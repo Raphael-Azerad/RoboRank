@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { StatCard } from "@/components/dashboard/StatCard";
@@ -10,8 +10,8 @@ import { Trophy, Target, Award, MapPin, Building, ArrowLeft, Loader2, TrendingUp
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-
 import { cn } from "@/lib/utils";
+import { MatchesPlayedModal, WinsModal, groupMatchesByEvent, filterWonMatches } from "@/components/matches/MatchModals";
 
 interface GroupedAward {
   title: string;
@@ -71,83 +71,9 @@ function AwardGroup({ group }: { group: GroupedAward }) {
   );
 }
 
-function roundLabel(round: number): string {
-  switch (round) {
-    case 1: return "Practice";
-    case 2: return "Qual";
-    case 3: return "R16";
-    case 4: return "QF";
-    case 5: return "SF";
-    case 6: return "Final";
-    default: return `R${round}`;
-  }
-}
-
-function MatchRow({ match, teamNumber }: { match: any; teamNumber: string }) {
-  const myAlliance = match.alliances?.find((a: any) =>
-    a.teams?.some((t: any) => t.team?.name === teamNumber),
-  );
-  const oppAlliance = match.alliances?.find((a: any) => a.color !== myAlliance?.color);
-  const myScore = myAlliance?.score ?? 0;
-  const oppScore = oppAlliance?.score ?? 0;
-  const won = myScore > oppScore;
-  const tied = myScore === oppScore && myScore > 0;
-
-  return (
-    <div className="rounded-lg border border-border/30 p-3 flex items-center justify-between hover:bg-accent/30 transition-colors">
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium truncate">{match.event?.name || "Unknown Event"}</div>
-        <div className="text-xs text-muted-foreground">{match.name || `${roundLabel(match.round)} ${match.matchnum}`} · {match.division?.name}</div>
-      </div>
-      <div className="flex items-center gap-3 shrink-0 ml-4">
-        <span className={cn("text-sm stat-number", won ? "text-[hsl(var(--success))]" : tied ? "text-muted-foreground" : "text-destructive")}>{myScore}</span>
-        <span className="text-xs text-muted-foreground">vs</span>
-        <span className="text-sm stat-number text-muted-foreground">{oppScore}</span>
-        <span className={cn("text-xs font-medium px-2 py-0.5 rounded", won ? "bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]" : tied ? "bg-muted text-muted-foreground" : "bg-destructive/10 text-destructive")}>
-          {won ? "W" : tied ? "T" : "L"}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function EventMatchGroup({ event, teamNumber }: { event: { eventName: string; eventId?: number; date: string; matches: any[] }; teamNumber: string }) {
-  const [open, setOpen] = useState(false);
-
-  return (
-    <div className="rounded-lg border border-border/30 overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-3 p-4 hover:bg-accent/30 transition-colors text-left"
-      >
-        <Target className="h-4 w-4 text-primary shrink-0" />
-        <div className="flex-1 min-w-0">
-          <span className="text-sm font-medium truncate block">{event.eventName}</span>
-          {event.date && <span className="text-[10px] text-muted-foreground">{event.date}</span>}
-        </div>
-        <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-          {event.matches.length}
-        </span>
-        {open ? (
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        ) : (
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        )}
-      </button>
-      {open && (
-        <div className="border-t border-border/20 space-y-1 p-2">
-          {event.matches.map((m: any) => (
-            <MatchRow key={m.id} match={m} teamNumber={teamNumber} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function TeamDetail() {
   const { teamNumber } = useParams<{ teamNumber: string }>();
+  const navigate = useNavigate();
   const { season } = useSeason();
   const [awardsModalOpen, setAwardsModalOpen] = useState(false);
   const [matchesModalOpen, setMatchesModalOpen] = useState(false);
@@ -191,56 +117,19 @@ export default function TeamDetail() {
   const loading = teamLoading || rankingsLoading;
   const groupedAwards = awards ? groupAwards(awards) : [];
 
-  // Group matches by event
   const matchesByEvent = useMemo(() => {
     if (!matches) return [];
-    const eventMap = new Map<string, { eventName: string; eventId?: number; date: string; matches: any[] }>();
-    matches.forEach((m: any) => {
-      const eventName = m.event?.name || "Unknown Event";
-      const eventId = m.event?.id;
-      const key = eventId ? String(eventId) : eventName;
-      if (!eventMap.has(key)) {
-        const dateSource = m.started || m.scheduled || m.event?.start || null;
-        eventMap.set(key, {
-          eventName,
-          eventId,
-          date: dateSource ? new Date(dateSource).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "",
-          matches: [],
-        });
-      }
-      eventMap.get(key)!.matches.push(m);
-    });
-    // Sort matches within each event
-    eventMap.forEach((v) => {
-      v.matches.sort((a: any, b: any) => (a.matchnum || 0) - (b.matchnum || 0));
-    });
-    return Array.from(eventMap.values()).sort((a, b) => {
-      const aTime = a.matches[0]?.started ? new Date(a.matches[0].started).getTime() : 0;
-      const bTime = b.matches[0]?.started ? new Date(b.matches[0].started).getTime() : 0;
-      return bTime - aTime;
-    });
+    return groupMatchesByEvent(matches);
   }, [matches]);
 
-  // Total match count (quals + elims)
   const totalMatchCount = matches?.length || 0;
 
-  // Won matches only (flat list)
   const wonMatches = useMemo(() => {
     if (!matches) return [];
-    return [...matches]
-      .filter((m: any) => {
-        const myAlliance = m.alliances?.find((a: any) =>
-          a.teams?.some((t: any) => t.team?.name === teamNumber),
-        );
-        const oppAlliance = m.alliances?.find((a: any) => a.color !== myAlliance?.color);
-        return (myAlliance?.score ?? 0) > (oppAlliance?.score ?? 0);
-      })
-      .sort((a: any, b: any) => {
-        const aTime = a.started ? new Date(a.started).getTime() : 0;
-        const bTime = b.started ? new Date(b.started).getTime() : 0;
-        return bTime - aTime;
-      });
+    return filterWonMatches(matches, teamNumber!);
   }, [matches, teamNumber]);
+
+  const seasonLabel = `${seasonInfo.name} ${seasonInfo.year}`;
 
   if (loading) {
     return (
@@ -290,7 +179,7 @@ export default function TeamDetail() {
                   </span>
                 )}
               </div>
-              <p className="text-xs text-primary mt-2">{seasonInfo.name} {seasonInfo.year}</p>
+              <p className="text-xs text-primary mt-2">{seasonLabel}</p>
             </div>
             <div className="shrink-0"><RoboRankScore score={roboRank ?? 0} size="lg" /></div>
           </motion.div>
@@ -315,51 +204,26 @@ export default function TeamDetail() {
           </button>
         </div>
 
-        {/* All Matches Dialog — grouped by event */}
-        <Dialog open={matchesModalOpen} onOpenChange={setMatchesModalOpen}>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
-            <DialogHeader>
-              <DialogTitle>{teamData.number} — All Matches</DialogTitle>
-              <DialogDescription>
-                {seasonInfo.name} {seasonInfo.year} · {totalMatchCount} total matches (Quals + Elims) · {matchesByEvent.length} events
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-              <div className="space-y-2">
-                {matchesByEvent.length > 0 ? (
-                  matchesByEvent.map((ev, idx) => (
-                    <EventMatchGroup key={idx} event={ev} teamNumber={teamNumber!} />
-                  ))
-                ) : (
-                  <div className="text-sm text-muted-foreground text-center py-8">No matches found.</div>
-                )}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* Matches Played Modal */}
+        <MatchesPlayedModal
+          open={matchesModalOpen}
+          onOpenChange={setMatchesModalOpen}
+          teamNumber={teamNumber!}
+          seasonLabel={seasonLabel}
+          matchesByEvent={matchesByEvent}
+          totalMatchCount={totalMatchCount}
+        />
 
-        {/* Won Matches Dialog */}
-        <Dialog open={winsModalOpen} onOpenChange={setWinsModalOpen}>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
-            <DialogHeader>
-              <DialogTitle>{teamData.number} — Wins</DialogTitle>
-              <DialogDescription>
-                {seasonInfo.name} {seasonInfo.year} · {wonMatches.length} wins out of {totalMatchCount} matches ({record ? record.winRate : 0}%)
-              </DialogDescription>
-            </DialogHeader>
-            <div className="flex-1 min-h-0 overflow-y-auto pr-1">
-              <div className="space-y-2">
-                {wonMatches.length > 0 ? (
-                  wonMatches.map((m: any) => (
-                    <MatchRow key={m.id} match={m} teamNumber={teamNumber!} />
-                  ))
-                ) : (
-                  <div className="text-sm text-muted-foreground text-center py-8">No wins found.</div>
-                )}
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        {/* Wins Modal */}
+        <WinsModal
+          open={winsModalOpen}
+          onOpenChange={setWinsModalOpen}
+          teamNumber={teamNumber!}
+          seasonLabel={seasonLabel}
+          wonMatches={wonMatches}
+          totalMatchCount={totalMatchCount}
+          winRate={record?.winRate ?? 0}
+        />
 
         {/* Awards Dialog */}
         <Dialog open={awardsModalOpen} onOpenChange={setAwardsModalOpen}>
@@ -367,7 +231,7 @@ export default function TeamDetail() {
             <DialogHeader>
               <DialogTitle>{teamData.number} Awards</DialogTitle>
               <DialogDescription>
-                {seasonInfo.name} {seasonInfo.year} · {awards?.length || 0} total awards
+                {seasonLabel} · {awards?.length || 0} total awards
               </DialogDescription>
             </DialogHeader>
 
@@ -385,6 +249,7 @@ export default function TeamDetail() {
           </DialogContent>
         </Dialog>
 
+        {/* Event Results Table - clickable event names */}
         {rankings && rankings.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <h2 className="text-xl font-display font-semibold mb-4">Event Results · {seasonInfo.name}</h2>
@@ -398,9 +263,10 @@ export default function TeamDetail() {
               </div>
               {rankings.map((r: any, i: number) => (
                 <motion.div key={r.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}
-                  className="grid grid-cols-12 gap-2 px-6 py-4 items-center border-t border-border/30 hover:bg-accent/50 transition-colors">
+                  onClick={() => r.event?.id && navigate(`/event/${r.event.id}`)}
+                  className="grid grid-cols-12 gap-2 px-6 py-4 items-center border-t border-border/30 hover:bg-accent/50 transition-colors cursor-pointer">
                   <div className="col-span-4">
-                    <div className="font-medium text-sm truncate">{r.event?.name || "Unknown"}</div>
+                    <div className="font-medium text-sm truncate text-primary hover:underline">{r.event?.name || "Unknown"}</div>
                     <div className="text-xs text-muted-foreground">{r.division?.name}</div>
                   </div>
                   <div className="col-span-2 text-center">

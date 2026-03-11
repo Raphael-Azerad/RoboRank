@@ -35,36 +35,20 @@ function useTeamComparison(teamNumber: string, season: string) {
   });
 }
 
-interface StatRowProps {
-  label: string;
-  values: (string | number)[];
-  higherIsBetter?: boolean;
-}
-
-function StatRow({ label, values, higherIsBetter = true }: StatRowProps) {
-  const nums = values.map((v) => (typeof v === "number" ? v : parseFloat(String(v)) || 0));
-  const best = higherIsBetter ? Math.max(...nums) : Math.min(...nums);
-  const allSame = nums.every((n) => n === nums[0]);
-
-  return (
-    <div className="grid items-center py-3 border-b border-border/20" style={{ gridTemplateColumns: `1fr repeat(${values.length}, 1fr)` }}>
-      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider pl-4">
-        {label}
-      </div>
-      {values.map((val, i) => (
-        <div
-          key={i}
-          className={cn(
-            "text-center stat-number text-base",
-            !allSame && nums[i] === best ? "text-[hsl(var(--success))]" : allSame ? "text-foreground" : "text-muted-foreground"
-          )}
-        >
-          {val}
-        </div>
-      ))}
-    </div>
-  );
-}
+const STAT_ROWS: { label: string; getValue: (t: TeamComparison) => string | number; higherIsBetter?: boolean }[] = [
+  { label: "RoboRank", getValue: (t) => t.roboRank },
+  { label: "Win Rate", getValue: (t) => `${t.record?.winRate ?? 0}%` },
+  { label: "Wins", getValue: (t) => t.record?.wins ?? 0 },
+  { label: "Losses", getValue: (t) => t.record?.losses ?? 0, higherIsBetter: false },
+  { label: "Matches", getValue: (t) => t.record?.total ?? 0 },
+  { label: "Events", getValue: (t) => t.record?.eventsAttended ?? 0 },
+  { label: "High Score", getValue: (t) => t.record?.highScore ?? 0 },
+  { label: "Avg Pts", getValue: (t) => t.record?.avgPointsPerEvent ?? 0 },
+  { label: "Skills", getValue: (t) => t.skillsScore },
+  { label: "Total WP", getValue: (t) => t.record?.totalWP ?? 0 },
+  { label: "Total AP", getValue: (t) => t.record?.totalAP ?? 0 },
+  { label: "Total SP", getValue: (t) => t.record?.totalSP ?? 0 },
+];
 
 export default function Compare() {
   const { season } = useSeason();
@@ -106,8 +90,6 @@ export default function Compare() {
     }
   };
 
-  const teamCount = inputs.length;
-
   return (
     <AppLayout>
       <div className="space-y-8">
@@ -121,7 +103,7 @@ export default function Compare() {
         <form onSubmit={handleCompare} className="space-y-3">
           <div className="flex flex-wrap gap-3 items-end">
             {inputs.map((input, i) => (
-              <div key={i} className="relative flex-1 min-w-[140px]">
+              <div key={i} className="relative flex-1 min-w-[120px] max-w-[200px]">
                 <label className="text-xs text-muted-foreground mb-1 block">Team {i + 1}</label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
@@ -145,7 +127,7 @@ export default function Compare() {
             ))}
             {inputs.length < 4 && (
               <Button type="button" variant="outline" size="sm" onClick={addSlot} className="gap-1.5 mb-0.5">
-                <Plus className="h-3.5 w-3.5" /> Add Team
+                <Plus className="h-3.5 w-3.5" /> Add
               </Button>
             )}
           </div>
@@ -169,39 +151,58 @@ export default function Compare() {
 
         {!loading && loadedTeams.length >= 2 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            {/* Team Headers */}
-            <div className="grid items-start" style={{ gridTemplateColumns: `1fr repeat(${loadedTeams.length}, 1fr)` }}>
-              <div />
-              {loadedTeams.map((t) => (
-                <div key={t.team.id} className="text-center space-y-2 px-2">
-                  <div className="text-xl font-display font-bold text-gradient">{t.team.number}</div>
-                  <div className="text-xs text-muted-foreground truncate">{t.team.team_name}</div>
-                  {t.team.location && (
-                    <div className="text-[10px] text-muted-foreground flex items-center gap-1 justify-center">
-                      <MapPin className="h-2.5 w-2.5" />
-                      {t.team.location.region}
-                    </div>
-                  )}
-                  <div className="flex justify-center pt-1">
-                    <RoboRankScore score={t.roboRank} size="md" />
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* Scrollable comparison table */}
+            <div className="rounded-xl border border-border/50 card-gradient overflow-x-auto">
+              <table className="w-full min-w-[400px]">
+                {/* Team Headers */}
+                <thead>
+                  <tr className="border-b border-border/30">
+                    <th className="text-left px-4 py-4 w-28" />
+                    {loadedTeams.map((t) => (
+                      <th key={t.team.id} className="text-center px-3 py-4">
+                        <div className="space-y-1.5">
+                          <div className="text-lg font-display font-bold text-gradient">{t.team.number}</div>
+                          <div className="text-[10px] text-muted-foreground truncate max-w-[120px] mx-auto">{t.team.team_name}</div>
+                          {t.team.location && (
+                            <div className="text-[10px] text-muted-foreground flex items-center gap-1 justify-center">
+                              <MapPin className="h-2.5 w-2.5" />
+                              {t.team.location.region}
+                            </div>
+                          )}
+                          <div className="flex justify-center pt-1">
+                            <RoboRankScore score={t.roboRank} size="sm" />
+                          </div>
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {STAT_ROWS.map(({ label, getValue, higherIsBetter = true }) => {
+                    const values = loadedTeams.map((t) => getValue(t));
+                    const nums = values.map((v) => (typeof v === "number" ? v : parseFloat(String(v)) || 0));
+                    const best = higherIsBetter ? Math.max(...nums) : Math.min(...nums);
+                    const allSame = nums.every((n) => n === nums[0]);
 
-            {/* Stats Table */}
-            <div className="rounded-xl border border-border/50 card-gradient overflow-hidden">
-              <StatRow label="Win Rate" values={loadedTeams.map((t) => `${t.record?.winRate ?? 0}%`)} />
-              <StatRow label="Wins" values={loadedTeams.map((t) => t.record?.wins ?? 0)} />
-              <StatRow label="Losses" values={loadedTeams.map((t) => t.record?.losses ?? 0)} higherIsBetter={false} />
-              <StatRow label="Matches" values={loadedTeams.map((t) => t.record?.total ?? 0)} />
-              <StatRow label="Events" values={loadedTeams.map((t) => t.record?.eventsAttended ?? 0)} />
-              <StatRow label="High Score" values={loadedTeams.map((t) => t.record?.highScore ?? 0)} />
-              <StatRow label="Avg Pts" values={loadedTeams.map((t) => t.record?.avgPointsPerEvent ?? 0)} />
-              <StatRow label="Skills" values={loadedTeams.map((t) => t.skillsScore)} />
-              <StatRow label="Total WP" values={loadedTeams.map((t) => t.record?.totalWP ?? 0)} />
-              <StatRow label="Total AP" values={loadedTeams.map((t) => t.record?.totalAP ?? 0)} />
-              <StatRow label="Total SP" values={loadedTeams.map((t) => t.record?.totalSP ?? 0)} />
+                    return (
+                      <tr key={label} className="border-b border-border/20">
+                        <td className="text-xs font-medium text-muted-foreground uppercase tracking-wider pl-4 py-3">{label}</td>
+                        {values.map((val, i) => (
+                          <td
+                            key={i}
+                            className={cn(
+                              "text-center stat-number text-sm py-3",
+                              !allSame && nums[i] === best ? "text-[hsl(var(--success))]" : allSame ? "text-foreground" : "text-muted-foreground"
+                            )}
+                          >
+                            {val}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
 
             {/* Not-found teams */}

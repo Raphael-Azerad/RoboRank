@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
@@ -6,15 +6,18 @@ import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getTeamByNumber, getTeamRankings, getTeamAwards, calculateRecordFromRankings, calculateRoboRank, getTeamSkillsScore, SEASONS } from "@/lib/robotevents";
+import { getTeamByNumber, getTeamRankings, getTeamAwards, getTeamMatches, calculateRecordFromRankings, calculateRoboRank, getTeamSkillsScore, SEASONS } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { MatchesPlayedModal, WinsModal, groupMatchesByEvent, filterWonMatches } from "@/components/matches/MatchModals";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { season } = useSeason();
   const [teamNumber, setTeamNumber] = useState<string>("");
+  const [matchesModalOpen, setMatchesModalOpen] = useState(false);
+  const [winsModalOpen, setWinsModalOpen] = useState(false);
   const seasonInfo = SEASONS[season];
 
   useEffect(() => {
@@ -49,9 +52,29 @@ export default function Dashboard() {
     enabled: !!teamId,
   });
 
+  const { data: matches } = useQuery({
+    queryKey: ["teamMatches", teamId, season],
+    queryFn: () => getTeamMatches(teamId!, season),
+    enabled: !!teamId,
+  });
+
   const record = rankings ? calculateRecordFromRankings(rankings) : null;
   const roboRank = rankings ? calculateRoboRank(rankings, skillsScore ?? 0) : null;
   const loading = teamLoading || rankingsLoading;
+
+  const matchesByEvent = useMemo(() => {
+    if (!matches) return [];
+    return groupMatchesByEvent(matches);
+  }, [matches]);
+
+  const totalMatchCount = matches?.length || 0;
+
+  const wonMatches = useMemo(() => {
+    if (!matches || !teamNumber) return [];
+    return filterWonMatches(matches, teamNumber);
+  }, [matches, teamNumber]);
+
+  const seasonLabel = `${seasonInfo.name} ${seasonInfo.year}`;
 
   return (
     <AppLayout>
@@ -65,7 +88,7 @@ export default function Dashboard() {
             <p className="text-muted-foreground mt-1">
               {teamData?.team_name || "Welcome to your competition command center"}
               {" · "}
-              <span className="text-xs text-primary">{seasonInfo.name} {seasonInfo.year}</span>
+              <span className="text-xs text-primary">{seasonLabel}</span>
             </p>
           </div>
           <Link to="/scouting">
@@ -76,10 +99,14 @@ export default function Dashboard() {
         </motion.div>
 
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-          <StatCard title="Win Rate" value={record ? `${record.winRate}%` : "—"} icon={Trophy}
-            subtitle={record ? `${record.wins}W-${record.losses}L-${record.ties}T` : loading ? "Loading..." : "No data"} />
-          <StatCard title="Qual Matches" value={record ? String(record.total) : "—"} icon={Target}
-            subtitle={record ? `Across ${record.eventsAttended} events` : loading ? "Loading..." : "No data"} />
+          <button type="button" onClick={() => setWinsModalOpen(true)} className="text-left">
+            <StatCard title="Win Rate" value={record ? `${record.winRate}%` : "—"} icon={Trophy}
+              subtitle={record ? `${record.wins}W-${record.losses}L-${record.ties}T` : loading ? "Loading..." : "No data"} className="cursor-pointer" />
+          </button>
+          <button type="button" onClick={() => setMatchesModalOpen(true)} className="text-left">
+            <StatCard title="Matches" value={totalMatchCount ? String(totalMatchCount) : "—"} icon={Target}
+              subtitle={record ? `Across ${record.eventsAttended} events` : loading ? "Loading..." : "No data"} className="cursor-pointer" />
+          </button>
           <StatCard title="High Score" value={record ? String(record.highScore) : "—"} icon={Award}
             subtitle={record ? `Avg ${record.avgPointsPerEvent} pts/match` : ""} />
           <div onClick={() => navigate("/awards")} className="cursor-pointer">
@@ -87,6 +114,31 @@ export default function Dashboard() {
               subtitle={awards && awards.length > 0 ? "Tap to view all" : loading ? "Loading..." : "No awards"} />
           </div>
         </div>
+
+        {/* Matches Played Modal */}
+        {teamNumber && (
+          <MatchesPlayedModal
+            open={matchesModalOpen}
+            onOpenChange={setMatchesModalOpen}
+            teamNumber={teamNumber}
+            seasonLabel={seasonLabel}
+            matchesByEvent={matchesByEvent}
+            totalMatchCount={totalMatchCount}
+          />
+        )}
+
+        {/* Wins Modal */}
+        {teamNumber && (
+          <WinsModal
+            open={winsModalOpen}
+            onOpenChange={setWinsModalOpen}
+            teamNumber={teamNumber}
+            seasonLabel={seasonLabel}
+            wonMatches={wonMatches}
+            totalMatchCount={totalMatchCount}
+            winRate={record?.winRate ?? 0}
+          />
+        )}
 
         <div className="grid gap-6 lg:grid-cols-3">
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
