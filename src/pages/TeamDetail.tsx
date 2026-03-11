@@ -4,7 +4,7 @@ import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { useQuery } from "@tanstack/react-query";
 import { getTeamByNumber, getTeamRankings, getTeamMatches, calculateRecordFromRankings, calculateRoboRank } from "@/lib/robotevents";
-import { Trophy, Target, Award, MapPin, Building, Calendar, ArrowLeft, Loader2 } from "lucide-react";
+import { Trophy, Target, Award, MapPin, Building, Calendar, ArrowLeft, Loader2, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
