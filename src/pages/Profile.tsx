@@ -2,14 +2,20 @@ import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { getTeamByNumber, SEASONS, SEASON_LIST } from "@/lib/robotevents";
-import { useSeason } from "@/contexts/SeasonContext";
+import { useSeason, type GradeLevel } from "@/contexts/SeasonContext";
 import { useQuery } from "@tanstack/react-query";
-import { User, Mail, Hash, MapPin, Building, Loader2, Calendar } from "lucide-react";
+import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
+const GRADE_OPTIONS: { value: GradeLevel; label: string; desc: string }[] = [
+  { value: "Both", label: "All Teams", desc: "Show HS & MS combined" },
+  { value: "High School", label: "High School", desc: "Only HS teams" },
+  { value: "Middle School", label: "Middle School", desc: "Only MS teams" },
+];
+
 export default function Profile() {
-  const { season, setSeason } = useSeason();
+  const { season, setSeason, gradeLevel, setGradeLevel } = useSeason();
   const [user, setUser] = useState<{ email?: string; team_number?: string }>({});
 
   useEffect(() => {
@@ -85,6 +91,40 @@ export default function Profile() {
               </>
             )}
           </div>
+        </motion.div>
+
+        {/* Grade Level Selector */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="rounded-xl border border-border/50 card-gradient p-8 space-y-4"
+        >
+          <div className="flex items-center gap-3">
+            <GraduationCap className="h-5 w-5 text-primary" />
+            <div>
+              <h3 className="font-display font-semibold">Grade Level</h3>
+              <p className="text-xs text-muted-foreground">
+                Filter rankings & leaderboards by division
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {GRADE_OPTIONS.map((opt) => (
+              <Button
+                key={opt.value}
+                variant={gradeLevel === opt.value ? "default" : "outline"}
+                size="sm"
+                onClick={() => setGradeLevel(opt.value)}
+                className="text-xs"
+              >
+                {opt.label}
+              </Button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Currently showing: <span className="text-foreground font-medium">{gradeLevel === "Both" ? "All Teams" : gradeLevel}</span>
+          </p>
         </motion.div>
 
         {/* Season Selector */}
