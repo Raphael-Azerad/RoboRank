@@ -178,6 +178,8 @@ export default function Rankings() {
   const [tab, setTab] = useState<Tab>("roborank");
   const [searchQuery, setSearchQuery] = useState("");
   const [displayCount, setDisplayCount] = useState(50);
+  const [streamedResults, setStreamedResults] = useState<RankedTeam[]>([]);
+  const [progress, setProgress] = useState({ processed: 0, total: 0, done: false });
 
   const seasonInfo = SEASONS[season];
 
@@ -194,12 +196,13 @@ export default function Rankings() {
       const skillsPool = await getGlobalSkillsPool(season, gradeLevel);
       if (skillsPool.length === 0) return [];
 
-      // Take top 2000 skills teams as candidates for broad coverage
       const candidates = skillsPool.slice(0, 2000);
       const results: RankedTeam[] = [];
+      setStreamedResults([]);
+      setProgress({ processed: 0, total: candidates.length, done: false });
 
-      for (let i = 0; i < candidates.length; i += 10) {
-        const batch = candidates.slice(i, i + 10);
+      for (let i = 0; i < candidates.length; i += 25) {
+        const batch = candidates.slice(i, i + 25);
 
         await Promise.all(
           batch.map(async (team) => {
@@ -229,11 +232,17 @@ export default function Rankings() {
           }),
         );
 
-        if (i + 10 < candidates.length) {
-          await sleep(100);
+        // Update streamed results progressively so users see teams appearing
+        const sorted = [...results].sort((a, b) => b.score - a.score || b.skillsCombined - a.skillsCombined);
+        setStreamedResults(sorted);
+        setProgress({ processed: Math.min(i + 25, candidates.length), total: candidates.length, done: false });
+
+        if (i + 25 < candidates.length) {
+          await sleep(50);
         }
       }
 
+      setProgress((p) => ({ ...p, done: true }));
       return results.sort((a, b) => b.score - a.score || b.skillsCombined - a.skillsCombined);
     },
     enabled: tab === "roborank",
@@ -246,7 +255,10 @@ export default function Rankings() {
     if (q) navigate(`/team/${q}`);
   };
 
-  const loading = tab === "skills" ? skillsLoading : roboRankLoading;
+  const loading = tab === "skills" ? skillsLoading : (roboRankLoading && streamedResults.length === 0);
+
+  // Use streamed results while still loading, final data when done
+  const activeRoboRank = roboRankLeaderboard ?? streamedResults;
 
   const filteredSkills = skillsLeaderboard?.filter((t) => {
     if (!searchQuery.trim()) return true;
@@ -254,7 +266,7 @@ export default function Rankings() {
     return t.number.toUpperCase().includes(q) || t.name.toUpperCase().includes(q);
   });
 
-  const filteredRoboRank = roboRankLeaderboard?.filter((t) => {
+  const filteredRoboRank = activeRoboRank?.filter((t) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.trim().toUpperCase();
     return t.number.toUpperCase().includes(q) || t.name.toUpperCase().includes(q);
@@ -300,6 +312,22 @@ export default function Rankings() {
             <p className="text-sm text-muted-foreground">
               {tab === "skills" ? "Loading global skills rankings..." : "Calculating RoboRank scores for top teams..."}
             </p>
+          </div>
+        )}
+
+        {/* Progress bar while RoboRank is streaming */}
+        {tab === "roborank" && roboRankLoading && streamedResults.length > 0 && (
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Processing teams... {progress.processed}/{progress.total}</span>
+              <span>{streamedResults.length} ranked</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-300"
+                style={{ width: `${(progress.processed / Math.max(progress.total, 1)) * 100}%` }}
+              />
+            </div>
           </div>
         )}
 
@@ -351,12 +379,7 @@ export default function Rankings() {
           )
         )}
 
-        {!loading && tab === "roborank" && filteredRoboRank && (
-          filteredRoboRank.length === 0 ? (
-            <div className="text-sm text-muted-foreground rounded-lg border border-border/50 card-gradient p-8 text-center">
-              No teams found for {seasonInfo.name}.
-            </div>
-          ) : (
+        {tab === "roborank" && filteredRoboRank && filteredRoboRank.length > 0 && (
             <div className="rounded-xl border border-border/50 overflow-hidden">
               <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 <div className="col-span-1">#</div>
@@ -397,7 +420,12 @@ export default function Rankings() {
                 </motion.div>
               ))}
             </div>
-          )
+        )}
+        
+        {tab === "roborank" && !loading && filteredRoboRank && filteredRoboRank.length === 0 && (
+          <div className="text-sm text-muted-foreground rounded-lg border border-border/50 card-gradient p-8 text-center">
+            No teams found for {seasonInfo.name}.
+          </div>
         )}
       </div>
     </AppLayout>
