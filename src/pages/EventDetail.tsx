@@ -6,15 +6,16 @@ import { useQuery } from "@tanstack/react-query";
 import {
   fetchRobotEvents, getEventTeams, getEventRankings, getEventMatches,
   getEventSkills, getTeamRankings, calculateRecordFromRankings,
-  calculateRoboRank, getTeamSkillsScore, fetchAllPages,
+  calculateRoboRank, getTeamSkillsScore, fetchAllPages, getTeamMatches,
 } from "@/lib/robotevents";
-import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { EliminationBracket } from "@/components/events/EliminationBracket";
 
-type DetailTab = "teams" | "quals" | "elims" | "skills" | "awards";
+type DetailTab = "teams" | "quals" | "elims" | "skills" | "awards" | "predictions";
 
 // Match round types: 1=Practice, 2=Qualification, 3=R128..6=Finals
 function roundLabel(round: number): string {
@@ -37,6 +38,8 @@ export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const [tab, setTab] = useState<DetailTab>("teams");
+  const [h2hTeams, setH2hTeams] = useState<[string, string] | null>(null);
+  const [h2hOpen, setH2hOpen] = useState(false);
 
   const { data: eventData, isLoading: eventLoading } = useQuery({
     queryKey: ["event", eventId],
@@ -254,6 +257,7 @@ export default function EventDetail() {
             { key: "elims" as DetailTab, label: "Elims", icon: Swords },
             { key: "skills" as DetailTab, label: "Skills", icon: Zap },
             { key: "awards" as DetailTab, label: "Awards", icon: Medal },
+            { key: "predictions" as DetailTab, label: "Predictions", icon: TrendingUp },
           ].map(({ key, label, icon: Icon }) => (
             <Button
               key={key}
@@ -538,7 +542,244 @@ export default function EventDetail() {
             </div>
           )
         )}
+
+        {/* Predictions Tab */}
+        {tab === "predictions" && (
+          <div className="space-y-6">
+            {/* Head-to-Head Selector */}
+            <div className="rounded-xl border border-border/50 card-gradient p-4">
+              <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <GitCompare className="h-3.5 w-3.5" /> Head-to-Head Lookup
+              </h3>
+              <p className="text-sm text-muted-foreground mb-3">Select two teams from the Teams tab to compare their matchup history.</p>
+              {teams && teams.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  <select
+                    className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
+                    value={h2hTeams?.[0] || ""}
+                    onChange={(e) => setH2hTeams([e.target.value, h2hTeams?.[1] || ""])}
+                  >
+                    <option value="">Team 1...</option>
+                    {teams.map((t: any) => (
+                      <option key={t.id} value={t.number}>{t.number}</option>
+                    ))}
+                  </select>
+                  <span className="text-muted-foreground self-center">vs</span>
+                  <select
+                    className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
+                    value={h2hTeams?.[1] || ""}
+                    onChange={(e) => setH2hTeams([h2hTeams?.[0] || "", e.target.value])}
+                  >
+                    <option value="">Team 2...</option>
+                    {teams.map((t: any) => (
+                      <option key={t.id} value={t.number}>{t.number}</option>
+                    ))}
+                  </select>
+                  <Button
+                    size="sm"
+                    disabled={!h2hTeams?.[0] || !h2hTeams?.[1] || h2hTeams[0] === h2hTeams[1]}
+                    onClick={() => setH2hOpen(true)}
+                  >
+                    Compare
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Match Predictions based on RoboRank */}
+            {teamStats && teamStats.length > 0 && (
+              <div className="rounded-xl border border-border/50 card-gradient p-4">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <TrendingUp className="h-3.5 w-3.5" /> Power Rankings Prediction
+                </h3>
+                <p className="text-xs text-muted-foreground mb-4">Based on RoboRank scores. Higher-rated teams are predicted to perform better.</p>
+                <div className="space-y-2">
+                  {teamStats.slice(0, 20).map((team: any, i: number) => {
+                    const barWidth = teamStats[0]?.roboRank > 0 ? (team.roboRank / teamStats[0].roboRank) * 100 : 0;
+                    return (
+                      <motion.div
+                        key={team.id}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: i * 0.03 }}
+                        onClick={() => navigate(`/team/${team.number}`)}
+                        className="flex items-center gap-3 cursor-pointer hover:bg-accent/30 rounded-lg px-2 py-1.5 transition-colors"
+                      >
+                        <span className="text-xs stat-number text-muted-foreground w-6">{i + 1}</span>
+                        <span className="text-sm font-display font-semibold w-16">{team.number}</span>
+                        <div className="flex-1 h-5 bg-muted rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${barWidth}%` }}
+                            transition={{ delay: i * 0.03 + 0.2, duration: 0.4 }}
+                            className="h-full rounded-full"
+                            style={{
+                              background: `linear-gradient(90deg, hsl(var(--primary)) 0%, hsl(var(--chart-2)) 100%)`,
+                              opacity: 0.7 + (barWidth / 100) * 0.3,
+                            }}
+                          />
+                        </div>
+                        <RoboRankScore score={team.roboRank} size="sm" />
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {(!teamStats || teamStats.length === 0) && !statsLoading && (
+              <div className="text-sm text-muted-foreground rounded-lg border border-border/50 card-gradient p-8 text-center">
+                Switch to the Teams tab first to load RoboRank data, then come back here for predictions.
+              </div>
+            )}
+            {statsLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground py-8 justify-center">
+                <Loader2 className="h-4 w-4 animate-spin" /> Calculating predictions...
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Head-to-Head Dialog */}
+        <HeadToHeadDialog
+          open={h2hOpen}
+          onOpenChange={setH2hOpen}
+          team1={h2hTeams?.[0] || ""}
+          team2={h2hTeams?.[1] || ""}
+        />
       </div>
     </AppLayout>
+  );
+}
+
+function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  team1: string;
+  team2: string;
+}) {
+  const { data, isLoading } = useQuery({
+    queryKey: ["h2h", team1, team2],
+    queryFn: async () => {
+      const [t1Data, t2Data] = await Promise.all([
+        fetchRobotEvents("/teams", { "number[]": team1, "program[]": "1" }),
+        fetchRobotEvents("/teams", { "number[]": team2, "program[]": "1" }),
+      ]);
+      const t1 = t1Data?.data?.[0];
+      const t2 = t2Data?.data?.[0];
+      if (!t1 || !t2) return null;
+
+      const [t1Matches, t2Matches, t1Rankings, t2Rankings, t1Skills, t2Skills] = await Promise.all([
+        getTeamMatches(t1.id),
+        getTeamMatches(t2.id),
+        getTeamRankings(t1.id),
+        getTeamRankings(t2.id),
+        getTeamSkillsScore(t1.id),
+        getTeamSkillsScore(t2.id),
+      ]);
+
+      // Find shared matches
+      let t1Wins = 0, t2Wins = 0, ties = 0;
+      const sharedMatches: any[] = [];
+
+      const t2MatchMap = new Map<number, any>();
+      t2Matches.forEach((m: any) => t2MatchMap.set(m.id, m));
+
+      t1Matches.forEach((m: any) => {
+        if (t2MatchMap.has(m.id)) {
+          const match = m;
+          const red = match.alliances?.find((a: any) => a.color === "red");
+          const blue = match.alliances?.find((a: any) => a.color === "blue");
+          const redTeams = red?.teams?.map((t: any) => t.team?.name) || [];
+          const blueTeams = blue?.teams?.map((t: any) => t.team?.name) || [];
+          const t1IsRed = redTeams.includes(team1);
+          const t1Score = t1IsRed ? (red?.score ?? 0) : (blue?.score ?? 0);
+          const t2Score = t1IsRed ? (blue?.score ?? 0) : (red?.score ?? 0);
+
+          sharedMatches.push({ ...match, t1Score, t2Score });
+          if (t1Score > t2Score) t1Wins++;
+          else if (t2Score > t1Score) t2Wins++;
+          else ties++;
+        }
+      });
+
+      const t1RR = calculateRoboRank(t1Rankings, t1Skills);
+      const t2RR = calculateRoboRank(t2Rankings, t2Skills);
+      const t1Record = calculateRecordFromRankings(t1Rankings);
+      const t2Record = calculateRecordFromRankings(t2Rankings);
+
+      return { t1, t2, t1Wins, t2Wins, ties, sharedMatches, t1RR, t2RR, t1Record, t2Record };
+    },
+    enabled: open && !!team1 && !!team2,
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="font-display">{team1} vs {team2}</DialogTitle>
+        </DialogHeader>
+        {isLoading && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground py-8 justify-center">
+            <Loader2 className="h-4 w-4 animate-spin" /> Loading head-to-head data...
+          </div>
+        )}
+        {data && (
+          <div className="space-y-4">
+            {/* RoboRank comparison */}
+            <div className="grid grid-cols-3 gap-4 text-center">
+              <div>
+                <div className="font-display font-bold text-lg">{team1}</div>
+                <RoboRankScore score={data.t1RR} size="sm" />
+                <div className="text-xs text-muted-foreground mt-1">
+                  {data.t1Record.wins}W-{data.t1Record.losses}L ({data.t1Record.winRate}%)
+                </div>
+              </div>
+              <div className="flex flex-col items-center justify-center">
+                <span className="text-xs text-muted-foreground uppercase">H2H Record</span>
+                <div className="text-lg font-display font-bold">
+                  <span className={cn(data.t1Wins > data.t2Wins && "text-[hsl(var(--success))]")}>{data.t1Wins}</span>
+                  <span className="text-muted-foreground mx-1">-</span>
+                  <span className={cn(data.t2Wins > data.t1Wins && "text-[hsl(var(--success))]")}>{data.t2Wins}</span>
+                </div>
+                {data.ties > 0 && <span className="text-xs text-muted-foreground">{data.ties} ties</span>}
+              </div>
+              <div>
+                <div className="font-display font-bold text-lg">{team2}</div>
+                <RoboRankScore score={data.t2RR} size="sm" />
+                <div className="text-xs text-muted-foreground mt-1">
+                  {data.t2Record.wins}W-{data.t2Record.losses}L ({data.t2Record.winRate}%)
+                </div>
+              </div>
+            </div>
+
+            {/* Shared matches */}
+            {data.sharedMatches.length > 0 ? (
+              <div className="rounded-lg border border-border/50 overflow-hidden">
+                <div className="px-3 py-1.5 bg-muted/50 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                  {data.sharedMatches.length} shared matches this season
+                </div>
+                {data.sharedMatches.slice(0, 10).map((m: any) => (
+                  <div key={m.id} className="flex items-center justify-between px-3 py-2 text-xs border-t border-border/20">
+                    <span className="text-muted-foreground">{m.name || `Match ${m.matchnum}`}</span>
+                    <span>
+                      <span className={cn("stat-number", m.t1Score > m.t2Score ? "text-[hsl(var(--success))]" : "text-muted-foreground")}>{m.t1Score}</span>
+                      <span className="text-muted-foreground mx-1">-</span>
+                      <span className={cn("stat-number", m.t2Score > m.t1Score ? "text-[hsl(var(--success))]" : "text-muted-foreground")}>{m.t2Score}</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                No shared matches found this season.
+              </p>
+            )}
+          </div>
+        )}
+        {!isLoading && !data && (
+          <p className="text-sm text-muted-foreground text-center py-4">Could not load data for these teams.</p>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

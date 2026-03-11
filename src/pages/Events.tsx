@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Calendar as CalendarIcon, MapPin, Search, Loader2, Filter, ArrowUpDown, List, Star, CalendarDays, ChevronLeft, ChevronRight, Map as MapIcon, Users } from "lucide-react";
+import { Calendar as CalendarIcon, MapPin, Search, Loader2, Filter, ArrowUpDown, List, Star, CalendarDays, ChevronLeft, ChevronRight, Map as MapIcon, Users, Navigation, GitCompare, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -80,6 +80,10 @@ export default function Events() {
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [calendarDate, setCalendarDate] = useState<Date | undefined>(new Date());
   const { watchlist, toggle: toggleWatchlist, isWatched } = useWatchlist();
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [sortByNearby, setSortByNearby] = useState(false);
+  const [compareIds, setCompareIds] = useState<number[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
 
   const seasonInfo = SEASONS[season];
 
@@ -172,7 +176,49 @@ export default function Events() {
     });
   }
 
+  // Distance calculation for nearby sorting
+  const getDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 3959; // miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }, []);
+
+  const requestLocation = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setSortByNearby(true);
+        },
+        () => setSortByNearby(false)
+      );
+    }
+  }, []);
+
+  const toggleCompare = useCallback((eventId: number) => {
+    setCompareIds((prev) =>
+      prev.includes(eventId)
+        ? prev.filter((id) => id !== eventId)
+        : prev.length < 4
+          ? [...prev, eventId]
+          : prev
+    );
+  }, []);
+
   events = [...events].sort((a: any, b: any) => {
+    // Nearby sorting
+    if (sortByNearby && userLocation) {
+      const aCoords = a.location?.coordinates;
+      const bCoords = b.location?.coordinates;
+      if (aCoords?.lat && bCoords?.lat) {
+        const aDist = getDistance(userLocation.lat, userLocation.lng, aCoords.lat, aCoords.lon);
+        const bDist = getDistance(userLocation.lat, userLocation.lng, bCoords.lat, bCoords.lon);
+        return aDist - bDist;
+      }
+    }
+    // Default: upcoming first, then by date
     const aDate = new Date(a.start);
     const bDate = new Date(b.start);
     const aUp = aDate > now;
@@ -182,6 +228,10 @@ export default function Events() {
     if (aUp && bUp) return aDate.getTime() - bDate.getTime();
     return bDate.getTime() - aDate.getTime();
   });
+
+  const compareEvents = useMemo(() => {
+    return events.filter((e: any) => compareIds.includes(e.id));
+  }, [events, compareIds]);
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, any[]>();
@@ -296,18 +346,40 @@ export default function Events() {
           </div>
 
           {/* Actions */}
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); toggleWatchlist(event.id); }}
-            className="p-1.5 rounded-lg hover:bg-accent transition-colors shrink-0"
-          >
-            {isWatched(event.id) ? (
-              <Star className="h-4 w-4 text-[hsl(var(--chart-4))] fill-[hsl(var(--chart-4))]" />
-            ) : (
-              <Star className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+          <div className="flex items-center gap-1 shrink-0">
+            {showCompare && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleCompare(event.id); }}
+                className={cn(
+                  "p-1.5 rounded-lg transition-colors",
+                  compareIds.includes(event.id) ? "bg-primary/20 text-primary" : "hover:bg-accent text-muted-foreground/40"
+                )}
+              >
+                <GitCompare className="h-4 w-4" />
+              </button>
             )}
-          </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); toggleWatchlist(event.id); }}
+              className="p-1.5 rounded-lg hover:bg-accent transition-colors"
+            >
+              {isWatched(event.id) ? (
+                <Star className="h-4 w-4 text-[hsl(var(--chart-4))] fill-[hsl(var(--chart-4))]" />
+              ) : (
+                <Star className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+              )}
+            </button>
+          </div>
         </div>
+
+        {/* Nearby distance */}
+        {sortByNearby && userLocation && event.location?.coordinates?.lat && (
+          <div className="mt-2 text-[10px] text-muted-foreground flex items-center gap-1 ml-[60px]">
+            <Navigation className="h-3 w-3" />
+            {Math.round(getDistance(userLocation.lat, userLocation.lng, event.location.coordinates.lat, event.location.coordinates.lon))} mi away
+          </div>
+        )}
       </motion.div>
     );
   };
@@ -353,6 +425,31 @@ export default function Events() {
               <Star className="h-3.5 w-3.5" /> Watchlist
               {watchlist.length > 0 && (
                 <span className="text-[10px] font-bold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">{watchlist.length}</span>
+              )}
+            </Button>
+            <Button
+              variant={sortByNearby ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                if (sortByNearby) {
+                  setSortByNearby(false);
+                } else {
+                  requestLocation();
+                }
+              }}
+              className="gap-1.5"
+            >
+              <Navigation className="h-3.5 w-3.5" /> Nearby
+            </Button>
+            <Button
+              variant={compareIds.length > 0 ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowCompare(!showCompare)}
+              className="gap-1.5"
+            >
+              <GitCompare className="h-3.5 w-3.5" /> Compare
+              {compareIds.length > 0 && (
+                <span className="text-[10px] font-bold bg-primary-foreground/20 px-1.5 py-0.5 rounded-full">{compareIds.length}</span>
               )}
             </Button>
           </div>
@@ -556,6 +653,50 @@ export default function Events() {
               )}
             </>
           )
+        )}
+        {/* Compare Panel */}
+        {showCompare && compareEvents.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-border bg-card shadow-xl p-4 max-w-3xl w-[95vw]"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-display font-semibold">Comparing {compareEvents.length} Events</h3>
+              <Button variant="ghost" size="sm" onClick={() => { setCompareIds([]); setShowCompare(false); }}>
+                <X className="h-3.5 w-3.5 mr-1" /> Clear
+              </Button>
+            </div>
+            <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(compareEvents.length, 4)}, 1fr)` }}>
+              {compareEvents.map((event: any) => {
+                const loc = event.location;
+                return (
+                  <div key={event.id} className="rounded-lg border border-border/50 p-3 text-xs space-y-1.5">
+                    <div className="font-display font-semibold text-sm line-clamp-2">{event.name}</div>
+                    <div className="text-muted-foreground flex items-center gap-1">
+                      <CalendarIcon className="h-3 w-3" />
+                      {formatDateRange(event.start, event.end)}
+                    </div>
+                    {loc?.city && (
+                      <div className="text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {loc.city}, {loc.region}
+                      </div>
+                    )}
+                    {(event.teams_count || event.stats?.teams) && (
+                      <div className="text-muted-foreground flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {event.teams_count || event.stats?.teams} teams
+                      </div>
+                    )}
+                    <Button variant="outline" size="sm" className="w-full mt-2 text-xs" onClick={() => navigate(`/event/${event.id}`)}>
+                      View Details
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
         )}
       </div>
     </AppLayout>
