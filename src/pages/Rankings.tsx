@@ -107,6 +107,7 @@ export default function Rankings() {
   const [displayCount, setDisplayCount] = useState(50);
   const [streamedResults, setStreamedResults] = useState<RankedTeam[]>([]);
   const [progress, setProgress] = useState({ processed: 0, total: 0, done: false });
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const seasonInfo = SEASONS[season];
 
