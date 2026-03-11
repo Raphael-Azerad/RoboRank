@@ -10,7 +10,7 @@ import { Trophy, Target, Award, MapPin, Building, ArrowLeft, Loader2, TrendingUp
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { cn } from "@/lib/utils";
 
 interface GroupedAward {
@@ -324,7 +324,7 @@ export default function TeamDetail() {
                 {seasonInfo.name} {seasonInfo.year} · {totalMatchCount} total matches (Quals + Elims) · {matchesByEvent.length} events
               </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="flex-1 pr-2">
+            <div className="flex-1 min-h-0 overflow-y-auto pr-1">
               <div className="space-y-2">
                 {matchesByEvent.length > 0 ? (
                   matchesByEvent.map((ev, idx) => (
@@ -334,7 +334,7 @@ export default function TeamDetail() {
                   <div className="text-sm text-muted-foreground text-center py-8">No matches found.</div>
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </DialogContent>
         </Dialog>
 
@@ -347,7 +347,7 @@ export default function TeamDetail() {
                 {seasonInfo.name} {seasonInfo.year} · {wonMatches.length} wins out of {totalMatchCount} matches ({record ? record.winRate : 0}%)
               </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="flex-1 pr-2">
+            <div className="flex-1 min-h-0 overflow-y-auto pr-1">
               <div className="space-y-2">
                 {wonMatches.length > 0 ? (
                   wonMatches.map((m: any) => (
@@ -357,7 +357,7 @@ export default function TeamDetail() {
                   <div className="text-sm text-muted-foreground text-center py-8">No wins found.</div>
                 )}
               </div>
-            </ScrollArea>
+            </div>
           </DialogContent>
         </Dialog>
 

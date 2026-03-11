@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
@@ -41,6 +41,15 @@ export default function EventDetail() {
   const [h2hTeams, setH2hTeams] = useState<[string, string] | null>(null);
   const [h2hOpen, setH2hOpen] = useState(false);
   const [selectedDivisionIdx, setSelectedDivisionIdx] = useState(0);
+
+  // Reset division when navigating to a new event
+  const prevEventId = useRef(eventId);
+  useEffect(() => {
+    if (eventId !== prevEventId.current) {
+      setSelectedDivisionIdx(0);
+      prevEventId.current = eventId;
+    }
+  }, [eventId]);
 
   const { data: eventData, isLoading: eventLoading } = useQuery({
     queryKey: ["event", eventId],
@@ -119,7 +128,7 @@ export default function EventDetail() {
       }
       return results.sort((a, b) => b.roboRank - a.roboRank);
     },
-    enabled: !!teams && teams.length > 0 && tab === "teams",
+    enabled: !!teams && teams.length > 0 && (tab === "teams" || tab === "predictions"),
   });
 
   // Split matches
