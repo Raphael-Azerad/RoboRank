@@ -285,7 +285,10 @@ export default function Rankings() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-1">Press Enter to look up any team globally. Type to filter the leaderboard below.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {tab === "roborank" ? "Type to filter or search any team globally. Press Enter to view profile." : "Press Enter to look up any team globally. Type to filter the leaderboard below."}
+            {liveSearchLoading && tab === "roborank" && <span className="ml-2 text-primary">Searching...</span>}
+          </p>
         </form>
 
         {loading && (
