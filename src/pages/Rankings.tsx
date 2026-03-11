@@ -66,41 +66,43 @@ export default function Rankings() {
     staleTime: 10 * 60 * 1000,
   });
 
-  // RoboRank leaderboard - uses top skills teams then fetches their rankings
+  // RoboRank leaderboard - uses top skills teams then fetches their rankings in batches
   const { data: roboRankLeaderboard, isLoading: roboRankLoading } = useQuery({
     queryKey: ["globalRoboRank", season],
     queryFn: async () => {
-      // First get top skills teams to have a good pool of strong teams
       const skillsData = await getWorldSkillsRankings(season, "High School");
       if (!Array.isArray(skillsData) || skillsData.length === 0) return [];
 
-      // Take top 100 skills teams and compute their RoboRank
-      const topTeams = skillsData.slice(0, 100);
+      const topTeams = skillsData.slice(0, 50);
       const results: RankedTeam[] = [];
 
-      await Promise.all(topTeams.map(async (entry: any) => {
-        try {
-          const teamId = entry.team?.id;
-          if (!teamId) return;
-          const rankings = await getTeamRankings(teamId, season);
-          const record = calculateRecordFromRankings(rankings);
-          const score = calculateRoboRank(rankings);
-          if (score > 0 && record.total >= 3) {
-            results.push({
-              number: entry.team?.team || entry.team?.number || "",
-              name: entry.team?.teamName || entry.team?.team_name || "",
-              id: teamId,
-              score,
-              wins: record.wins,
-              losses: record.losses,
-              ties: record.ties,
-              total: record.total,
-              winRate: `${record.winRate}%`,
-              eventsAttended: record.eventsAttended,
-            });
-          }
-        } catch {}
-      }));
+      // Process in batches of 10 to avoid overwhelming the API
+      for (let i = 0; i < topTeams.length; i += 10) {
+        const batch = topTeams.slice(i, i + 10);
+        await Promise.all(batch.map(async (entry: any) => {
+          try {
+            const teamId = entry.team?.id;
+            if (!teamId) return;
+            const rankings = await getTeamRankings(teamId, season);
+            const record = calculateRecordFromRankings(rankings);
+            const score = calculateRoboRank(rankings);
+            if (score > 0 && record.total >= 3) {
+              results.push({
+                number: entry.team?.team || entry.team?.number || "",
+                name: entry.team?.teamName || entry.team?.team_name || "",
+                id: teamId,
+                score,
+                wins: record.wins,
+                losses: record.losses,
+                ties: record.ties,
+                total: record.total,
+                winRate: `${record.winRate}%`,
+                eventsAttended: record.eventsAttended,
+              });
+            }
+          } catch {}
+        }));
+      }
 
       return results.sort((a, b) => b.score - a.score);
     },
