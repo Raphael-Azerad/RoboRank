@@ -554,6 +554,12 @@ export default function Events() {
           </Popover>
         </div>
 
+        {showCompare && compareIds.length === 0 && viewMode !== "map" && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+            Compare mode is on — click the compare icon on event cards to add up to 4 events.
+          </div>
+        )}
+
         {isLoading && (
           <div className="flex flex-col items-center gap-2 py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
