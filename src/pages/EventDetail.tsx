@@ -164,6 +164,7 @@ export default function EventDetail() {
   }, [elimMatches]);
 
   const loading = eventLoading || teamsLoading;
+  const eventIsCompleted = !!event && !event.ongoing && new Date(event.end || event.start).getTime() < Date.now();
 
   const renderMatchRow = (match: any, i: number) => {
     const red = match.alliances?.find((a: any) => a.color === "red");
@@ -421,7 +422,7 @@ export default function EventDetail() {
               {/* Visual Bracket */}
               <div className="rounded-xl border border-border/50 card-gradient p-4 overflow-x-auto">
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Elimination Bracket</h3>
-                <EliminationBracket rounds={bracketRounds} />
+                <EliminationBracket rounds={bracketRounds} showPlaceholders={!eventIsCompleted} />
               </div>
 
               {/* Detailed match list fallback */}
@@ -575,9 +576,12 @@ export default function EventDetail() {
                     onChange={(e) => setH2hTeams([e.target.value, h2hTeams?.[1] || ""])}
                   >
                     <option value="">Select Team 1</option>
-                    {teams.map((t: any) => (
-                      <option key={t.id} value={t.number}>{t.number} — {t.team_name}</option>
-                    ))}
+                    {teams.map((t: any) => {
+                      const teamNumber = t.number || t.name || "";
+                      return (
+                        <option key={t.id} value={teamNumber}>{teamNumber} — {t.team_name || t.teamName || ""}</option>
+                      );
+                    })}
                   </select>
                   <span className="text-sm font-display font-bold text-muted-foreground">vs</span>
                   <select
@@ -586,9 +590,12 @@ export default function EventDetail() {
                     onChange={(e) => setH2hTeams([h2hTeams?.[0] || "", e.target.value])}
                   >
                     <option value="">Select Team 2</option>
-                    {teams.map((t: any) => (
-                      <option key={t.id} value={t.number}>{t.number} — {t.team_name}</option>
-                    ))}
+                    {teams.map((t: any) => {
+                      const teamNumber = t.number || t.name || "";
+                      return (
+                        <option key={t.id} value={teamNumber}>{teamNumber} — {t.team_name || t.teamName || ""}</option>
+                      );
+                    })}
                   </select>
                   <Button
                     size="sm"
@@ -721,21 +728,44 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
       t2Matches.forEach((m: any) => t2MatchMap.set(m.id, m));
 
       t1Matches.forEach((m: any) => {
-        if (t2MatchMap.has(m.id)) {
-          const match = m;
-          const red = match.alliances?.find((a: any) => a.color === "red");
-          const blue = match.alliances?.find((a: any) => a.color === "blue");
-          const redTeams = red?.teams?.map((t: any) => t.team?.name) || [];
-          const blueTeams = blue?.teams?.map((t: any) => t.team?.name) || [];
-          const t1IsRed = redTeams.includes(team1);
-          const t1Score = t1IsRed ? (red?.score ?? 0) : (blue?.score ?? 0);
-          const t2Score = t1IsRed ? (blue?.score ?? 0) : (red?.score ?? 0);
+        if (!t2MatchMap.has(m.id)) return;
 
-          sharedMatches.push({ ...match, t1Score, t2Score });
-          if (t1Score > t2Score) t1Wins++;
-          else if (t2Score > t1Score) t2Wins++;
-          else ties++;
-        }
+        const match = m;
+        const red = match.alliances?.find((a: any) => a.color === "red");
+        const blue = match.alliances?.find((a: any) => a.color === "blue");
+        const redTeams = red?.teams?.map((t: any) => t.team?.name) || [];
+
+        const t1IsRed = redTeams.includes(team1);
+        const t1Score = t1IsRed ? (red?.score ?? 0) : (blue?.score ?? 0);
+        const t2Score = t1IsRed ? (blue?.score ?? 0) : (red?.score ?? 0);
+
+        const eventName = match.event?.name || match.event_name || "Unknown Event";
+        const eventSku = match.event?.sku || "";
+        const dateSource = match.started || match.scheduled || match.event?.start || null;
+        const matchDate = dateSource
+          ? new Date(dateSource).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+          : "Date N/A";
+        const matchLabel = match.name || `${roundLabel(match.round)} ${match.matchnum || ""}`.trim();
+
+        sharedMatches.push({
+          ...match,
+          t1Score,
+          t2Score,
+          eventName,
+          eventSku,
+          matchDate,
+          matchLabel,
+        });
+
+        if (t1Score > t2Score) t1Wins++;
+        else if (t2Score > t1Score) t2Wins++;
+        else ties++;
+      });
+
+      sharedMatches.sort((a, b) => {
+        const aTime = a.started ? new Date(a.started).getTime() : 0;
+        const bTime = b.started ? new Date(b.started).getTime() : 0;
+        return bTime - aTime;
       });
 
       const t1RR = calculateRoboRank(t1Rankings, t1Skills);
@@ -803,18 +833,33 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
                 </div>
                 <div className="divide-y divide-border/20">
                   {data.sharedMatches.slice(0, 15).map((m: any) => (
-                    <div key={m.id} className="flex items-center justify-between px-3 py-2.5 text-xs hover:bg-accent/20 transition-colors">
-                      <span className="text-muted-foreground font-mono">{m.name || `Match ${m.matchnum}`}</span>
-                      <div className="flex items-center gap-2">
-                        <span className={cn(
-                          "stat-number text-sm px-2 py-0.5 rounded",
-                          m.t1Score > m.t2Score ? "text-[hsl(var(--success))] bg-[hsl(var(--success))]/10 font-bold" : "text-muted-foreground"
-                        )}>{m.t1Score}</span>
-                        <span className="text-muted-foreground">–</span>
-                        <span className={cn(
-                          "stat-number text-sm px-2 py-0.5 rounded",
-                          m.t2Score > m.t1Score ? "text-[hsl(var(--success))] bg-[hsl(var(--success))]/10 font-bold" : "text-muted-foreground"
-                        )}>{m.t2Score}</span>
+                    <div key={m.id} className="px-3 py-2.5 text-xs hover:bg-accent/20 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="font-medium text-foreground truncate">{m.eventName}</div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono">{m.matchLabel}</span>
+                            <span>•</span>
+                            <span>{m.matchDate}</span>
+                            {m.eventSku && (
+                              <>
+                                <span>•</span>
+                                <span className="font-mono">{m.eventSku}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={cn(
+                            "stat-number text-sm px-2 py-0.5 rounded",
+                            m.t1Score > m.t2Score ? "text-[hsl(var(--success))] bg-[hsl(var(--success))]/10 font-bold" : "text-muted-foreground"
+                          )}>{m.t1Score}</span>
+                          <span className="text-muted-foreground">–</span>
+                          <span className={cn(
+                            "stat-number text-sm px-2 py-0.5 rounded",
+                            m.t2Score > m.t1Score ? "text-[hsl(var(--success))] bg-[hsl(var(--success))]/10 font-bold" : "text-muted-foreground"
+                          )}>{m.t2Score}</span>
+                        </div>
                       </div>
                     </div>
                   ))}

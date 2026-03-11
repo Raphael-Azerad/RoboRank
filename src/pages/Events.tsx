@@ -443,7 +443,7 @@ export default function Events() {
               <Navigation className="h-3.5 w-3.5" /> Nearby
             </Button>
             <Button
-              variant={compareIds.length > 0 ? "default" : "outline"}
+              variant={showCompare ? "default" : "outline"}
               size="sm"
               onClick={() => setShowCompare(!showCompare)}
               className="gap-1.5"
@@ -553,6 +553,12 @@ export default function Events() {
             </PopoverContent>
           </Popover>
         </div>
+
+        {showCompare && compareIds.length === 0 && viewMode !== "map" && (
+          <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
+            Compare mode is on — click the compare icon on event cards to add up to 4 events.
+          </div>
+        )}
 
         {isLoading && (
           <div className="flex flex-col items-center gap-2 py-12">
