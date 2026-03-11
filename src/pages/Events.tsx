@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Calendar as CalendarIcon, MapPin, Search, Loader2, Filter, ArrowUpDown, List, Star, CalendarDays, ChevronLeft, ChevronRight, Map as MapIcon, Users } from "lucide-react";
+import { Calendar as CalendarIcon, MapPin, Search, Loader2, Filter, ArrowUpDown, List, Star, CalendarDays, ChevronLeft, ChevronRight, Map as MapIcon, Users, Navigation, GitCompare, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
