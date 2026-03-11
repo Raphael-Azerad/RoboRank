@@ -405,6 +405,31 @@ export default function Events() {
                 <span className="text-[10px] font-bold bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">{watchlist.length}</span>
               )}
             </Button>
+            <Button
+              variant={sortByNearby ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                if (sortByNearby) {
+                  setSortByNearby(false);
+                } else {
+                  requestLocation();
+                }
+              }}
+              className="gap-1.5"
+            >
+              <Navigation className="h-3.5 w-3.5" /> Nearby
+            </Button>
+            <Button
+              variant={compareIds.length > 0 ? "default" : "outline"}
+              size="sm"
+              onClick={() => setShowCompare(!showCompare)}
+              className="gap-1.5"
+            >
+              <GitCompare className="h-3.5 w-3.5" /> Compare
+              {compareIds.length > 0 && (
+                <span className="text-[10px] font-bold bg-primary-foreground/20 px-1.5 py-0.5 rounded-full">{compareIds.length}</span>
+              )}
+            </Button>
           </div>
 
           <div className="flex gap-1 border border-border rounded-lg p-0.5">
