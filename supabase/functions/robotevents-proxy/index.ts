@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
 
     // Whitelist allowed endpoint patterns
     const allowedPatterns = [
-      /^\/events(\/\d+)?(\/teams|\/divisions\/\d+\/(matches|rankings)|\/skills|\/awards)?$/,
+      /^\/events(\/\d+)?(\/teams|\/divisions\/\d+\/(matches|rankings|awards)|\/skills|\/awards)?$/,
       /^\/teams(\/\d+)?(\/matches|\/events|\/rankings|\/skills|\/awards)?$/,
       /^\/seasons(\/\d+)?$/,
     ];
