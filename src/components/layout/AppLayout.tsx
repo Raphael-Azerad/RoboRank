@@ -11,6 +11,7 @@ const navItems = [
   { href: "/events", label: "Events", icon: Calendar },
   { href: "/rankings", label: "Rankings", icon: Trophy },
   { href: "/scouting", label: "Scouting", icon: Search },
+  { href: "/compare", label: "Compare", icon: ArrowLeftRight },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
