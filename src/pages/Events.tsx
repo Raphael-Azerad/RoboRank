@@ -80,6 +80,10 @@ export default function Events() {
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [calendarDate, setCalendarDate] = useState<Date | undefined>(new Date());
   const { watchlist, toggle: toggleWatchlist, isWatched } = useWatchlist();
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [sortByNearby, setSortByNearby] = useState(false);
+  const [compareIds, setCompareIds] = useState<number[]>([]);
+  const [showCompare, setShowCompare] = useState(false);
 
   const seasonInfo = SEASONS[season];
 
