@@ -61,7 +61,6 @@ export default function EventDetail() {
   const divisions = event?.divisions || [];
   const hasDivisions = divisions.length > 1;
   const divisionId = divisions[selectedDivisionIdx]?.id || divisions[0]?.id || 1;
-  const divisionName = divisions[selectedDivisionIdx]?.name || "";
 
   const { data: teams, isLoading: teamsLoading } = useQuery({
     queryKey: ["eventTeams", eventId],
@@ -69,7 +68,6 @@ export default function EventDetail() {
     enabled: !!eventId,
   });
 
-  // Rankings at this event (division-level)
   const { data: eventRankings, isLoading: rankingsLoading } = useQuery({
     queryKey: ["eventRankings", eventId, divisionId],
     queryFn: async () => {
@@ -79,26 +77,34 @@ export default function EventDetail() {
     enabled: !!eventId && (tab === "teams" || tab === "quals"),
   });
 
-  // Matches
   const { data: allMatches, isLoading: matchesLoading } = useQuery({
     queryKey: ["eventMatches", eventId, divisionId],
     queryFn: () => getEventMatches(Number(eventId), divisionId),
     enabled: !!eventId && (tab === "quals" || tab === "elims"),
   });
 
-  // Skills
   const { data: eventSkills, isLoading: skillsLoading } = useQuery({
     queryKey: ["eventSkills", eventId],
     queryFn: () => getEventSkills(Number(eventId)),
     enabled: !!eventId && tab === "skills",
   });
 
-  // Awards (division-aware for multi-division events)
+  // Awards: try division-level first, fall back to event-level for single-division events
   const { data: eventAwards, isLoading: awardsLoading } = useQuery({
-    queryKey: ["eventAwards", eventId, divisionId],
+    queryKey: ["eventAwards", eventId, divisionId, hasDivisions],
     queryFn: async () => {
-      const result = await fetchAllPages(`/events/${eventId}/divisions/${divisionId}/awards`);
-      return result || [];
+      if (hasDivisions) {
+        // Multi-division: fetch division-specific awards
+        const divAwards = await fetchAllPages(`/events/${eventId}/divisions/${divisionId}/awards`);
+        if (divAwards && divAwards.length > 0) return divAwards;
+        // Fallback to event-level awards
+        return fetchAllPages(`/events/${eventId}/awards`);
+      }
+      // Single division: use event-level awards
+      const eventAwards = await fetchAllPages(`/events/${eventId}/awards`);
+      if (eventAwards && eventAwards.length > 0) return eventAwards;
+      // Fallback to division-level
+      return fetchAllPages(`/events/${eventId}/divisions/${divisionId}/awards`);
     },
     enabled: !!eventId && tab === "awards",
   });
@@ -285,7 +291,7 @@ export default function EventDetail() {
           ))}
         </div>
 
-        {/* Division Selector */}
+        {/* Division Selector — below tabs */}
         {hasDivisions && (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Division:</span>
@@ -312,7 +318,6 @@ export default function EventDetail() {
               </div>
             )}
 
-            {/* Event Rankings */}
             {eventRankings && Array.isArray(eventRankings) && eventRankings.length > 0 && !statsLoading && (
               <div className="rounded-xl border border-border/50 overflow-hidden">
                 <div className="px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -359,7 +364,6 @@ export default function EventDetail() {
               </div>
             )}
 
-            {/* Fallback: Team list with RoboRank */}
             {teamStats && teamStats.length > 0 && !(eventRankings && Array.isArray(eventRankings) && eventRankings.length > 0) && (
               <div className="rounded-xl border border-border/50 overflow-hidden">
                 <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -450,13 +454,11 @@ export default function EventDetail() {
             </div>
           ) : (
             <div className="space-y-6">
-              {/* Visual Bracket */}
               <div className="rounded-xl border border-border/50 card-gradient p-4 overflow-x-auto">
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Elimination Bracket</h3>
                 <EliminationBracket rounds={bracketRounds} showPlaceholders={!eventIsCompleted} />
               </div>
 
-              {/* Detailed match list fallback */}
               <div className="space-y-4">
                 {bracketRounds.map(({ round, label, matches }) => (
                   <div key={round} className="rounded-xl border border-border/50 overflow-hidden">
@@ -578,7 +580,6 @@ export default function EventDetail() {
         {/* Predictions Tab */}
         {tab === "predictions" && (
           <div className="space-y-6">
-            {/* Explanation */}
             <div className="rounded-xl border border-border/50 card-gradient p-4 space-y-2">
               <h3 className="text-sm font-display font-semibold flex items-center gap-1.5">
                 <TrendingUp className="h-4 w-4 text-primary" /> What is this?
@@ -593,7 +594,6 @@ export default function EventDetail() {
               </div>
             </div>
 
-            {/* Head-to-Head Selector */}
             <div className="rounded-xl border border-border/50 card-gradient p-4">
               <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                 <GitCompare className="h-3.5 w-3.5" /> Head-to-Head Lookup
@@ -639,7 +639,6 @@ export default function EventDetail() {
               )}
             </div>
 
-            {/* Power Rankings - ALL teams */}
             {teamStats && teamStats.length > 0 && (
               <div className="rounded-xl border border-border/50 card-gradient p-4">
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1.5">
@@ -647,7 +646,6 @@ export default function EventDetail() {
                 </h3>
                 <p className="text-xs text-muted-foreground mb-4">Ranked by RoboRank. Bar length shows relative strength compared to the #1 seed.</p>
                 
-                {/* Header */}
                 <div className="grid grid-cols-12 gap-2 px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider border-b border-border/20 mb-1">
                   <div className="col-span-1">#</div>
                   <div className="col-span-2">Team</div>
@@ -751,7 +749,6 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
         getTeamSkillsScore(t2.id),
       ]);
 
-      // Find shared matches
       let t1Wins = 0, t2Wins = 0, ties = 0;
       const sharedMatches: any[] = [];
 
@@ -809,6 +806,18 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
     enabled: open && !!team1 && !!team2,
   });
 
+  function roundLabel(round: number): string {
+    switch (round) {
+      case 1: return "Practice";
+      case 2: return "Qual";
+      case 3: return "R16";
+      case 4: return "QF";
+      case 5: return "SF";
+      case 6: return "Final";
+      default: return `R${round}`;
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
@@ -822,7 +831,6 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
         )}
         {data && (
           <div className="space-y-5 overflow-y-auto pr-1">
-            {/* Team comparison header */}
             <div className="grid grid-cols-3 gap-4 text-center py-2">
               <div className="space-y-1.5">
                 <div className="font-display font-bold text-lg text-gradient">{team1}</div>
@@ -855,7 +863,6 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
               </div>
             </div>
 
-            {/* Shared matches */}
             {data.sharedMatches.length > 0 ? (
               <div className="rounded-lg border border-border/50 overflow-hidden">
                 <div className="px-3 py-2 bg-muted/50 text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between">
@@ -872,12 +879,6 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
                             <span className="font-mono">{m.matchLabel}</span>
                             <span>•</span>
                             <span>{m.matchDate}</span>
-                            {m.eventSku && (
-                              <>
-                                <span>•</span>
-                                <span className="font-mono">{m.eventSku}</span>
-                              </>
-                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
