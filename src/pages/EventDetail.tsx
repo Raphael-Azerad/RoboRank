@@ -37,9 +37,12 @@ export default function EventDetail() {
       const results: any[] = [];
       await Promise.all(subset.map(async (team: any) => {
         try {
-          const rankings = await getTeamRankings(team.id);
+          const [rankings, skillsScore] = await Promise.all([
+            getTeamRankings(team.id),
+            getTeamSkillsScore(team.id),
+          ]);
           const record = calculateRecordFromRankings(rankings);
-          const score = calculateRoboRank(rankings);
+          const score = calculateRoboRank(rankings, skillsScore);
           results.push({
             ...team,
             record,

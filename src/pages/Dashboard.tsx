@@ -43,8 +43,14 @@ export default function Dashboard() {
     enabled: !!teamId,
   });
 
+  const { data: skillsScore } = useQuery({
+    queryKey: ["teamSkillsScore", teamId, season],
+    queryFn: () => getTeamSkillsScore(teamId!, season),
+    enabled: !!teamId,
+  });
+
   const record = rankings ? calculateRecordFromRankings(rankings) : null;
-  const roboRank = rankings ? calculateRoboRank(rankings) : null;
+  const roboRank = rankings ? calculateRoboRank(rankings, skillsScore ?? 0) : null;
   const loading = teamLoading || rankingsLoading;
 
   return (

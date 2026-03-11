@@ -101,8 +101,14 @@ export default function TeamDetail() {
     enabled: !!teamId,
   });
 
+  const { data: skillsScore } = useQuery({
+    queryKey: ["teamSkillsScore", teamId, season],
+    queryFn: () => getTeamSkillsScore(teamId!, season),
+    enabled: !!teamId,
+  });
+
   const record = rankings ? calculateRecordFromRankings(rankings) : null;
-  const roboRank = rankings ? calculateRoboRank(rankings) : null;
+  const roboRank = rankings ? calculateRoboRank(rankings, skillsScore ?? 0) : null;
   const loading = teamLoading || rankingsLoading;
   const groupedAwards = awards ? groupAwards(awards) : [];
 
