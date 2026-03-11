@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Calendar as CalendarIcon, MapPin, Search, Loader2, Filter, ArrowUpDown, Flame, List, Star, StarOff, CalendarDays, Users, ExternalLink } from "lucide-react";
+import { Calendar as CalendarIcon, MapPin, Search, Loader2, Filter, ArrowUpDown, List, Star, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { useQuery } from "@tanstack/react-query";
-import { fetchRobotEvents, getTeamByNumber, getTeamEvents, SEASONS, US_STATES, type SeasonKey } from "@/lib/robotevents";
+import { fetchAllPages, getTeamByNumber, getTeamEvents, SEASONS, US_STATES, type SeasonKey } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
@@ -92,16 +92,19 @@ export default function Events() {
 
   const teamId = teamData?.id || null;
 
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 50;
+
   const { data: allEventsData, isLoading: allLoading } = useQuery({
     queryKey: ["events", "all", search, season, stateFilter],
-    queryFn: () => fetchRobotEvents("/events", {
+    queryFn: () => fetchAllPages("/events", {
       "program[]": "1",
       "season[]": SEASONS[season].id,
       ...(search ? { name: search } : {}),
       ...(stateFilter !== "all" ? { region: stateFilter } : {}),
-      per_page: "100",
     }),
     enabled: tab === "all" || tab === "watchlist",
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: myEvents, isLoading: myLoading } = useQuery({
@@ -110,7 +113,7 @@ export default function Events() {
     enabled: tab === "my" && !!teamId,
   });
 
-  let events = tab === "all" || tab === "watchlist" ? (allEventsData?.data || []) : (myEvents || []);
+  let events = tab === "all" || tab === "watchlist" ? (allEventsData || []) : (myEvents || []);
   const isLoading = tab === "all" || tab === "watchlist" ? allLoading : myLoading;
 
   if (tab === "watchlist") {
@@ -168,6 +171,13 @@ export default function Events() {
   // Stats
   const upcomingCount = events.filter((e: any) => new Date(e.start) > now).length;
   const completedCount = events.filter((e: any) => new Date(e.end || e.start) < now).length;
+
+  // Pagination
+  const totalPages = Math.ceil(events.length / PAGE_SIZE);
+  const paginatedEvents = events.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Reset page when filters change
+  useEffect(() => { setPage(1); }, [tab, search, stateFilter, statusFilter, levelFilter]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -366,7 +376,8 @@ export default function Events() {
         {isLoading && (
           <div className="flex flex-col items-center gap-2 py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Loading events...</p>
+            <p className="text-sm text-muted-foreground">Loading all events...</p>
+            <p className="text-xs text-muted-foreground/60">This may take a moment</p>
           </div>
         )}
 
@@ -418,9 +429,39 @@ export default function Events() {
                "No events found. Try adjusting your filters."}
             </div>
           ) : (
-            <div className="grid gap-2">
-              {events.map((event: any, i: number) => renderEventCard(event, i))}
-            </div>
+            <>
+              <div className="grid gap-2">
+                {paginatedEvents.map((event: any, i: number) => renderEventCard(event, i))}
+              </div>
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4">
+                  <p className="text-xs text-muted-foreground">
+                    Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, events.length)} of {events.length} events
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button variant="outline" size="icon" className="h-8 w-8" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                      let pageNum: number;
+                      if (totalPages <= 7) { pageNum = i + 1; }
+                      else if (page <= 4) { pageNum = i + 1; }
+                      else if (page >= totalPages - 3) { pageNum = totalPages - 6 + i; }
+                      else { pageNum = page - 3 + i; }
+                      return (
+                        <Button key={pageNum} variant={page === pageNum ? "default" : "outline"} size="icon" className="h-8 w-8 text-xs"
+                          onClick={() => setPage(pageNum)}>
+                          {pageNum}
+                        </Button>
+                      );
+                    })}
+                    <Button variant="outline" size="icon" className="h-8 w-8" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
           )
         )}
       </div>
