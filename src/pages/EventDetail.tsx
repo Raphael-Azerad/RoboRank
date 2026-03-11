@@ -84,12 +84,12 @@ export default function EventDetail() {
     enabled: !!eventId && tab === "skills",
   });
 
-  // Awards
+  // Awards (division-aware for multi-division events)
   const { data: eventAwards, isLoading: awardsLoading } = useQuery({
-    queryKey: ["eventAwards", eventId],
+    queryKey: ["eventAwards", eventId, divisionId],
     queryFn: async () => {
-      const result = await fetchRobotEvents(`/events/${eventId}/awards`);
-      return result?.data || result || [];
+      const result = await fetchAllPages(`/events/${eventId}/divisions/${divisionId}/awards`);
+      return result || [];
     },
     enabled: !!eventId && tab === "awards",
   });
