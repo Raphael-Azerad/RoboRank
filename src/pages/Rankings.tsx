@@ -177,6 +177,46 @@ export default function Rankings() {
     staleTime: 15 * 60 * 1000,
   });
 
+  // Debounce search for live lookup
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery.trim().toUpperCase()), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Live search: fetch any team not in top 2000 and calculate their RoboRank
+  const { data: liveSearchResult, isLoading: liveSearchLoading } = useQuery({
+    queryKey: ["liveRoboRankSearch", debouncedSearch, season],
+    queryFn: async () => {
+      const teamData = await getTeamByNumber(debouncedSearch);
+      if (!teamData) return null;
+      // Check if already in leaderboard
+      const existing = activeRoboRankBase?.find((t) => t.number.toUpperCase() === debouncedSearch);
+      if (existing) return null;
+      const [rankings, skillsScore] = await Promise.all([
+        getTeamRankings(teamData.id, season),
+        getTeamSkillsScore(teamData.id, season),
+      ]);
+      const record = calculateRecordFromRankings(rankings);
+      const score = calculateRoboRank(rankings, skillsScore);
+      if (score <= 0) return null;
+      return {
+        number: teamData.number,
+        name: teamData.team_name || "",
+        id: teamData.id,
+        score,
+        wins: record.wins,
+        losses: record.losses,
+        ties: record.ties,
+        total: record.total,
+        winRate: `${record.winRate}%`,
+        eventsAttended: record.eventsAttended,
+        skillsCombined: skillsScore,
+      } as RankedTeam;
+    },
+    enabled: tab === "roborank" && debouncedSearch.length >= 2,
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Search navigates to team page directly (works for ANY team, not just top 2000)
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -186,11 +226,11 @@ export default function Rankings() {
 
   const loading = tab === "skills" ? skillsLoading : (roboRankLoading && streamedResults.length === 0);
 
-  const activeRoboRank = roboRankLeaderboard ?? streamedResults;
+  const activeRoboRankBase = roboRankLeaderboard ?? streamedResults;
 
   // Build a lookup map for RoboRank scores to show in skills tab
   const roboRankMap = new Map<number, number>();
-  (roboRankLeaderboard ?? streamedResults)?.forEach((t) => {
+  activeRoboRankBase?.forEach((t) => {
     roboRankMap.set(t.id, t.score);
   });
 
@@ -200,11 +240,18 @@ export default function Rankings() {
     return t.number.toUpperCase().includes(q) || t.name.toUpperCase().includes(q);
   });
 
-  const filteredRoboRank = activeRoboRank?.filter((t) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.trim().toUpperCase();
-    return t.number.toUpperCase().includes(q) || t.name.toUpperCase().includes(q);
-  });
+  const filteredRoboRank = (() => {
+    let results = activeRoboRankBase?.filter((t) => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.trim().toUpperCase();
+      return t.number.toUpperCase().includes(q) || t.name.toUpperCase().includes(q);
+    }) ?? [];
+    // Append live search result if not already in list
+    if (liveSearchResult && !results.find((t) => t.id === liveSearchResult.id)) {
+      results = [...results, liveSearchResult];
+    }
+    return results;
+  })();
 
   const gradeBadge = gradeLevel === "Both" ? "All" : gradeLevel === "High School" ? "HS" : "MS";
 
