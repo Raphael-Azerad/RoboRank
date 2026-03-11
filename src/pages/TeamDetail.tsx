@@ -1,17 +1,17 @@
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { useQuery } from "@tanstack/react-query";
-import { getTeamByNumber, getTeamRankings, getTeamMatches, getTeamAwards, calculateRecordFromRankings, calculateRoboRank, SEASONS, SEASON_LIST, type SeasonKey } from "@/lib/robotevents";
+import { getTeamByNumber, getTeamRankings, getTeamMatches, getTeamAwards, calculateRecordFromRankings, calculateRoboRank, SEASONS } from "@/lib/robotevents";
+import { useSeason } from "@/contexts/SeasonContext";
 import { Trophy, Target, Award, MapPin, Building, ArrowLeft, Loader2, TrendingUp, Medal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
 export default function TeamDetail() {
   const { teamNumber } = useParams<{ teamNumber: string }>();
-  const [season, setSeason] = useState<SeasonKey>("current");
+  const { season } = useSeason();
 
   const { data: teamData, isLoading: teamLoading } = useQuery({
     queryKey: ["team", teamNumber],
@@ -20,6 +20,7 @@ export default function TeamDetail() {
   });
 
   const teamId = teamData?.id || null;
+  const seasonInfo = SEASONS[season];
 
   const { data: rankings, isLoading: rankingsLoading } = useQuery({
     queryKey: ["teamRankings", teamId, season],
@@ -64,8 +65,6 @@ export default function TeamDetail() {
     );
   }
 
-  const seasonInfo = SEASONS[season];
-
   return (
     <AppLayout>
       <div className="space-y-8">
@@ -93,19 +92,10 @@ export default function TeamDetail() {
                   </span>
                 )}
               </div>
+              <p className="text-xs text-primary mt-2">{seasonInfo.name} {seasonInfo.year}</p>
             </div>
             <div className="shrink-0"><RoboRankScore score={roboRank ?? 0} size="lg" /></div>
           </motion.div>
-        </div>
-
-        {/* Season Toggle — 5 seasons */}
-        <div className="flex flex-wrap gap-2">
-          {SEASON_LIST.map((s) => (
-            <Button key={s.key} variant={season === s.key ? "default" : "outline"} size="sm"
-              onClick={() => setSeason(s.key)} className="text-xs">
-              {s.name} ({s.year})
-            </Button>
-          ))}
         </div>
 
         {/* Stats */}
@@ -119,15 +109,13 @@ export default function TeamDetail() {
           <StatCard title="Total WP" value={record ? String(record.totalWP) : "—"} icon={TrendingUp}
             subtitle={record ? `AP: ${record.totalAP} · SP: ${record.totalSP}` : ""} />
           <StatCard title="Awards" value={awards ? String(awards.length) : "—"} icon={Medal}
-            subtitle={awards && awards.length > 0 ? `This season` : "No awards yet"} />
+            subtitle={awards && awards.length > 0 ? "This season" : "No awards yet"} />
         </div>
 
         {/* Awards List */}
         {awards && awards.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-            <h2 className="text-xl font-display font-semibold mb-4">
-              Awards · {seasonInfo.name}
-            </h2>
+            <h2 className="text-xl font-display font-semibold mb-4">Awards · {seasonInfo.name}</h2>
             <div className="grid gap-2 sm:grid-cols-2">
               {awards.map((award: any, i: number) => (
                 <motion.div key={award.id || i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
@@ -146,9 +134,7 @@ export default function TeamDetail() {
         {/* Event Results */}
         {rankings && rankings.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <h2 className="text-xl font-display font-semibold mb-4">
-              Event Results · {seasonInfo.name}
-            </h2>
+            <h2 className="text-xl font-display font-semibold mb-4">Event Results · {seasonInfo.name}</h2>
             <div className="rounded-xl border border-border/50 overflow-hidden">
               <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 <div className="col-span-4">Event</div>

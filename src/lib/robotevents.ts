@@ -97,6 +97,14 @@ export async function getEventMatches(eventId: number, divisionId: number) {
   return fetchAllPages(`/events/${eventId}/divisions/${divisionId}/matches`);
 }
 
+export async function getEventSkills(eventId: number) {
+  return fetchAllPages(`/events/${eventId}/skills`);
+}
+
+export async function getTeamSkills(teamId: number, season: SeasonKey = "current") {
+  return fetchAllPages(`/teams/${teamId}/skills`, { "season[]": SEASONS[season].id });
+}
+
 export async function searchEvents(params: Record<string, string>) {
   return fetchRobotEvents("/events", { "program[]": "1", "season[]": SEASONS.current.id, ...params });
 }
