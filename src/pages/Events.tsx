@@ -376,7 +376,8 @@ export default function Events() {
         {isLoading && (
           <div className="flex flex-col items-center gap-2 py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">Loading events...</p>
+            <p className="text-sm text-muted-foreground">Loading all events...</p>
+            <p className="text-xs text-muted-foreground/60">This may take a moment</p>
           </div>
         )}
 
