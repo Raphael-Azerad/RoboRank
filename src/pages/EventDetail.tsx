@@ -752,7 +752,7 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle className="font-display">{team1} vs {team2}</DialogTitle>
+          <DialogTitle className="font-display text-xl">{team1} vs {team2}</DialogTitle>
         </DialogHeader>
         {isLoading && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground py-8 justify-center">
@@ -760,30 +760,36 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
           </div>
         )}
         {data && (
-          <div className="space-y-4">
-            {/* RoboRank comparison */}
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <div className="font-display font-bold text-lg">{team1}</div>
-                <RoboRankScore score={data.t1RR} size="sm" />
-                <div className="text-xs text-muted-foreground mt-1">
-                  {data.t1Record.wins}W-{data.t1Record.losses}L ({data.t1Record.winRate}%)
+          <div className="space-y-5">
+            {/* Team comparison header */}
+            <div className="grid grid-cols-3 gap-4 text-center py-2">
+              <div className="space-y-1.5">
+                <div className="font-display font-bold text-lg text-gradient">{team1}</div>
+                <RoboRankScore score={data.t1RR} size="md" />
+                <div className="text-xs text-muted-foreground">
+                  <span className="text-[hsl(var(--success))]">{data.t1Record.wins}W</span>
+                  <span className="text-muted-foreground mx-0.5">-</span>
+                  <span className="text-destructive">{data.t1Record.losses}L</span>
+                  <span className="text-muted-foreground ml-1">({data.t1Record.winRate}%)</span>
                 </div>
               </div>
               <div className="flex flex-col items-center justify-center">
-                <span className="text-xs text-muted-foreground uppercase">H2H Record</span>
-                <div className="text-lg font-display font-bold">
-                  <span className={cn(data.t1Wins > data.t2Wins && "text-[hsl(var(--success))]")}>{data.t1Wins}</span>
-                  <span className="text-muted-foreground mx-1">-</span>
-                  <span className={cn(data.t2Wins > data.t1Wins && "text-[hsl(var(--success))]")}>{data.t2Wins}</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider mb-1">Head-to-Head</span>
+                <div className="text-2xl font-display font-bold">
+                  <span className={cn(data.t1Wins > data.t2Wins ? "text-[hsl(var(--success))]" : "text-foreground")}>{data.t1Wins}</span>
+                  <span className="text-muted-foreground mx-1.5">–</span>
+                  <span className={cn(data.t2Wins > data.t1Wins ? "text-[hsl(var(--success))]" : "text-foreground")}>{data.t2Wins}</span>
                 </div>
-                {data.ties > 0 && <span className="text-xs text-muted-foreground">{data.ties} ties</span>}
+                {data.ties > 0 && <span className="text-xs text-muted-foreground mt-0.5">{data.ties} tie{data.ties > 1 ? "s" : ""}</span>}
               </div>
-              <div>
-                <div className="font-display font-bold text-lg">{team2}</div>
-                <RoboRankScore score={data.t2RR} size="sm" />
-                <div className="text-xs text-muted-foreground mt-1">
-                  {data.t2Record.wins}W-{data.t2Record.losses}L ({data.t2Record.winRate}%)
+              <div className="space-y-1.5">
+                <div className="font-display font-bold text-lg text-gradient">{team2}</div>
+                <RoboRankScore score={data.t2RR} size="md" />
+                <div className="text-xs text-muted-foreground">
+                  <span className="text-[hsl(var(--success))]">{data.t2Record.wins}W</span>
+                  <span className="text-muted-foreground mx-0.5">-</span>
+                  <span className="text-destructive">{data.t2Record.losses}L</span>
+                  <span className="text-muted-foreground ml-1">({data.t2Record.winRate}%)</span>
                 </div>
               </div>
             </div>
@@ -791,24 +797,38 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
             {/* Shared matches */}
             {data.sharedMatches.length > 0 ? (
               <div className="rounded-lg border border-border/50 overflow-hidden">
-                <div className="px-3 py-1.5 bg-muted/50 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                  {data.sharedMatches.length} shared matches this season
+                <div className="px-3 py-2 bg-muted/50 text-[10px] font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                  <span>Shared Matches This Season</span>
+                  <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{data.sharedMatches.length}</span>
                 </div>
-                {data.sharedMatches.slice(0, 10).map((m: any) => (
-                  <div key={m.id} className="flex items-center justify-between px-3 py-2 text-xs border-t border-border/20">
-                    <span className="text-muted-foreground">{m.name || `Match ${m.matchnum}`}</span>
-                    <span>
-                      <span className={cn("stat-number", m.t1Score > m.t2Score ? "text-[hsl(var(--success))]" : "text-muted-foreground")}>{m.t1Score}</span>
-                      <span className="text-muted-foreground mx-1">-</span>
-                      <span className={cn("stat-number", m.t2Score > m.t1Score ? "text-[hsl(var(--success))]" : "text-muted-foreground")}>{m.t2Score}</span>
-                    </span>
+                <div className="divide-y divide-border/20">
+                  {data.sharedMatches.slice(0, 15).map((m: any) => (
+                    <div key={m.id} className="flex items-center justify-between px-3 py-2.5 text-xs hover:bg-accent/20 transition-colors">
+                      <span className="text-muted-foreground font-mono">{m.name || `Match ${m.matchnum}`}</span>
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "stat-number text-sm px-2 py-0.5 rounded",
+                          m.t1Score > m.t2Score ? "text-[hsl(var(--success))] bg-[hsl(var(--success))]/10 font-bold" : "text-muted-foreground"
+                        )}>{m.t1Score}</span>
+                        <span className="text-muted-foreground">–</span>
+                        <span className={cn(
+                          "stat-number text-sm px-2 py-0.5 rounded",
+                          m.t2Score > m.t1Score ? "text-[hsl(var(--success))] bg-[hsl(var(--success))]/10 font-bold" : "text-muted-foreground"
+                        )}>{m.t2Score}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {data.sharedMatches.length > 15 && (
+                  <div className="px-3 py-2 text-[10px] text-muted-foreground text-center bg-muted/30">
+                    +{data.sharedMatches.length - 15} more matches
                   </div>
-                ))}
+                )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                No shared matches found this season.
-              </p>
+              <div className="text-sm text-muted-foreground rounded-lg border border-border/30 border-dashed p-6 text-center">
+                These teams haven't played in any shared matches this season.
+              </div>
             )}
           </div>
         )}
