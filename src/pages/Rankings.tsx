@@ -178,6 +178,8 @@ export default function Rankings() {
   const [tab, setTab] = useState<Tab>("roborank");
   const [searchQuery, setSearchQuery] = useState("");
   const [displayCount, setDisplayCount] = useState(50);
+  const [streamedResults, setStreamedResults] = useState<RankedTeam[]>([]);
+  const [progress, setProgress] = useState({ processed: 0, total: 0, done: false });
 
   const seasonInfo = SEASONS[season];
 
@@ -194,12 +196,13 @@ export default function Rankings() {
       const skillsPool = await getGlobalSkillsPool(season, gradeLevel);
       if (skillsPool.length === 0) return [];
 
-      // Take top 2000 skills teams as candidates for broad coverage
       const candidates = skillsPool.slice(0, 2000);
       const results: RankedTeam[] = [];
+      setStreamedResults([]);
+      setProgress({ processed: 0, total: candidates.length, done: false });
 
-      for (let i = 0; i < candidates.length; i += 10) {
-        const batch = candidates.slice(i, i + 10);
+      for (let i = 0; i < candidates.length; i += 25) {
+        const batch = candidates.slice(i, i + 25);
 
         await Promise.all(
           batch.map(async (team) => {
@@ -229,11 +232,17 @@ export default function Rankings() {
           }),
         );
 
-        if (i + 10 < candidates.length) {
-          await sleep(100);
+        // Update streamed results progressively so users see teams appearing
+        const sorted = [...results].sort((a, b) => b.score - a.score || b.skillsCombined - a.skillsCombined);
+        setStreamedResults(sorted);
+        setProgress({ processed: Math.min(i + 25, candidates.length), total: candidates.length, done: false });
+
+        if (i + 25 < candidates.length) {
+          await sleep(50);
         }
       }
 
+      setProgress((p) => ({ ...p, done: true }));
       return results.sort((a, b) => b.score - a.score || b.skillsCombined - a.skillsCombined);
     },
     enabled: tab === "roborank",
