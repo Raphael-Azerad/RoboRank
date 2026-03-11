@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
-import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2 } from "lucide-react";
+import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getTeamByNumber, getTeamMatches, getTeamRankings, calculateRecord, calculateRoboRank } from "@/lib/robotevents";
+import { getTeamByNumber, getTeamRankings, calculateRecordFromRankings, calculateRoboRank } from "@/lib/robotevents";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 
@@ -20,7 +20,6 @@ export default function Dashboard() {
     });
   }, []);
 
-  // Look up team on RobotEvents
   const { data: teamData, isLoading: teamLoading } = useQuery({
     queryKey: ["team", teamNumber],
     queryFn: () => getTeamByNumber(teamNumber),
@@ -29,30 +28,21 @@ export default function Dashboard() {
 
   const teamId = teamData?.id || null;
 
-  // Fetch match history
-  const { data: matches, isLoading: matchesLoading } = useQuery({
-    queryKey: ["teamMatches", teamId],
-    queryFn: () => getTeamMatches(teamId!),
-    enabled: !!teamId,
-  });
-
-  // Fetch rankings
-  const { data: rankings } = useQuery({
+  // Use rankings as source of truth for W/L/T
+  const { data: rankings, isLoading: rankingsLoading } = useQuery({
     queryKey: ["teamRankings", teamId],
     queryFn: () => getTeamRankings(teamId!),
     enabled: !!teamId,
   });
 
-  // Calculate stats
-  const record = matches ? calculateRecord(matches, teamNumber) : null;
-  const roboRank = record && rankings ? calculateRoboRank(record, rankings) : null;
+  const record = rankings ? calculateRecordFromRankings(rankings) : null;
+  const roboRank = rankings ? calculateRoboRank(rankings) : null;
 
-  const loading = teamLoading || matchesLoading;
+  const loading = teamLoading || rankingsLoading;
 
   return (
     <AppLayout>
       <div className="space-y-8">
-        {/* Welcome */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -73,7 +63,6 @@ export default function Dashboard() {
           </Link>
         </motion.div>
 
-        {/* Stats Grid */}
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Win Rate"
@@ -82,10 +71,16 @@ export default function Dashboard() {
             subtitle={record ? `${record.wins}W-${record.losses}L-${record.ties}T` : loading ? "Loading..." : "No data"}
           />
           <StatCard
-            title="Matches"
+            title="Qual Matches"
             value={record ? String(record.total) : "—"}
             icon={Target}
-            subtitle={record ? `Avg score: ${record.avgScore}` : loading ? "Loading..." : "No data"}
+            subtitle={record ? `Across ${record.eventsAttended} events` : loading ? "Loading..." : "No data"}
+          />
+          <StatCard
+            title="High Score"
+            value={record ? String(record.highScore) : "—"}
+            icon={Award}
+            subtitle={record ? `Avg ${record.avgPointsPerEvent} pts/match` : ""}
           />
           <StatCard
             title="Location"
@@ -93,17 +88,9 @@ export default function Dashboard() {
             icon={Calendar}
             subtitle={teamData?.location?.country || ""}
           />
-          <StatCard
-            title="Organization"
-            value={teamData?.organization ? "✓" : "—"}
-            icon={TrendingUp}
-            subtitle={teamData?.organization?.slice(0, 30) || ""}
-          />
         </div>
 
-        {/* Main Content */}
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Score Card */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -117,11 +104,10 @@ export default function Dashboard() {
               <RoboRankScore score={roboRank ?? 0} size="lg" />
             )}
             <p className="text-sm text-muted-foreground text-center">
-              {record ? `Based on ${record.total} scored matches` : loading ? "Loading match data..." : "No match data available"}
+              {record ? `Based on ${record.total} qualifier matches across ${record.eventsAttended} events` : loading ? "Loading…" : "No data"}
             </p>
           </motion.div>
 
-          {/* Quick Actions */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -141,7 +127,7 @@ export default function Dashboard() {
                 <div className="rounded-lg border border-border/50 p-4 hover:border-primary/30 transition-all cursor-pointer">
                   <Trophy className="h-5 w-5 text-primary mb-2" />
                   <h3 className="font-medium text-sm">View Rankings</h3>
-                  <p className="text-xs text-muted-foreground mt-1">See top-rated teams</p>
+                  <p className="text-xs text-muted-foreground mt-1">Look up any team's stats</p>
                 </div>
               </Link>
               <Link to="/scouting">
@@ -151,11 +137,13 @@ export default function Dashboard() {
                   <p className="text-xs text-muted-foreground mt-1">Scout an upcoming event</p>
                 </div>
               </Link>
-              <div className="rounded-lg border border-border/50 p-4 opacity-60">
-                <TrendingUp className="h-5 w-5 text-muted-foreground mb-2" />
-                <h3 className="font-medium text-sm">Match Predictions</h3>
-                <p className="text-xs text-muted-foreground mt-1">Coming soon</p>
-              </div>
+              <Link to={teamId ? `/team/${teamNumber}` : "#"}>
+                <div className="rounded-lg border border-border/50 p-4 hover:border-primary/30 transition-all cursor-pointer">
+                  <TrendingUp className="h-5 w-5 text-primary mb-2" />
+                  <h3 className="font-medium text-sm">Your Full Stats</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Detailed team profile</p>
+                </div>
+              </Link>
             </div>
           </motion.div>
         </div>

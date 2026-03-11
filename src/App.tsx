@@ -15,6 +15,7 @@ import Events from "./pages/Events";
 import Rankings from "./pages/Rankings";
 import Scouting from "./pages/Scouting";
 import Profile from "./pages/Profile";
+import TeamDetail from "./pages/TeamDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -65,6 +66,7 @@ const App = () => (
           <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />
           <Route path="/scouting" element={<ProtectedRoute><Scouting /></ProtectedRoute>} />
           <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/team/:teamNumber" element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
