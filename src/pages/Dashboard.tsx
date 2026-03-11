@@ -2,20 +2,66 @@ import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
-import { Calendar, Trophy, Target, TrendingUp, ArrowRight } from "lucide-react";
+import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getTeamByNumber, getTeamMatches, getTeamRankings } from "@/lib/robotevents";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 
 export default function Dashboard() {
   const [teamNumber, setTeamNumber] = useState<string>("");
+  const [teamId, setTeamId] = useState<number | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      setTeamNumber(data.user?.user_metadata?.team_number || "—");
+      const tn = data.user?.user_metadata?.team_number || "—";
+      setTeamNumber(tn);
     });
   }, []);
+
+  // Look up team on RobotEvents
+  const { data: teamData } = useQuery({
+    queryKey: ["team", teamNumber],
+    queryFn: () => getTeamByNumber(teamNumber),
+    enabled: !!teamNumber && teamNumber !== "—",
+  });
+
+  useEffect(() => {
+    if (teamData?.id) setTeamId(teamData.id);
+  }, [teamData]);
+
+  // Fetch match history
+  const { data: matches, isLoading: matchesLoading } = useQuery({
+    queryKey: ["teamMatches", teamId],
+    queryFn: () => getTeamMatches(teamId!),
+    enabled: !!teamId,
+  });
+
+  // Calculate stats
+  const stats = (() => {
+    if (!matches || matches.length === 0) return null;
+    let wins = 0, losses = 0, ties = 0;
+    matches.forEach((m: any) => {
+      m.alliances?.forEach((a: any) => {
+        const hasTeam = a.teams?.some((t: any) => t.team?.name === teamNumber);
+        if (!hasTeam) return;
+        if (a.color === "red") {
+          const red = m.alliances.find((x: any) => x.color === "red")?.score || 0;
+          const blue = m.alliances.find((x: any) => x.color === "blue")?.score || 0;
+          if (red > blue) wins++; else if (blue > red) losses++; else ties++;
+        } else {
+          const red = m.alliances.find((x: any) => x.color === "red")?.score || 0;
+          const blue = m.alliances.find((x: any) => x.color === "blue")?.score || 0;
+          if (blue > red) wins++; else if (red > blue) losses++; else ties++;
+        }
+      });
+    });
+    const total = wins + losses + ties;
+    const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+    return { wins, losses, ties, total, winRate };
+  })();
 
   return (
     <AppLayout>
@@ -30,7 +76,9 @@ export default function Dashboard() {
             <h1 className="text-3xl font-display font-bold">
               Team <span className="text-gradient">{teamNumber}</span>
             </h1>
-            <p className="text-muted-foreground mt-1">Welcome to your competition command center</p>
+            <p className="text-muted-foreground mt-1">
+              {teamData?.team_name ? teamData.team_name : "Welcome to your competition command center"}
+            </p>
           </div>
           <Link to="/scouting">
             <Button variant="hero">
@@ -41,10 +89,30 @@ export default function Dashboard() {
 
         {/* Stats Grid */}
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-          <StatCard title="RoboRank Score" value="—" icon={TrendingUp} subtitle="Connect API to calculate" />
-          <StatCard title="Win Rate" value="—" icon={Trophy} subtitle="No data yet" />
-          <StatCard title="Events" value="—" icon={Calendar} subtitle="Upcoming events" />
-          <StatCard title="Skills Score" value="—" icon={Target} subtitle="Best combined" />
+          <StatCard
+            title="Win Rate"
+            value={stats ? `${stats.winRate}%` : "—"}
+            icon={Trophy}
+            subtitle={stats ? `${stats.wins}W-${stats.losses}L-${stats.ties}T` : "Loading..."}
+          />
+          <StatCard
+            title="Matches"
+            value={stats ? String(stats.total) : "—"}
+            icon={Target}
+            subtitle="Total matches played"
+          />
+          <StatCard
+            title="Location"
+            value={teamData?.location?.region || "—"}
+            icon={Calendar}
+            subtitle={teamData?.location?.country || ""}
+          />
+          <StatCard
+            title="Organization"
+            value={teamData?.organization ? "✓" : "—"}
+            icon={TrendingUp}
+            subtitle={teamData?.organization?.slice(0, 30) || ""}
+          />
         </div>
 
         {/* Main Content */}
@@ -57,9 +125,9 @@ export default function Dashboard() {
             className="rounded-xl border border-border/50 card-gradient p-8 flex flex-col items-center justify-center gap-4"
           >
             <h2 className="text-lg font-display font-semibold text-muted-foreground">Your RoboRank</h2>
-            <RoboRankScore score={0} size="lg" />
+            <RoboRankScore score={stats?.winRate || 0} size="lg" />
             <p className="text-sm text-muted-foreground text-center">
-              Add your API key to calculate your team's score
+              {stats ? `Based on ${stats.total} matches` : "Loading match data..."}
             </p>
           </motion.div>
 
