@@ -864,11 +864,6 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
                     </div>
                   ))}
                 </div>
-                {data.sharedMatches.length > 15 && (
-                  <div className="px-3 py-2 text-[10px] text-muted-foreground text-center bg-muted/30">
-                    +{data.sharedMatches.length - 15} more matches
-                  </div>
-                )}
               </div>
             ) : (
               <div className="text-sm text-muted-foreground rounded-lg border border-border/30 border-dashed p-6 text-center">
