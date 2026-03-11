@@ -137,7 +137,7 @@ export default function Rankings() {
             try {
               const rankings = await getTeamRankings(team.id, season);
               const record = calculateRecordFromRankings(rankings);
-              const score = calculateRoboRankV2(rankings, team.combined);
+              const score = calculateRoboRank(rankings, team.combined);
 
               if (score > 0 && record.total >= 5) {
                 results.push({
