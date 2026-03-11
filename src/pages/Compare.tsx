@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
-import { Search, Loader2, ArrowLeftRight, Trophy, Target, Award, TrendingUp, Zap, MapPin } from "lucide-react";
+import { Search, Loader2, Plus, X, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
@@ -17,29 +17,51 @@ interface TeamComparison {
   skillsScore: number;
 }
 
-function CompareColumn({ label, team1Value, team2Value, higherIsBetter = true }: {
+function useTeamComparison(teamNumber: string, season: string) {
+  return useQuery({
+    queryKey: ["compare-team", teamNumber, season],
+    queryFn: async (): Promise<TeamComparison | null> => {
+      const team = await getTeamByNumber(teamNumber);
+      if (!team) return null;
+      const [rankings, skillsScore] = await Promise.all([
+        getTeamRankings(team.id, season as any),
+        getTeamSkillsScore(team.id, season as any),
+      ]);
+      const record = calculateRecordFromRankings(rankings);
+      const roboRank = calculateRoboRank(rankings, skillsScore);
+      return { team, record, roboRank, skillsScore };
+    },
+    enabled: !!teamNumber,
+  });
+}
+
+interface StatRowProps {
   label: string;
-  team1Value: string | number;
-  team2Value: string | number;
+  values: (string | number)[];
   higherIsBetter?: boolean;
-}) {
-  const v1 = typeof team1Value === "number" ? team1Value : parseFloat(String(team1Value)) || 0;
-  const v2 = typeof team2Value === "number" ? team2Value : parseFloat(String(team2Value)) || 0;
-  const t1Better = higherIsBetter ? v1 > v2 : v1 < v2;
-  const t2Better = higherIsBetter ? v2 > v1 : v2 < v1;
-  const tied = v1 === v2;
+}
+
+function StatRow({ label, values, higherIsBetter = true }: StatRowProps) {
+  const nums = values.map((v) => (typeof v === "number" ? v : parseFloat(String(v)) || 0));
+  const best = higherIsBetter ? Math.max(...nums) : Math.min(...nums);
+  const allSame = nums.every((n) => n === nums[0]);
 
   return (
-    <div className="grid grid-cols-3 gap-4 items-center py-3 border-b border-border/20">
-      <div className={cn("text-right stat-number text-lg", t1Better ? "text-success" : tied ? "text-foreground" : "text-muted-foreground")}>
-        {team1Value}
-      </div>
-      <div className="text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
+    <div className="grid items-center py-3 border-b border-border/20" style={{ gridTemplateColumns: `1fr repeat(${values.length}, 1fr)` }}>
+      <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider pl-4">
         {label}
       </div>
-      <div className={cn("text-left stat-number text-lg", t2Better ? "text-success" : tied ? "text-foreground" : "text-muted-foreground")}>
-        {team2Value}
-      </div>
+      {values.map((val, i) => (
+        <div
+          key={i}
+          className={cn(
+            "text-center stat-number text-base",
+            !allSame && nums[i] === best ? "text-[hsl(var(--success))]" : allSame ? "text-foreground" : "text-muted-foreground"
+          )}
+        >
+          {val}
+        </div>
+      ))}
     </div>
   );
 }
@@ -47,51 +69,44 @@ function CompareColumn({ label, team1Value, team2Value, higherIsBetter = true }:
 export default function Compare() {
   const { season } = useSeason();
   const seasonInfo = SEASONS[season];
-  const [team1Input, setTeam1Input] = useState("");
-  const [team2Input, setTeam2Input] = useState("");
-  const [team1Number, setTeam1Number] = useState("");
-  const [team2Number, setTeam2Number] = useState("");
+  const [inputs, setInputs] = useState<string[]>(["", ""]);
+  const [submitted, setSubmitted] = useState<string[]>([]);
 
-  const { data: team1Data, isLoading: t1Loading } = useQuery({
-    queryKey: ["compare-team", team1Number, season],
-    queryFn: async (): Promise<TeamComparison | null> => {
-      const team = await getTeamByNumber(team1Number);
-      if (!team) return null;
-      const [rankings, skillsScore] = await Promise.all([
-        getTeamRankings(team.id, season),
-        getTeamSkillsScore(team.id, season),
-      ]);
-      const record = calculateRecordFromRankings(rankings);
-      const roboRank = calculateRoboRank(rankings, skillsScore);
-      return { team, record, roboRank, skillsScore };
-    },
-    enabled: !!team1Number,
-  });
+  const team1 = useTeamComparison(submitted[0] || "", season);
+  const team2 = useTeamComparison(submitted[1] || "", season);
+  const team3 = useTeamComparison(submitted[2] || "", season);
+  const team4 = useTeamComparison(submitted[3] || "", season);
 
-  const { data: team2Data, isLoading: t2Loading } = useQuery({
-    queryKey: ["compare-team", team2Number, season],
-    queryFn: async (): Promise<TeamComparison | null> => {
-      const team = await getTeamByNumber(team2Number);
-      if (!team) return null;
-      const [rankings, skillsScore] = await Promise.all([
-        getTeamRankings(team.id, season),
-        getTeamSkillsScore(team.id, season),
-      ]);
-      const record = calculateRecordFromRankings(rankings);
-      const roboRank = calculateRoboRank(rankings, skillsScore);
-      return { team, record, roboRank, skillsScore };
-    },
-    enabled: !!team2Number,
-  });
+  const allQueries = [team1, team2, team3, team4].slice(0, submitted.length);
+  const loading = allQueries.some((q) => q.isLoading);
+  const loadedTeams = allQueries.map((q) => q.data).filter(Boolean) as TeamComparison[];
 
   const handleCompare = (e: React.FormEvent) => {
     e.preventDefault();
-    setTeam1Number(team1Input.trim().toUpperCase());
-    setTeam2Number(team2Input.trim().toUpperCase());
+    const cleaned = inputs.filter((s) => s.trim()).map((s) => s.trim().toUpperCase());
+    if (cleaned.length >= 2) setSubmitted(cleaned);
   };
 
-  const loading = t1Loading || t2Loading;
-  const bothLoaded = team1Data && team2Data;
+  const updateInput = (index: number, value: string) => {
+    setInputs((prev) => {
+      const next = [...prev];
+      next[index] = value;
+      return next;
+    });
+  };
+
+  const addSlot = () => {
+    if (inputs.length < 4) setInputs((prev) => [...prev, ""]);
+  };
+
+  const removeSlot = (index: number) => {
+    if (inputs.length > 2) {
+      setInputs((prev) => prev.filter((_, i) => i !== index));
+      setSubmitted((prev) => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const teamCount = inputs.length;
 
   return (
     <AppLayout>
@@ -99,33 +114,42 @@ export default function Compare() {
         <div>
           <h1 className="text-3xl font-display font-bold">Compare Teams</h1>
           <p className="text-muted-foreground mt-1">
-            {seasonInfo.name} {seasonInfo.year} · Head-to-head comparison
+            {seasonInfo.name} {seasonInfo.year} · Compare up to 4 teams side by side
           </p>
         </div>
 
-        <form onSubmit={handleCompare} className="flex flex-col sm:flex-row items-center gap-3">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Team 1 (e.g. 17505B)"
-              className="pl-10 bg-card text-center font-display font-semibold"
-              value={team1Input}
-              onChange={(e) => setTeam1Input(e.target.value)}
-            />
+        <form onSubmit={handleCompare} className="space-y-3">
+          <div className="flex flex-wrap gap-3 items-end">
+            {inputs.map((input, i) => (
+              <div key={i} className="relative flex-1 min-w-[140px]">
+                <label className="text-xs text-muted-foreground mb-1 block">Team {i + 1}</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder={`e.g. ${["17505B", "1000A", "2011C", "5150H"][i]}`}
+                    className="pl-9 bg-card font-display font-semibold text-sm"
+                    value={input}
+                    onChange={(e) => updateInput(i, e.target.value)}
+                  />
+                  {inputs.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() => removeSlot(i)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+            {inputs.length < 4 && (
+              <Button type="button" variant="outline" size="sm" onClick={addSlot} className="gap-1.5 mb-0.5">
+                <Plus className="h-3.5 w-3.5" /> Add Team
+              </Button>
+            )}
           </div>
-          <div className="shrink-0">
-            <ArrowLeftRight className="h-5 w-5 text-primary" />
-          </div>
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Team 2 (e.g. 1000A)"
-              className="pl-10 bg-card text-center font-display font-semibold"
-              value={team2Input}
-              onChange={(e) => setTeam2Input(e.target.value)}
-            />
-          </div>
-          <Button type="submit" disabled={!team1Input.trim() || !team2Input.trim()}>
+          <Button type="submit" disabled={inputs.filter((s) => s.trim()).length < 2}>
             Compare
           </Button>
         </form>
@@ -137,67 +161,55 @@ export default function Compare() {
           </div>
         )}
 
-        {!loading && (team1Number || team2Number) && (!team1Data || !team2Data) && (
+        {!loading && submitted.length >= 2 && loadedTeams.length === 0 && (
           <div className="text-sm text-muted-foreground rounded-lg border border-border/50 card-gradient p-8 text-center">
-            {!team1Data && team1Number && `Team "${team1Number}" not found. `}
-            {!team2Data && team2Number && `Team "${team2Number}" not found.`}
+            No teams found. Check your team numbers and try again.
           </div>
         )}
 
-        {!loading && bothLoaded && (
+        {!loading && loadedTeams.length >= 2 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             {/* Team Headers */}
-            <div className="grid grid-cols-3 gap-4 items-center">
-              <div className="text-right space-y-1">
-                <div className="text-2xl font-display font-bold text-gradient">{team1Data.team.number}</div>
-                <div className="text-sm text-muted-foreground truncate">{team1Data.team.team_name}</div>
-                {team1Data.team.location && (
-                  <div className="text-xs text-muted-foreground flex items-center gap-1 justify-end">
-                    <MapPin className="h-3 w-3" />
-                    {team1Data.team.location.region}
+            <div className="grid items-start" style={{ gridTemplateColumns: `1fr repeat(${loadedTeams.length}, 1fr)` }}>
+              <div />
+              {loadedTeams.map((t) => (
+                <div key={t.team.id} className="text-center space-y-2 px-2">
+                  <div className="text-xl font-display font-bold text-gradient">{t.team.number}</div>
+                  <div className="text-xs text-muted-foreground truncate">{t.team.team_name}</div>
+                  {t.team.location && (
+                    <div className="text-[10px] text-muted-foreground flex items-center gap-1 justify-center">
+                      <MapPin className="h-2.5 w-2.5" />
+                      {t.team.location.region}
+                    </div>
+                  )}
+                  <div className="flex justify-center pt-1">
+                    <RoboRankScore score={t.roboRank} size="md" />
                   </div>
-                )}
-              </div>
-              <div className="text-center text-sm font-medium text-muted-foreground">VS</div>
-              <div className="text-left space-y-1">
-                <div className="text-2xl font-display font-bold text-gradient">{team2Data.team.number}</div>
-                <div className="text-sm text-muted-foreground truncate">{team2Data.team.team_name}</div>
-                {team2Data.team.location && (
-                  <div className="text-xs text-muted-foreground flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    {team2Data.team.location.region}
-                  </div>
-                )}
-              </div>
+                </div>
+              ))}
             </div>
 
-            {/* RoboRank comparison */}
-            <div className="grid grid-cols-3 gap-4 items-center py-4">
-              <div className="flex justify-end">
-                <RoboRankScore score={team1Data.roboRank} size="lg" />
-              </div>
-              <div className="text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                RoboRank
-              </div>
-              <div className="flex justify-start">
-                <RoboRankScore score={team2Data.roboRank} size="lg" />
-              </div>
+            {/* Stats Table */}
+            <div className="rounded-xl border border-border/50 card-gradient overflow-hidden">
+              <StatRow label="Win Rate" values={loadedTeams.map((t) => `${t.record?.winRate ?? 0}%`)} />
+              <StatRow label="Wins" values={loadedTeams.map((t) => t.record?.wins ?? 0)} />
+              <StatRow label="Losses" values={loadedTeams.map((t) => t.record?.losses ?? 0)} higherIsBetter={false} />
+              <StatRow label="Matches" values={loadedTeams.map((t) => t.record?.total ?? 0)} />
+              <StatRow label="Events" values={loadedTeams.map((t) => t.record?.eventsAttended ?? 0)} />
+              <StatRow label="High Score" values={loadedTeams.map((t) => t.record?.highScore ?? 0)} />
+              <StatRow label="Avg Pts" values={loadedTeams.map((t) => t.record?.avgPointsPerEvent ?? 0)} />
+              <StatRow label="Skills" values={loadedTeams.map((t) => t.skillsScore)} />
+              <StatRow label="Total WP" values={loadedTeams.map((t) => t.record?.totalWP ?? 0)} />
+              <StatRow label="Total AP" values={loadedTeams.map((t) => t.record?.totalAP ?? 0)} />
+              <StatRow label="Total SP" values={loadedTeams.map((t) => t.record?.totalSP ?? 0)} />
             </div>
 
-            {/* Stats comparison */}
-            <div className="rounded-xl border border-border/50 card-gradient p-6">
-              <CompareColumn label="Win Rate" team1Value={`${team1Data.record?.winRate ?? 0}%`} team2Value={`${team2Data.record?.winRate ?? 0}%`} />
-              <CompareColumn label="Wins" team1Value={team1Data.record?.wins ?? 0} team2Value={team2Data.record?.wins ?? 0} />
-              <CompareColumn label="Losses" team1Value={team1Data.record?.losses ?? 0} team2Value={team2Data.record?.losses ?? 0} higherIsBetter={false} />
-              <CompareColumn label="Matches" team1Value={team1Data.record?.total ?? 0} team2Value={team2Data.record?.total ?? 0} />
-              <CompareColumn label="Events" team1Value={team1Data.record?.eventsAttended ?? 0} team2Value={team2Data.record?.eventsAttended ?? 0} />
-              <CompareColumn label="High Score" team1Value={team1Data.record?.highScore ?? 0} team2Value={team2Data.record?.highScore ?? 0} />
-              <CompareColumn label="Avg Pts" team1Value={team1Data.record?.avgPointsPerEvent ?? 0} team2Value={team2Data.record?.avgPointsPerEvent ?? 0} />
-              <CompareColumn label="Skills" team1Value={team1Data.skillsScore} team2Value={team2Data.skillsScore} />
-              <CompareColumn label="Total WP" team1Value={team1Data.record?.totalWP ?? 0} team2Value={team2Data.record?.totalWP ?? 0} />
-              <CompareColumn label="Total AP" team1Value={team1Data.record?.totalAP ?? 0} team2Value={team2Data.record?.totalAP ?? 0} />
-              <CompareColumn label="Total SP" team1Value={team1Data.record?.totalSP ?? 0} team2Value={team2Data.record?.totalSP ?? 0} />
-            </div>
+            {/* Not-found teams */}
+            {submitted.length > loadedTeams.length && (
+              <p className="text-sm text-muted-foreground text-center">
+                {submitted.filter((n) => !loadedTeams.find((t) => t.team.number === n)).map((n) => `"${n}"`).join(", ")} not found.
+              </p>
+            )}
           </motion.div>
         )}
       </div>
