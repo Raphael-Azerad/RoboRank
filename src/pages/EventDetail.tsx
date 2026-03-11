@@ -780,7 +780,7 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">{team1} vs {team2}</DialogTitle>
         </DialogHeader>
