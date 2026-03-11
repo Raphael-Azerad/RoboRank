@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
