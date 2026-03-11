@@ -230,8 +230,9 @@ export default function Events() {
   });
 
   const compareEvents = useMemo(() => {
-    return events.filter((e: any) => compareIds.includes(e.id));
-  }, [events, compareIds]);
+    const allEvents = allEventsData || myEvents || [];
+    return allEvents.filter((e: any) => compareIds.includes(e.id));
+  }, [allEventsData, myEvents, compareIds]);
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, any[]>();
