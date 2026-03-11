@@ -3,9 +3,32 @@ import { supabase } from "@/integrations/supabase/client";
 export const SEASONS = {
   current: { id: "197", name: "Push Back", year: "2025-2026" },
   previous: { id: "190", name: "High Stakes", year: "2024-2025" },
+  overunder: { id: "181", name: "Over Under", year: "2023-2024" },
+  spinup: { id: "173", name: "Spin Up", year: "2022-2023" },
+  tippingpoint: { id: "154", name: "Tipping Point", year: "2021-2022" },
 };
 
-export type SeasonKey = "current" | "previous";
+export const SEASON_LIST = [
+  { key: "current" as SeasonKey, ...SEASONS.current },
+  { key: "previous" as SeasonKey, ...SEASONS.previous },
+  { key: "overunder" as SeasonKey, ...SEASONS.overunder },
+  { key: "spinup" as SeasonKey, ...SEASONS.spinup },
+  { key: "tippingpoint" as SeasonKey, ...SEASONS.tippingpoint },
+];
+
+export type SeasonKey = keyof typeof SEASONS;
+
+// US States for filtering
+export const US_STATES = [
+  "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut",
+  "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa",
+  "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan",
+  "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire",
+  "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio",
+  "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota",
+  "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia",
+  "Wisconsin", "Wyoming"
+];
 
 export async function fetchRobotEvents(endpoint: string, params?: Record<string, string>) {
   const { data, error } = await supabase.functions.invoke("robotevents-proxy", {

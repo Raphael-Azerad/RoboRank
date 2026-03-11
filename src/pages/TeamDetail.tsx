@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { useQuery } from "@tanstack/react-query";
-import { getTeamByNumber, getTeamRankings, getTeamMatches, calculateRecordFromRankings, calculateRoboRank, SEASONS, type SeasonKey } from "@/lib/robotevents";
-import { Trophy, Target, Award, MapPin, Building, ArrowLeft, Loader2, TrendingUp } from "lucide-react";
+import { getTeamByNumber, getTeamRankings, getTeamMatches, getTeamAwards, calculateRecordFromRankings, calculateRoboRank, SEASONS, SEASON_LIST, type SeasonKey } from "@/lib/robotevents";
+import { Trophy, Target, Award, MapPin, Building, ArrowLeft, Loader2, TrendingUp, Medal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
@@ -30,6 +30,12 @@ export default function TeamDetail() {
   const { data: matches } = useQuery({
     queryKey: ["teamMatches", teamId, season],
     queryFn: () => getTeamMatches(teamId!, season),
+    enabled: !!teamId,
+  });
+
+  const { data: awards } = useQuery({
+    queryKey: ["teamAwards", teamId, season],
+    queryFn: () => getTeamAwards(teamId!, season),
     enabled: !!teamId,
   });
 
@@ -92,20 +98,18 @@ export default function TeamDetail() {
           </motion.div>
         </div>
 
-        {/* Season Toggle */}
-        <div className="flex gap-2">
-          <Button variant={season === "current" ? "default" : "outline"} size="sm"
-            onClick={() => setSeason("current")}>
-            {SEASONS.current.name} ({SEASONS.current.year})
-          </Button>
-          <Button variant={season === "previous" ? "default" : "outline"} size="sm"
-            onClick={() => setSeason("previous")}>
-            {SEASONS.previous.name} ({SEASONS.previous.year})
-          </Button>
+        {/* Season Toggle — 5 seasons */}
+        <div className="flex flex-wrap gap-2">
+          {SEASON_LIST.map((s) => (
+            <Button key={s.key} variant={season === s.key ? "default" : "outline"} size="sm"
+              onClick={() => setSeason(s.key)} className="text-xs">
+              {s.name} ({s.year})
+            </Button>
+          ))}
         </div>
 
         {/* Stats */}
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
           <StatCard title="Win Rate" value={record ? `${record.winRate}%` : "—"} icon={Trophy}
             subtitle={record ? `${record.wins}W-${record.losses}L-${record.ties}T` : "No data"} />
           <StatCard title="Qual Matches" value={record ? String(record.total) : "—"} icon={Target}
@@ -114,7 +118,30 @@ export default function TeamDetail() {
             subtitle={record ? `Avg ${record.avgPointsPerEvent} pts/match` : ""} />
           <StatCard title="Total WP" value={record ? String(record.totalWP) : "—"} icon={TrendingUp}
             subtitle={record ? `AP: ${record.totalAP} · SP: ${record.totalSP}` : ""} />
+          <StatCard title="Awards" value={awards ? String(awards.length) : "—"} icon={Medal}
+            subtitle={awards && awards.length > 0 ? `This season` : "No awards yet"} />
         </div>
+
+        {/* Awards List */}
+        {awards && awards.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
+            <h2 className="text-xl font-display font-semibold mb-4">
+              Awards · {seasonInfo.name}
+            </h2>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {awards.map((award: any, i: number) => (
+                <motion.div key={award.id || i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
+                  className="rounded-lg border border-border/30 p-4 flex items-start gap-3 hover:bg-accent/30 transition-colors">
+                  <Medal className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium">{award.title}</div>
+                    <div className="text-xs text-muted-foreground truncate">{award.event?.name || "Unknown Event"}</div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         {/* Event Results */}
         {rankings && rankings.length > 0 && (
