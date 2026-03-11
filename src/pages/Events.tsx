@@ -92,16 +92,19 @@ export default function Events() {
 
   const teamId = teamData?.id || null;
 
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 50;
+
   const { data: allEventsData, isLoading: allLoading } = useQuery({
     queryKey: ["events", "all", search, season, stateFilter],
-    queryFn: () => fetchRobotEvents("/events", {
+    queryFn: () => fetchAllPages("/events", {
       "program[]": "1",
       "season[]": SEASONS[season].id,
       ...(search ? { name: search } : {}),
       ...(stateFilter !== "all" ? { region: stateFilter } : {}),
-      per_page: "100",
     }),
     enabled: tab === "all" || tab === "watchlist",
+    staleTime: 5 * 60 * 1000,
   });
 
   const { data: myEvents, isLoading: myLoading } = useQuery({
@@ -110,7 +113,7 @@ export default function Events() {
     enabled: tab === "my" && !!teamId,
   });
 
-  let events = tab === "all" || tab === "watchlist" ? (allEventsData?.data || []) : (myEvents || []);
+  let events = tab === "all" || tab === "watchlist" ? (allEventsData || []) : (myEvents || []);
   const isLoading = tab === "all" || tab === "watchlist" ? allLoading : myLoading;
 
   if (tab === "watchlist") {
