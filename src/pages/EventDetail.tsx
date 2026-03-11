@@ -43,8 +43,8 @@ export default function EventDetail() {
   const [selectedDivisionIdx, setSelectedDivisionIdx] = useState(0);
 
   // Reset division when navigating to a new event
-  const prevEventId = React.useRef(eventId);
-  React.useEffect(() => {
+  const prevEventId = useRef(eventId);
+  useEffect(() => {
     if (eventId !== prevEventId.current) {
       setSelectedDivisionIdx(0);
       prevEventId.current = eventId;
