@@ -40,6 +40,7 @@ export default function EventDetail() {
   const [tab, setTab] = useState<DetailTab>("teams");
   const [h2hTeams, setH2hTeams] = useState<[string, string] | null>(null);
   const [h2hOpen, setH2hOpen] = useState(false);
+  const [selectedDivisionIdx, setSelectedDivisionIdx] = useState(0);
 
   const { data: eventData, isLoading: eventLoading } = useQuery({
     queryKey: ["event", eventId],
@@ -48,7 +49,10 @@ export default function EventDetail() {
   });
 
   const event = eventData;
-  const divisionId = event?.divisions?.[0]?.id || 1;
+  const divisions = event?.divisions || [];
+  const hasDivisions = divisions.length > 1;
+  const divisionId = divisions[selectedDivisionIdx]?.id || divisions[0]?.id || 1;
+  const divisionName = divisions[selectedDivisionIdx]?.name || "";
 
   const { data: teams, isLoading: teamsLoading } = useQuery({
     queryKey: ["eventTeams", eventId],
