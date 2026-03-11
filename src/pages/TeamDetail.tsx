@@ -10,7 +10,7 @@ import { Trophy, Target, Award, MapPin, Building, ArrowLeft, Loader2, TrendingUp
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { DialogDescription } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 interface GroupedAward {
