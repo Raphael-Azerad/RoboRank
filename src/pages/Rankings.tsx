@@ -178,7 +178,7 @@ export default function Rankings() {
   });
 
   // Debounce search for live lookup
-  React.useEffect(() => {
+  useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery.trim().toUpperCase()), 400);
     return () => clearTimeout(timer);
   }, [searchQuery]);
