@@ -346,18 +346,40 @@ export default function Events() {
           </div>
 
           {/* Actions */}
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); toggleWatchlist(event.id); }}
-            className="p-1.5 rounded-lg hover:bg-accent transition-colors shrink-0"
-          >
-            {isWatched(event.id) ? (
-              <Star className="h-4 w-4 text-[hsl(var(--chart-4))] fill-[hsl(var(--chart-4))]" />
-            ) : (
-              <Star className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+          <div className="flex items-center gap-1 shrink-0">
+            {showCompare && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); toggleCompare(event.id); }}
+                className={cn(
+                  "p-1.5 rounded-lg transition-colors",
+                  compareIds.includes(event.id) ? "bg-primary/20 text-primary" : "hover:bg-accent text-muted-foreground/40"
+                )}
+              >
+                <GitCompare className="h-4 w-4" />
+              </button>
             )}
-          </button>
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); toggleWatchlist(event.id); }}
+              className="p-1.5 rounded-lg hover:bg-accent transition-colors"
+            >
+              {isWatched(event.id) ? (
+                <Star className="h-4 w-4 text-[hsl(var(--chart-4))] fill-[hsl(var(--chart-4))]" />
+              ) : (
+                <Star className="h-4 w-4 text-muted-foreground/40 group-hover:text-muted-foreground transition-colors" />
+              )}
+            </button>
+          </div>
         </div>
+
+        {/* Nearby distance */}
+        {sortByNearby && userLocation && event.location?.coordinates?.lat && (
+          <div className="mt-2 text-[10px] text-muted-foreground flex items-center gap-1 ml-[60px]">
+            <Navigation className="h-3 w-3" />
+            {Math.round(getDistance(userLocation.lat, userLocation.lng, event.location.coordinates.lat, event.location.coordinates.lon))} mi away
+          </div>
+        )}
       </motion.div>
     );
   };
