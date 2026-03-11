@@ -2,16 +2,20 @@ import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
-import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award } from "lucide-react";
+import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getTeamByNumber, getTeamRankings, calculateRecordFromRankings, calculateRoboRank, SEASONS } from "@/lib/robotevents";
+import { getTeamByNumber, getTeamRankings, getTeamAwards, calculateRecordFromRankings, calculateRoboRank, SEASONS } from "@/lib/robotevents";
+import { useSeason } from "@/contexts/SeasonContext";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Dashboard() {
+  const navigate = useNavigate();
+  const { season } = useSeason();
   const [teamNumber, setTeamNumber] = useState<string>("");
+  const seasonInfo = SEASONS[season];
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -28,8 +32,14 @@ export default function Dashboard() {
   const teamId = teamData?.id || null;
 
   const { data: rankings, isLoading: rankingsLoading } = useQuery({
-    queryKey: ["teamRankings", teamId, "current"],
-    queryFn: () => getTeamRankings(teamId!, "current"),
+    queryKey: ["teamRankings", teamId, season],
+    queryFn: () => getTeamRankings(teamId!, season),
+    enabled: !!teamId,
+  });
+
+  const { data: awards } = useQuery({
+    queryKey: ["teamAwards", teamId, season],
+    queryFn: () => getTeamAwards(teamId!, season),
     enabled: !!teamId,
   });
 
@@ -49,7 +59,7 @@ export default function Dashboard() {
             <p className="text-muted-foreground mt-1">
               {teamData?.team_name || "Welcome to your competition command center"}
               {" · "}
-              <span className="text-xs text-primary">{SEASONS.current.name} {SEASONS.current.year}</span>
+              <span className="text-xs text-primary">{seasonInfo.name} {seasonInfo.year}</span>
             </p>
           </div>
           <Link to="/scouting">
@@ -59,7 +69,7 @@ export default function Dashboard() {
           </Link>
         </motion.div>
 
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
           <StatCard title="Win Rate" value={record ? `${record.winRate}%` : "—"} icon={Trophy}
             subtitle={record ? `${record.wins}W-${record.losses}L-${record.ties}T` : loading ? "Loading..." : "No data"} />
           <StatCard title="Qual Matches" value={record ? String(record.total) : "—"} icon={Target}
@@ -68,6 +78,10 @@ export default function Dashboard() {
             subtitle={record ? `Avg ${record.avgPointsPerEvent} pts/match` : ""} />
           <StatCard title="Location" value={teamData?.location?.region || "—"} icon={Calendar}
             subtitle={teamData?.location?.country || ""} />
+          <div onClick={() => navigate("/awards")} className="cursor-pointer">
+            <StatCard title="Awards" value={awards ? String(awards.length) : "—"} icon={Medal}
+              subtitle={awards && awards.length > 0 ? "Tap to view all" : loading ? "Loading..." : "No awards"} />
+          </div>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-3">

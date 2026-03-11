@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
-import { getTeamByNumber } from "@/lib/robotevents";
+import { getTeamByNumber, SEASONS, SEASON_LIST } from "@/lib/robotevents";
+import { useSeason } from "@/contexts/SeasonContext";
 import { useQuery } from "@tanstack/react-query";
-import { User, Mail, Hash, MapPin, Building, Loader2 } from "lucide-react";
+import { User, Mail, Hash, MapPin, Building, Loader2, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
 export default function Profile() {
+  const { season, setSeason } = useSeason();
   const [user, setUser] = useState<{ email?: string; team_number?: string }>({});
 
   useEffect(() => {
@@ -23,6 +26,8 @@ export default function Profile() {
     queryFn: () => getTeamByNumber(user.team_number!),
     enabled: !!user.team_number,
   });
+
+  const seasonInfo = SEASONS[season];
 
   return (
     <AppLayout>
@@ -80,6 +85,40 @@ export default function Profile() {
               </>
             )}
           </div>
+        </motion.div>
+
+        {/* Season Selector */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="rounded-xl border border-border/50 card-gradient p-8 space-y-4"
+        >
+          <div className="flex items-center gap-3">
+            <Calendar className="h-5 w-5 text-primary" />
+            <div>
+              <h3 className="font-display font-semibold">Active Season</h3>
+              <p className="text-xs text-muted-foreground">
+                Changes data across the entire platform
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {SEASON_LIST.map((s) => (
+              <Button
+                key={s.key}
+                variant={season === s.key ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSeason(s.key)}
+                className="text-xs"
+              >
+                {s.name} ({s.year})
+              </Button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Currently viewing: <span className="text-foreground font-medium">{seasonInfo.name} ({seasonInfo.year})</span>
+          </p>
         </motion.div>
       </div>
     </AppLayout>
