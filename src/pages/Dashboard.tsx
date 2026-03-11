@@ -6,31 +6,28 @@ import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2 } from "lucid
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getTeamByNumber, getTeamMatches, getTeamRankings } from "@/lib/robotevents";
+import { getTeamByNumber, getTeamMatches, getTeamRankings, calculateRecord, calculateRoboRank } from "@/lib/robotevents";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Dashboard() {
   const [teamNumber, setTeamNumber] = useState<string>("");
-  const [teamId, setTeamId] = useState<number | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      const tn = data.user?.user_metadata?.team_number || "—";
+      const tn = data.user?.user_metadata?.team_number || "";
       setTeamNumber(tn);
     });
   }, []);
 
   // Look up team on RobotEvents
-  const { data: teamData } = useQuery({
+  const { data: teamData, isLoading: teamLoading } = useQuery({
     queryKey: ["team", teamNumber],
     queryFn: () => getTeamByNumber(teamNumber),
-    enabled: !!teamNumber && teamNumber !== "—",
+    enabled: !!teamNumber,
   });
 
-  useEffect(() => {
-    if (teamData?.id) setTeamId(teamData.id);
-  }, [teamData]);
+  const teamId = teamData?.id || null;
 
   // Fetch match history
   const { data: matches, isLoading: matchesLoading } = useQuery({
@@ -39,29 +36,18 @@ export default function Dashboard() {
     enabled: !!teamId,
   });
 
+  // Fetch rankings
+  const { data: rankings } = useQuery({
+    queryKey: ["teamRankings", teamId],
+    queryFn: () => getTeamRankings(teamId!),
+    enabled: !!teamId,
+  });
+
   // Calculate stats
-  const stats = (() => {
-    if (!matches || matches.length === 0) return null;
-    let wins = 0, losses = 0, ties = 0;
-    matches.forEach((m: any) => {
-      m.alliances?.forEach((a: any) => {
-        const hasTeam = a.teams?.some((t: any) => t.team?.name === teamNumber);
-        if (!hasTeam) return;
-        if (a.color === "red") {
-          const red = m.alliances.find((x: any) => x.color === "red")?.score || 0;
-          const blue = m.alliances.find((x: any) => x.color === "blue")?.score || 0;
-          if (red > blue) wins++; else if (blue > red) losses++; else ties++;
-        } else {
-          const red = m.alliances.find((x: any) => x.color === "red")?.score || 0;
-          const blue = m.alliances.find((x: any) => x.color === "blue")?.score || 0;
-          if (blue > red) wins++; else if (red > blue) losses++; else ties++;
-        }
-      });
-    });
-    const total = wins + losses + ties;
-    const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
-    return { wins, losses, ties, total, winRate };
-  })();
+  const record = matches ? calculateRecord(matches, teamNumber) : null;
+  const roboRank = record && rankings ? calculateRoboRank(record, rankings) : null;
+
+  const loading = teamLoading || matchesLoading;
 
   return (
     <AppLayout>
@@ -74,10 +60,10 @@ export default function Dashboard() {
         >
           <div>
             <h1 className="text-3xl font-display font-bold">
-              Team <span className="text-gradient">{teamNumber}</span>
+              Team <span className="text-gradient">{teamNumber || "—"}</span>
             </h1>
             <p className="text-muted-foreground mt-1">
-              {teamData?.team_name ? teamData.team_name : "Welcome to your competition command center"}
+              {teamData?.team_name || "Welcome to your competition command center"}
             </p>
           </div>
           <Link to="/scouting">
@@ -91,15 +77,15 @@ export default function Dashboard() {
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Win Rate"
-            value={stats ? `${stats.winRate}%` : "—"}
+            value={record ? `${record.winRate}%` : "—"}
             icon={Trophy}
-            subtitle={stats ? `${stats.wins}W-${stats.losses}L-${stats.ties}T` : "Loading..."}
+            subtitle={record ? `${record.wins}W-${record.losses}L-${record.ties}T` : loading ? "Loading..." : "No data"}
           />
           <StatCard
             title="Matches"
-            value={stats ? String(stats.total) : "—"}
+            value={record ? String(record.total) : "—"}
             icon={Target}
-            subtitle="Total matches played"
+            subtitle={record ? `Avg score: ${record.avgScore}` : loading ? "Loading..." : "No data"}
           />
           <StatCard
             title="Location"
@@ -125,9 +111,13 @@ export default function Dashboard() {
             className="rounded-xl border border-border/50 card-gradient p-8 flex flex-col items-center justify-center gap-4"
           >
             <h2 className="text-lg font-display font-semibold text-muted-foreground">Your RoboRank</h2>
-            <RoboRankScore score={stats?.winRate || 0} size="lg" />
+            {loading ? (
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            ) : (
+              <RoboRankScore score={roboRank ?? 0} size="lg" />
+            )}
             <p className="text-sm text-muted-foreground text-center">
-              {stats ? `Based on ${stats.total} matches` : "Loading match data..."}
+              {record ? `Based on ${record.total} scored matches` : loading ? "Loading match data..." : "No match data available"}
             </p>
           </motion.div>
 
