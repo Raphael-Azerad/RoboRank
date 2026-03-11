@@ -128,7 +128,7 @@ export default function EventDetail() {
       }
       return results.sort((a, b) => b.roboRank - a.roboRank);
     },
-    enabled: !!teams && teams.length > 0 && tab === "teams",
+    enabled: !!teams && teams.length > 0 && (tab === "teams" || tab === "predictions"),
   });
 
   // Split matches
