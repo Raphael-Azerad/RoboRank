@@ -194,8 +194,8 @@ export default function Rankings() {
       const skillsPool = await getGlobalSkillsPool(season, gradeLevel);
       if (skillsPool.length === 0) return [];
 
-      // Take top 150 skills teams as candidates for broader coverage
-      const candidates = skillsPool.slice(0, 150);
+      // Take top 2000 skills teams as candidates for broad coverage
+      const candidates = skillsPool.slice(0, 2000);
       const results: RankedTeam[] = [];
 
       for (let i = 0; i < candidates.length; i += 10) {
