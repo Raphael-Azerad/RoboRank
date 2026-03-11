@@ -315,6 +315,22 @@ export default function Rankings() {
           </div>
         )}
 
+        {/* Progress bar while RoboRank is streaming */}
+        {tab === "roborank" && roboRankLoading && streamedResults.length > 0 && (
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Processing teams... {progress.processed}/{progress.total}</span>
+              <span>{streamedResults.length} ranked</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full bg-primary rounded-full transition-all duration-300"
+                style={{ width: `${(progress.processed / Math.max(progress.total, 1)) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+
         {!loading && tab === "skills" && filteredSkills && (
           filteredSkills.length === 0 ? (
             <div className="text-sm text-muted-foreground rounded-lg border border-border/50 card-gradient p-8 text-center">
