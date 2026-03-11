@@ -443,7 +443,7 @@ export default function Events() {
               <Navigation className="h-3.5 w-3.5" /> Nearby
             </Button>
             <Button
-              variant={compareIds.length > 0 ? "default" : "outline"}
+              variant={showCompare ? "default" : "outline"}
               size="sm"
               onClick={() => setShowCompare(!showCompare)}
               className="gap-1.5"
