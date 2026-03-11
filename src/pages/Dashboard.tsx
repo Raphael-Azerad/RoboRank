@@ -6,7 +6,7 @@ import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getTeamByNumber, getTeamRankings, getTeamAwards, getTeamMatches, calculateRecordFromRankings, calculateRoboRank, getTeamSkillsScore, SEASONS } from "@/lib/robotevents";
+import { getTeamByNumber, getTeamRankings, getTeamAwards, getTeamMatches, calculateRecordFromRankings, calculateRecordFromMatches, calculateRoboRank, getTeamSkillsScore, SEASONS } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -58,7 +58,12 @@ export default function Dashboard() {
     enabled: !!teamId,
   });
 
-  const record = rankings ? calculateRecordFromRankings(rankings) : null;
+  const qualRecord = rankings ? calculateRecordFromRankings(rankings) : null;
+  const matchRecord = useMemo(() => {
+    if (!matches || !teamNumber) return null;
+    return calculateRecordFromMatches(matches, teamNumber);
+  }, [matches, teamNumber]);
+
   const roboRank = rankings ? calculateRoboRank(rankings, skillsScore ?? 0) : null;
   const loading = teamLoading || rankingsLoading;
 
@@ -100,22 +105,21 @@ export default function Dashboard() {
 
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           <button type="button" onClick={() => setWinsModalOpen(true)} className="text-left">
-            <StatCard title="Win Rate" value={record ? `${record.winRate}%` : "—"} icon={Trophy}
-              subtitle={record ? `${record.wins}W-${record.losses}L-${record.ties}T` : loading ? "Loading..." : "No data"} className="cursor-pointer" />
+            <StatCard title="Win Rate" value={matchRecord ? `${matchRecord.winRate}%` : "—"} icon={Trophy}
+              subtitle={matchRecord ? `${matchRecord.wins}W-${matchRecord.losses}L-${matchRecord.ties}T (all matches)` : loading ? "Loading..." : "No data"} className="cursor-pointer" />
           </button>
           <button type="button" onClick={() => setMatchesModalOpen(true)} className="text-left">
             <StatCard title="Matches" value={totalMatchCount ? String(totalMatchCount) : "—"} icon={Target}
-              subtitle={record ? `Across ${record.eventsAttended} events` : loading ? "Loading..." : "No data"} className="cursor-pointer" />
+              subtitle={qualRecord ? `Across ${qualRecord.eventsAttended} events` : loading ? "Loading..." : "No data"} className="cursor-pointer" />
           </button>
-          <StatCard title="High Score" value={record ? String(record.highScore) : "—"} icon={Award}
-            subtitle={record ? `Avg ${record.avgPointsPerEvent} pts/match` : ""} />
+          <StatCard title="High Score" value={matchRecord ? String(matchRecord.highScore) : "—"} icon={Award}
+            subtitle={matchRecord ? `Avg ${matchRecord.avgPoints} pts/match` : ""} />
           <div onClick={() => navigate("/awards")} className="cursor-pointer">
             <StatCard title="Awards" value={awards ? String(awards.length) : "—"} icon={Medal}
               subtitle={awards && awards.length > 0 ? "Tap to view all" : loading ? "Loading..." : "No awards"} />
           </div>
         </div>
 
-        {/* Matches Played Modal */}
         {teamNumber && (
           <MatchesPlayedModal
             open={matchesModalOpen}
@@ -127,7 +131,6 @@ export default function Dashboard() {
           />
         )}
 
-        {/* Wins Modal */}
         {teamNumber && (
           <WinsModal
             open={winsModalOpen}
@@ -136,7 +139,7 @@ export default function Dashboard() {
             seasonLabel={seasonLabel}
             wonMatches={wonMatches}
             totalMatchCount={totalMatchCount}
-            winRate={record?.winRate ?? 0}
+            winRate={matchRecord?.winRate ?? 0}
           />
         )}
 
@@ -146,7 +149,7 @@ export default function Dashboard() {
             <h2 className="text-lg font-display font-semibold text-muted-foreground">Your RoboRank</h2>
             {loading ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : <RoboRankScore score={roboRank ?? 0} size="lg" />}
             <p className="text-sm text-muted-foreground text-center">
-              {record ? `Based on ${record.total} qualifier matches` : loading ? "Loading…" : "No data"}
+              {qualRecord ? `Based on ${qualRecord.total} qualifier matches` : loading ? "Loading…" : "No data"}
             </p>
           </motion.div>
 

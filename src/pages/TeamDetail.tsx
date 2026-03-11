@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { useQuery } from "@tanstack/react-query";
-import { getTeamByNumber, getTeamRankings, getTeamMatches, getTeamAwards, calculateRecordFromRankings, calculateRoboRank, getTeamSkillsScore, SEASONS } from "@/lib/robotevents";
+import { getTeamByNumber, getTeamRankings, getTeamMatches, getTeamAwards, calculateRecordFromRankings, calculateRecordFromMatches, calculateRoboRank, getTeamSkillsScore, SEASONS } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import { Trophy, Target, Award, MapPin, Building, ArrowLeft, Loader2, TrendingUp, Medal, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,23 +39,14 @@ function AwardGroup({ group }: { group: GroupedAward }) {
 
   return (
     <div className="rounded-lg border border-border/30 overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-3 p-4 hover:bg-accent/30 transition-colors text-left"
-      >
+      <button type="button" onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 p-4 hover:bg-accent/30 transition-colors text-left">
         <Medal className="h-4 w-4 text-primary shrink-0" />
         <div className="flex-1 min-w-0">
           <span className="text-sm font-medium">{group.title}</span>
         </div>
-        <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-          ×{group.events.length}
-        </span>
-        {open ? (
-          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        ) : (
-          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-        )}
+        <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">×{group.events.length}</span>
+        {open ? <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" /> : <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
       </button>
       {open && (
         <div className="border-t border-border/20 bg-muted/30">
@@ -112,7 +103,12 @@ export default function TeamDetail() {
     enabled: !!teamId,
   });
 
-  const record = rankings ? calculateRecordFromRankings(rankings) : null;
+  const qualRecord = rankings ? calculateRecordFromRankings(rankings) : null;
+  const matchRecord = useMemo(() => {
+    if (!matches || !teamNumber) return null;
+    return calculateRecordFromMatches(matches, teamNumber);
+  }, [matches, teamNumber]);
+
   const roboRank = rankings ? calculateRoboRank(rankings, skillsScore ?? 0) : null;
   const loading = teamLoading || rankingsLoading;
   const groupedAwards = awards ? groupAwards(awards) : [];
@@ -187,24 +183,23 @@ export default function TeamDetail() {
 
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
           <button type="button" onClick={() => setWinsModalOpen(true)} className="text-left">
-            <StatCard title="Win Rate" value={record ? `${record.winRate}%` : "—"} icon={Trophy}
-              subtitle={record ? `${record.wins}W-${record.losses}L-${record.ties}T · Tap to view wins` : "No data"} className="cursor-pointer" />
+            <StatCard title="Win Rate" value={matchRecord ? `${matchRecord.winRate}%` : "—"} icon={Trophy}
+              subtitle={matchRecord ? `${matchRecord.wins}W-${matchRecord.losses}L-${matchRecord.ties}T (all matches)` : "No data"} className="cursor-pointer" />
           </button>
           <button type="button" onClick={() => setMatchesModalOpen(true)} className="text-left">
             <StatCard title="Matches Played" value={String(totalMatchCount)} icon={Target}
               subtitle={`Quals + Elims · Tap to view all`} className="cursor-pointer" />
           </button>
-          <StatCard title="High Score" value={record ? String(record.highScore) : "—"} icon={Award}
-            subtitle={record ? `Avg ${record.avgPointsPerEvent} pts/match` : ""} />
-          <StatCard title="Total WP" value={record ? String(record.totalWP) : "—"} icon={TrendingUp}
-            subtitle={record ? `AP: ${record.totalAP} · SP: ${record.totalSP}` : ""} />
+          <StatCard title="High Score" value={matchRecord ? String(matchRecord.highScore) : "—"} icon={Award}
+            subtitle={matchRecord ? `Avg ${matchRecord.avgPoints} pts/match` : ""} />
+          <StatCard title="Total WP" value={qualRecord ? String(qualRecord.totalWP) : "—"} icon={TrendingUp}
+            subtitle={qualRecord ? `AP: ${qualRecord.totalAP} · SP: ${qualRecord.totalSP}` : ""} />
           <button type="button" onClick={() => setAwardsModalOpen(true)} className="text-left">
             <StatCard title="Awards" value={awards ? String(awards.length) : "—"} icon={Medal}
               subtitle={awards && awards.length > 0 ? "Tap to view" : "No awards yet"} className="cursor-pointer" />
           </button>
         </div>
 
-        {/* Matches Played Modal */}
         <MatchesPlayedModal
           open={matchesModalOpen}
           onOpenChange={setMatchesModalOpen}
@@ -214,7 +209,6 @@ export default function TeamDetail() {
           totalMatchCount={totalMatchCount}
         />
 
-        {/* Wins Modal */}
         <WinsModal
           open={winsModalOpen}
           onOpenChange={setWinsModalOpen}
@@ -222,34 +216,25 @@ export default function TeamDetail() {
           seasonLabel={seasonLabel}
           wonMatches={wonMatches}
           totalMatchCount={totalMatchCount}
-          winRate={record?.winRate ?? 0}
+          winRate={matchRecord?.winRate ?? 0}
         />
 
-        {/* Awards Dialog */}
         <Dialog open={awardsModalOpen} onOpenChange={setAwardsModalOpen}>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>{teamData.number} Awards</DialogTitle>
-              <DialogDescription>
-                {seasonLabel} · {awards?.length || 0} total awards
-              </DialogDescription>
+              <DialogDescription>{seasonLabel} · {awards?.length || 0} total awards</DialogDescription>
             </DialogHeader>
-
             <div className="overflow-y-auto pr-1 space-y-2">
               {groupedAwards.length > 0 ? (
-                groupedAwards.map((group) => (
-                  <AwardGroup key={group.title} group={group} />
-                ))
+                groupedAwards.map((group) => <AwardGroup key={group.title} group={group} />)
               ) : (
-                <div className="rounded-lg border border-border/30 p-6 text-sm text-muted-foreground text-center">
-                  No awards found for this season.
-                </div>
+                <div className="rounded-lg border border-border/30 p-6 text-sm text-muted-foreground text-center">No awards found for this season.</div>
               )}
             </div>
           </DialogContent>
         </Dialog>
 
-        {/* Event Results Table - clickable event names */}
         {rankings && rankings.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <h2 className="text-xl font-display font-semibold mb-4">Event Results · {seasonInfo.name}</h2>
