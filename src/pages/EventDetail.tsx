@@ -42,6 +42,15 @@ export default function EventDetail() {
   const [h2hOpen, setH2hOpen] = useState(false);
   const [selectedDivisionIdx, setSelectedDivisionIdx] = useState(0);
 
+  // Reset division when navigating to a new event
+  const prevEventId = React.useRef(eventId);
+  React.useEffect(() => {
+    if (eventId !== prevEventId.current) {
+      setSelectedDivisionIdx(0);
+      prevEventId.current = eventId;
+    }
+  }, [eventId]);
+
   const { data: eventData, isLoading: eventLoading } = useQuery({
     queryKey: ["event", eventId],
     queryFn: () => fetchRobotEvents(`/events/${eventId}`),
