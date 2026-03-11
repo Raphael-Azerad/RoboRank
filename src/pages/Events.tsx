@@ -176,7 +176,49 @@ export default function Events() {
     });
   }
 
+  // Distance calculation for nearby sorting
+  const getDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 3959; // miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }, []);
+
+  const requestLocation = useCallback(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setSortByNearby(true);
+        },
+        () => setSortByNearby(false)
+      );
+    }
+  }, []);
+
+  const toggleCompare = useCallback((eventId: number) => {
+    setCompareIds((prev) =>
+      prev.includes(eventId)
+        ? prev.filter((id) => id !== eventId)
+        : prev.length < 4
+          ? [...prev, eventId]
+          : prev
+    );
+  }, []);
+
   events = [...events].sort((a: any, b: any) => {
+    // Nearby sorting
+    if (sortByNearby && userLocation) {
+      const aCoords = a.location?.coordinates;
+      const bCoords = b.location?.coordinates;
+      if (aCoords?.lat && bCoords?.lat) {
+        const aDist = getDistance(userLocation.lat, userLocation.lng, aCoords.lat, aCoords.lon);
+        const bDist = getDistance(userLocation.lat, userLocation.lng, bCoords.lat, bCoords.lon);
+        return aDist - bDist;
+      }
+    }
+    // Default: upcoming first, then by date
     const aDate = new Date(a.start);
     const bDate = new Date(b.start);
     const aUp = aDate > now;
@@ -186,6 +228,10 @@ export default function Events() {
     if (aUp && bUp) return aDate.getTime() - bDate.getTime();
     return bDate.getTime() - aDate.getTime();
   });
+
+  const compareEvents = useMemo(() => {
+    return events.filter((e: any) => compareIds.includes(e.id));
+  }, [events, compareIds]);
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, any[]>();
