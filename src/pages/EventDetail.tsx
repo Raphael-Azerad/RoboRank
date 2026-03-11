@@ -826,18 +826,33 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
                 </div>
                 <div className="divide-y divide-border/20">
                   {data.sharedMatches.slice(0, 15).map((m: any) => (
-                    <div key={m.id} className="flex items-center justify-between px-3 py-2.5 text-xs hover:bg-accent/20 transition-colors">
-                      <span className="text-muted-foreground font-mono">{m.name || `Match ${m.matchnum}`}</span>
-                      <div className="flex items-center gap-2">
-                        <span className={cn(
-                          "stat-number text-sm px-2 py-0.5 rounded",
-                          m.t1Score > m.t2Score ? "text-[hsl(var(--success))] bg-[hsl(var(--success))]/10 font-bold" : "text-muted-foreground"
-                        )}>{m.t1Score}</span>
-                        <span className="text-muted-foreground">–</span>
-                        <span className={cn(
-                          "stat-number text-sm px-2 py-0.5 rounded",
-                          m.t2Score > m.t1Score ? "text-[hsl(var(--success))] bg-[hsl(var(--success))]/10 font-bold" : "text-muted-foreground"
-                        )}>{m.t2Score}</span>
+                    <div key={m.id} className="px-3 py-2.5 text-xs hover:bg-accent/20 transition-colors">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="font-medium text-foreground truncate">{m.eventName}</div>
+                          <div className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
+                            <span className="font-mono">{m.matchLabel}</span>
+                            <span>•</span>
+                            <span>{m.matchDate}</span>
+                            {m.eventSku && (
+                              <>
+                                <span>•</span>
+                                <span className="font-mono">{m.eventSku}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={cn(
+                            "stat-number text-sm px-2 py-0.5 rounded",
+                            m.t1Score > m.t2Score ? "text-[hsl(var(--success))] bg-[hsl(var(--success))]/10 font-bold" : "text-muted-foreground"
+                          )}>{m.t1Score}</span>
+                          <span className="text-muted-foreground">–</span>
+                          <span className={cn(
+                            "stat-number text-sm px-2 py-0.5 rounded",
+                            m.t2Score > m.t1Score ? "text-[hsl(var(--success))] bg-[hsl(var(--success))]/10 font-bold" : "text-muted-foreground"
+                          )}>{m.t2Score}</span>
+                        </div>
                       </div>
                     </div>
                   ))}
