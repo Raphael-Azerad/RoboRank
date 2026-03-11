@@ -6,15 +6,16 @@ import { useQuery } from "@tanstack/react-query";
 import {
   fetchRobotEvents, getEventTeams, getEventRankings, getEventMatches,
   getEventSkills, getTeamRankings, calculateRecordFromRankings,
-  calculateRoboRank, getTeamSkillsScore, fetchAllPages,
+  calculateRoboRank, getTeamSkillsScore, fetchAllPages, getTeamMatches,
 } from "@/lib/robotevents";
-import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { EliminationBracket } from "@/components/events/EliminationBracket";
 
-type DetailTab = "teams" | "quals" | "elims" | "skills" | "awards";
+type DetailTab = "teams" | "quals" | "elims" | "skills" | "awards" | "predictions";
 
 // Match round types: 1=Practice, 2=Qualification, 3=R128..6=Finals
 function roundLabel(round: number): string {
