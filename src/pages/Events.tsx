@@ -654,6 +654,50 @@ export default function Events() {
             </>
           )
         )}
+        {/* Compare Panel */}
+        {showCompare && compareEvents.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-border bg-card shadow-xl p-4 max-w-3xl w-[95vw]"
+          >
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-display font-semibold">Comparing {compareEvents.length} Events</h3>
+              <Button variant="ghost" size="sm" onClick={() => { setCompareIds([]); setShowCompare(false); }}>
+                <X className="h-3.5 w-3.5 mr-1" /> Clear
+              </Button>
+            </div>
+            <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(compareEvents.length, 4)}, 1fr)` }}>
+              {compareEvents.map((event: any) => {
+                const loc = event.location;
+                return (
+                  <div key={event.id} className="rounded-lg border border-border/50 p-3 text-xs space-y-1.5">
+                    <div className="font-display font-semibold text-sm line-clamp-2">{event.name}</div>
+                    <div className="text-muted-foreground flex items-center gap-1">
+                      <CalendarIcon className="h-3 w-3" />
+                      {formatDateRange(event.start, event.end)}
+                    </div>
+                    {loc?.city && (
+                      <div className="text-muted-foreground flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        {loc.city}, {loc.region}
+                      </div>
+                    )}
+                    {(event.teams_count || event.stats?.teams) && (
+                      <div className="text-muted-foreground flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {event.teams_count || event.stats?.teams} teams
+                      </div>
+                    )}
+                    <Button variant="outline" size="sm" className="w-full mt-2 text-xs" onClick={() => navigate(`/event/${event.id}`)}>
+                      View Details
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
       </div>
     </AppLayout>
   );
