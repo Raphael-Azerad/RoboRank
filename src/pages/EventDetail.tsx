@@ -276,6 +276,24 @@ export default function EventDetail() {
           ))}
         </div>
 
+        {/* Division Selector */}
+        {hasDivisions && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Division:</span>
+            {divisions.map((div: any, idx: number) => (
+              <Button
+                key={div.id}
+                variant={selectedDivisionIdx === idx ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedDivisionIdx(idx)}
+                className="text-xs h-7"
+              >
+                {div.name || `Division ${idx + 1}`}
+              </Button>
+            ))}
+          </div>
+        )}
+
         {/* Teams Tab */}
         {tab === "teams" && (
           <>
