@@ -590,9 +590,12 @@ export default function EventDetail() {
                     onChange={(e) => setH2hTeams([h2hTeams?.[0] || "", e.target.value])}
                   >
                     <option value="">Select Team 2</option>
-                    {teams.map((t: any) => (
-                      <option key={t.id} value={t.number}>{t.number} — {t.team_name}</option>
-                    ))}
+                    {teams.map((t: any) => {
+                      const teamNumber = t.number || t.name || "";
+                      return (
+                        <option key={t.id} value={teamNumber}>{teamNumber} — {t.team_name || t.teamName || ""}</option>
+                      );
+                    })}
                   </select>
                   <Button
                     size="sm"
