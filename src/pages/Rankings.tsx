@@ -9,12 +9,13 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getWorldSkillsRankings,
   getTeamRankings,
+  getTeamSkills,
   calculateRecordFromRankings,
-  calculateRoboRank,
   SEASONS,
   type SeasonKey,
 } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
+import type { GradeLevel } from "@/contexts/SeasonContext";
 import { motion } from "framer-motion";
 
 interface SkillsTeam {
@@ -26,6 +27,7 @@ interface SkillsTeam {
   progScore: number;
   combined: number;
   region: string;
+  gradeLevel: string;
 }
 
 interface RankedTeam {
@@ -39,13 +41,14 @@ interface RankedTeam {
   total: number;
   winRate: string;
   eventsAttended: number;
+  skillsCombined: number;
 }
 
 type Tab = "skills" | "roborank";
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function normalizeSkillsEntry(entry: any): SkillsTeam | null {
+function normalizeSkillsEntry(entry: any, grade: string): SkillsTeam | null {
   const id = entry?.team?.id;
   const number = entry?.team?.team || entry?.team?.number;
   if (!id || !number) return null;
@@ -59,40 +62,119 @@ function normalizeSkillsEntry(entry: any): SkillsTeam | null {
     progScore: Number(entry?.scores?.programming || 0),
     combined: Number(entry?.scores?.score || 0),
     region: entry?.team?.eventRegion || "",
+    gradeLevel: grade,
   };
 }
 
-async function getUnifiedGlobalSkillsPool(season: SeasonKey): Promise<SkillsTeam[]> {
-  const [highSchoolRaw, middleSchoolRaw] = await Promise.all([
-    getWorldSkillsRankings(season, "High School"),
-    getWorldSkillsRankings(season, "Middle School"),
-  ]);
+async function getGlobalSkillsPool(season: SeasonKey, gradeLevel: GradeLevel): Promise<SkillsTeam[]> {
+  const fetchGrades: string[] =
+    gradeLevel === "Both"
+      ? ["High School", "Middle School"]
+      : [gradeLevel];
 
-  const allRaw = [
-    ...(Array.isArray(highSchoolRaw) ? highSchoolRaw : []),
-    ...(Array.isArray(middleSchoolRaw) ? middleSchoolRaw : []),
-  ];
+  const results = await Promise.all(
+    fetchGrades.map((g) => getWorldSkillsRankings(season, g).then((raw) => ({ raw, grade: g })))
+  );
 
   const teamMap = new Map<number, SkillsTeam>();
 
-  allRaw.forEach((entry: any) => {
-    const normalized = normalizeSkillsEntry(entry);
-    if (!normalized) return;
-
-    const existing = teamMap.get(normalized.id);
-    if (!existing || normalized.combined > existing.combined) {
-      teamMap.set(normalized.id, normalized);
-    }
+  results.forEach(({ raw, grade }) => {
+    const arr = Array.isArray(raw) ? raw : [];
+    arr.forEach((entry: any) => {
+      const normalized = normalizeSkillsEntry(entry, grade);
+      if (!normalized) return;
+      const existing = teamMap.get(normalized.id);
+      if (!existing || normalized.combined > existing.combined) {
+        teamMap.set(normalized.id, normalized);
+      }
+    });
   });
 
   return Array.from(teamMap.values())
-    .sort((a, b) => b.combined - a.combined || b.driverScore - a.driverScore || b.progScore - a.progScore)
+    .sort((a, b) => b.combined - a.combined || b.driverScore - a.driverScore)
     .map((team, index) => ({ ...team, rank: index + 1 }));
+}
+
+/**
+ * Improved RoboRank v2 algorithm
+ * Combines competition record with skills performance for a holistic score.
+ *
+ * Components (total = 100):
+ * - Win Rate (25%): raw win percentage
+ * - Ranking Percentile (20%): average placement across events
+ * - Skills Combined (20%): global skills score normalized
+ * - Consistency (15%): low variance in event placements
+ * - Event Volume (10%): number of events attended
+ * - High Score (10%): best single match score
+ */
+function calculateRoboRankV2(
+  rankings: any[],
+  skillsCombined: number
+): number {
+  if (!rankings || rankings.length === 0) return 0;
+
+  let wins = 0, losses = 0, ties = 0;
+  let totalWP = 0, highScore = 0, totalAvgPoints = 0;
+  const percentiles: number[] = [];
+
+  rankings.forEach((r: any) => {
+    wins += r.wins || 0;
+    losses += r.losses || 0;
+    ties += r.ties || 0;
+    totalWP += r.wp || 0;
+    if (r.high_score > highScore) highScore = r.high_score;
+    totalAvgPoints += r.average_points || 0;
+
+    if (r.rank && r.rank > 0) {
+      const fieldSize = Math.max(r.rank, 24);
+      percentiles.push(Math.max(0, (1 - (r.rank - 1) / fieldSize) * 100));
+    }
+  });
+
+  const total = wins + losses + ties;
+  if (total < 3) return 0;
+
+  const winRate = total > 0 ? (wins / total) * 100 : 0;
+
+  // 1. Win Rate (25%)
+  const winComponent = winRate * 0.25;
+
+  // 2. Ranking Percentile (20%)
+  const avgPercentile = percentiles.length > 0
+    ? percentiles.reduce((a, b) => a + b, 0) / percentiles.length
+    : 50;
+  const rankComponent = avgPercentile * 0.20;
+
+  // 3. Skills Combined (20%) - normalized to ~450 max realistic score
+  const skillsComponent = Math.min(skillsCombined / 450, 1) * 100 * 0.20;
+
+  // 4. Consistency (15%) - low std dev in percentiles = high consistency
+  let consistencyScore = 75; // default if only 1 event
+  if (percentiles.length >= 2) {
+    const mean = avgPercentile;
+    const variance = percentiles.reduce((sum, p) => sum + (p - mean) ** 2, 0) / percentiles.length;
+    const stdDev = Math.sqrt(variance);
+    // Lower std dev = better. 0 stddev = 100, 40+ stddev = 0
+    consistencyScore = Math.max(0, 100 - stdDev * 2.5);
+  }
+  const consistencyComponent = consistencyScore * 0.15;
+
+  // 5. Event Volume (10%) - caps at 8 events
+  const eventsAttended = rankings.length;
+  const volumeComponent = Math.min(eventsAttended / 8, 1) * 100 * 0.10;
+
+  // 6. High Score (10%) - normalized to ~120 max realistic
+  const highScoreComponent = Math.min(highScore / 120, 1) * 100 * 0.10;
+
+  return Math.round(Math.min(100,
+    winComponent + rankComponent + skillsComponent +
+    consistencyComponent + volumeComponent + highScoreComponent
+  ));
 }
 
 export default function Rankings() {
   const navigate = useNavigate();
-  const { season } = useSeason();
+  const { season, gradeLevel } = useSeason();
   const [tab, setTab] = useState<Tab>("roborank");
   const [searchQuery, setSearchQuery] = useState("");
   const [displayCount, setDisplayCount] = useState(50);
@@ -100,32 +182,33 @@ export default function Rankings() {
   const seasonInfo = SEASONS[season];
 
   const { data: skillsLeaderboard, isLoading: skillsLoading } = useQuery({
-    queryKey: ["globalSkillsLeaderboard", season],
-    queryFn: () => getUnifiedGlobalSkillsPool(season),
+    queryKey: ["globalSkillsLeaderboard", season, gradeLevel],
+    queryFn: () => getGlobalSkillsPool(season, gradeLevel),
     enabled: tab === "skills",
     staleTime: 15 * 60 * 1000,
   });
 
   const { data: roboRankLeaderboard, isLoading: roboRankLoading } = useQuery({
-    queryKey: ["globalRoboRank", season],
+    queryKey: ["globalRoboRank", season, gradeLevel],
     queryFn: async () => {
-      const skillsPool = await getUnifiedGlobalSkillsPool(season);
+      const skillsPool = await getGlobalSkillsPool(season, gradeLevel);
       if (skillsPool.length === 0) return [];
 
-      const candidates = skillsPool.slice(0, 120);
+      // Take top 150 skills teams as candidates for broader coverage
+      const candidates = skillsPool.slice(0, 150);
       const results: RankedTeam[] = [];
 
-      for (let i = 0; i < candidates.length; i += 8) {
-        const batch = candidates.slice(i, i + 8);
+      for (let i = 0; i < candidates.length; i += 10) {
+        const batch = candidates.slice(i, i + 10);
 
         await Promise.all(
           batch.map(async (team) => {
             try {
               const rankings = await getTeamRankings(team.id, season);
               const record = calculateRecordFromRankings(rankings);
-              const score = calculateRoboRank(rankings);
+              const score = calculateRoboRankV2(rankings, team.combined);
 
-              if (score > 0 && record.total >= 6) {
+              if (score > 0 && record.total >= 5) {
                 results.push({
                   number: team.number,
                   name: team.name,
@@ -137,6 +220,7 @@ export default function Rankings() {
                   total: record.total,
                   winRate: `${record.winRate}%`,
                   eventsAttended: record.eventsAttended,
+                  skillsCombined: team.combined,
                 });
               }
             } catch {
@@ -145,12 +229,12 @@ export default function Rankings() {
           }),
         );
 
-        if (i + 8 < candidates.length) {
-          await sleep(120);
+        if (i + 10 < candidates.length) {
+          await sleep(100);
         }
       }
 
-      return results.sort((a, b) => b.score - a.score || b.wins - a.wins);
+      return results.sort((a, b) => b.score - a.score || b.skillsCombined - a.skillsCombined);
     },
     enabled: tab === "roborank",
     staleTime: 15 * 60 * 1000,
@@ -176,13 +260,16 @@ export default function Rankings() {
     return t.number.toUpperCase().includes(q) || t.name.toUpperCase().includes(q);
   });
 
+  const gradeBadge = gradeLevel === "Both" ? "All" : gradeLevel === "High School" ? "HS" : "MS";
+
   return (
     <AppLayout>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-display font-bold">Rankings</h1>
           <p className="text-muted-foreground mt-1">
-            {seasonInfo.name} {seasonInfo.year} · Global Leaderboard
+            {seasonInfo.name} {seasonInfo.year} · Global Leaderboard ·{" "}
+            <span className="text-primary font-medium">{gradeBadge}</span>
           </p>
         </div>
 
@@ -277,7 +364,7 @@ export default function Rankings() {
                 <div className="col-span-2 text-center">RoboRank</div>
                 <div className="col-span-2 text-center hidden sm:block">Record</div>
                 <div className="col-span-2 text-center">Win Rate</div>
-                <div className="col-span-2 text-center hidden sm:block">Events</div>
+                <div className="col-span-2 text-center hidden sm:block">Skills</div>
               </div>
               {filteredRoboRank.map((team, i) => (
                 <motion.div
@@ -306,7 +393,7 @@ export default function Rankings() {
                     )}
                   </div>
                   <div className="col-span-2 text-center stat-number text-sm">{team.winRate}</div>
-                  <div className="col-span-2 text-center text-sm text-muted-foreground hidden sm:block">{team.eventsAttended}</div>
+                  <div className="col-span-2 text-center stat-number text-sm text-muted-foreground hidden sm:block">{team.skillsCombined}</div>
                 </motion.div>
               ))}
             </div>
