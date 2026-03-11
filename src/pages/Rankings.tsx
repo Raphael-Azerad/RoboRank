@@ -379,12 +379,7 @@ export default function Rankings() {
           )
         )}
 
-        {tab === "roborank" && filteredRoboRank && filteredRoboRank.length > 0 ? (
-          filteredRoboRank.length === 0 ? (
-            <div className="text-sm text-muted-foreground rounded-lg border border-border/50 card-gradient p-8 text-center">
-              No teams found for {seasonInfo.name}.
-            </div>
-          ) : (
+        {tab === "roborank" && filteredRoboRank && filteredRoboRank.length > 0 && (
             <div className="rounded-xl border border-border/50 overflow-hidden">
               <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 <div className="col-span-1">#</div>
@@ -425,7 +420,12 @@ export default function Rankings() {
                 </motion.div>
               ))}
             </div>
-          )
+        )}
+        
+        {tab === "roborank" && !loading && filteredRoboRank && filteredRoboRank.length === 0 && (
+          <div className="text-sm text-muted-foreground rounded-lg border border-border/50 card-gradient p-8 text-center">
+            No teams found for {seasonInfo.name}.
+          </div>
         )}
       </div>
     </AppLayout>
