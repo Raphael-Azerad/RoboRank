@@ -172,6 +172,13 @@ export default function Events() {
   const upcomingCount = events.filter((e: any) => new Date(e.start) > now).length;
   const completedCount = events.filter((e: any) => new Date(e.end || e.start) < now).length;
 
+  // Pagination
+  const totalPages = Math.ceil(events.length / PAGE_SIZE);
+  const paginatedEvents = events.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Reset page when filters change
+  useEffect(() => { setPage(1); }, [tab, search, stateFilter, statusFilter, levelFilter]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setSearch(searchQuery);
