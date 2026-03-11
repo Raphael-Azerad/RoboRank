@@ -109,6 +109,12 @@ export async function searchEvents(params: Record<string, string>) {
   return fetchRobotEvents("/events", { "program[]": "1", "season[]": SEASONS.current.id, ...params });
 }
 
+export async function getWorldSkillsRankings(season: SeasonKey = "current", gradeLevel: string = "High School") {
+  const seasonId = SEASONS[season].id;
+  const result = await fetchRobotEvents(`/seasons/${seasonId}/skills`, { grade_level: gradeLevel });
+  return result || [];
+}
+
 export function calculateRecordFromRankings(rankings: any[]) {
   let wins = 0, losses = 0, ties = 0;
   let totalWP = 0, totalAP = 0, totalSP = 0;

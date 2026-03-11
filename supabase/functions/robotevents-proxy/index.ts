@@ -28,6 +28,29 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Special endpoint: global skills rankings (non-v2 API)
+    const skillsMatch = endpoint.match(/^\/seasons\/(\d+)\/skills$/);
+    if (skillsMatch) {
+      const seasonId = skillsMatch[1];
+      const queryParams = new URLSearchParams(params || {});
+      if (!queryParams.has('grade_level')) {
+        queryParams.set('grade_level', 'High School');
+      }
+      const url = `https://www.robotevents.com/api/seasons/${seasonId}/skills?${queryParams.toString()}`;
+
+      const response = await fetch(url, {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      return new Response(JSON.stringify(data), {
+        status: response.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Whitelist allowed endpoint patterns
     const allowedPatterns = [
       /^\/events(\/\d+)?(\/teams|\/divisions\/\d+\/(matches|rankings)|\/skills|\/awards)?$/,

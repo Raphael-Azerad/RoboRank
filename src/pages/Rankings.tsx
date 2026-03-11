@@ -2,14 +2,24 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
-import { Search, Loader2, MapPin, Globe, Zap } from "lucide-react";
+import { Search, Loader2, Zap, Globe } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useQuery } from "@tanstack/react-query";
-import { fetchRobotEvents, getTeamRankings, getEventSkills, calculateRecordFromRankings, calculateRoboRank, SEASONS, US_STATES, type SeasonKey } from "@/lib/robotevents";
+import { getWorldSkillsRankings, getTeamRankings, calculateRecordFromRankings, calculateRoboRank, SEASONS, type SeasonKey } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import { motion } from "framer-motion";
+
+interface SkillsTeam {
+  rank: number;
+  number: string;
+  name: string;
+  id: number;
+  driverScore: number;
+  progScore: number;
+  combined: number;
+  region: string;
+}
 
 interface RankedTeam {
   number: string;
@@ -24,15 +34,6 @@ interface RankedTeam {
   eventsAttended: number;
 }
 
-interface SkillsTeam {
-  number: string;
-  name: string;
-  id: number;
-  driverScore: number;
-  progScore: number;
-  combined: number;
-}
-
 type Tab = "skills" | "roborank";
 
 export default function Rankings() {
@@ -40,100 +41,55 @@ export default function Rankings() {
   const { season } = useSeason();
   const [tab, setTab] = useState<Tab>("skills");
   const [searchQuery, setSearchQuery] = useState("");
-  const [stateFilter, setStateFilter] = useState("all");
+  const [displayCount, setDisplayCount] = useState(50);
 
   const seasonInfo = SEASONS[season];
 
-  // Discover events for the season (optionally filtered by state)
-  const { data: events, isLoading: eventsLoading } = useQuery({
-    queryKey: ["rankingsEvents", season, stateFilter],
-    queryFn: async () => {
-      const params: Record<string, string> = {
-        "program[]": "1",
-        "season[]": SEASONS[season].id,
-        per_page: "20",
-      };
-      if (stateFilter !== "all") params.region = stateFilter;
-      const result = await fetchRobotEvents("/events", params);
-      return result?.data || [];
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
-  // Skills leaderboard
+  // Global Skills Leaderboard from the official endpoint
   const { data: skillsLeaderboard, isLoading: skillsLoading } = useQuery({
-    queryKey: ["skillsLeaderboard", season, stateFilter, events?.map((e: any) => e.id)],
+    queryKey: ["globalSkillsLeaderboard", season],
     queryFn: async () => {
-      if (!events || events.length === 0) return [];
-      const teamSkills = new Map<number, { number: string; name: string; id: number; driver: number; prog: number }>();
-
-      const eventsToFetch = events.slice(0, 10);
-      await Promise.all(eventsToFetch.map(async (evt: any) => {
-        try {
-          const skills = await getEventSkills(evt.id);
-          skills.forEach((s: any) => {
-            const teamId = s.team?.id;
-            if (!teamId) return;
-            const existing = teamSkills.get(teamId) || {
-              number: s.team.name || "",
-              name: s.team.team_name || "",
-              id: teamId,
-              driver: 0,
-              prog: 0,
-            };
-            if (s.type === "driver" && s.score > existing.driver) existing.driver = s.score;
-            if (s.type === "programming" && s.score > existing.prog) existing.prog = s.score;
-            teamSkills.set(teamId, existing);
-          });
-        } catch {}
-      }));
-
-      const results: SkillsTeam[] = Array.from(teamSkills.values()).map((t) => ({
-        ...t,
-        driverScore: t.driver,
-        progScore: t.prog,
-        combined: t.driver + t.prog,
-      }));
-
-      return results.sort((a, b) => b.combined - a.combined).slice(0, 100);
+      const data = await getWorldSkillsRankings(season, "High School");
+      if (!Array.isArray(data)) return [];
+      return data.map((entry: any) => ({
+        rank: entry.rank,
+        number: entry.team?.team || entry.team?.number || "",
+        name: entry.team?.teamName || entry.team?.team_name || "",
+        id: entry.team?.id || 0,
+        driverScore: entry.scores?.driver || 0,
+        progScore: entry.scores?.programming || 0,
+        combined: entry.scores?.score || 0,
+        region: entry.team?.eventRegion || "",
+      })) as SkillsTeam[];
     },
-    enabled: tab === "skills" && !!events && events.length > 0,
-    staleTime: 5 * 60 * 1000,
+    enabled: tab === "skills",
+    staleTime: 10 * 60 * 1000,
   });
 
-  // RoboRank leaderboard
+  // RoboRank leaderboard - uses top skills teams then fetches their rankings
   const { data: roboRankLeaderboard, isLoading: roboRankLoading } = useQuery({
-    queryKey: ["roboRankLeaderboard", season, stateFilter, events?.map((e: any) => e.id)],
+    queryKey: ["globalRoboRank", season],
     queryFn: async () => {
-      if (!events || events.length === 0) return [];
+      // First get top skills teams to have a good pool of strong teams
+      const skillsData = await getWorldSkillsRankings(season, "High School");
+      if (!Array.isArray(skillsData) || skillsData.length === 0) return [];
 
-      // Discover teams from events
-      const teamMap = new Map<number, any>();
-      const eventsToFetch = events.slice(0, 10);
-      await Promise.all(eventsToFetch.map(async (evt: any) => {
-        try {
-          const result = await fetchRobotEvents(`/events/${evt.id}/teams`, { per_page: "250" });
-          (result?.data || []).forEach((t: any) => {
-            if (!teamMap.has(t.id)) teamMap.set(t.id, t);
-          });
-        } catch {}
-      }));
-
-      // Take up to 80 teams and fetch their rankings
-      const teams = Array.from(teamMap.values()).slice(0, 80);
+      // Take top 100 skills teams and compute their RoboRank
+      const topTeams = skillsData.slice(0, 100);
       const results: RankedTeam[] = [];
 
-      await Promise.all(teams.map(async (team: any) => {
+      await Promise.all(topTeams.map(async (entry: any) => {
         try {
-          const rankings = await getTeamRankings(team.id, season);
+          const teamId = entry.team?.id;
+          if (!teamId) return;
+          const rankings = await getTeamRankings(teamId, season);
           const record = calculateRecordFromRankings(rankings);
           const score = calculateRoboRank(rankings);
-          // Only include teams with meaningful data
-          if (score > 20 && record.total >= 6) {
+          if (score > 0 && record.total >= 3) {
             results.push({
-              number: team.number,
-              name: team.team_name || "",
-              id: team.id,
+              number: entry.team?.team || entry.team?.number || "",
+              name: entry.team?.teamName || entry.team?.team_name || "",
+              id: teamId,
               score,
               wins: record.wins,
               losses: record.losses,
@@ -146,20 +102,31 @@ export default function Rankings() {
         } catch {}
       }));
 
-      return results.sort((a, b) => b.score - a.score).slice(0, 100);
+      return results.sort((a, b) => b.score - a.score);
     },
-    enabled: tab === "roborank" && !!events && events.length > 0,
-    staleTime: 5 * 60 * 1000,
+    enabled: tab === "roborank",
+    staleTime: 10 * 60 * 1000,
   });
 
-  // Search (navigate to team page)
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const q = searchQuery.trim().toUpperCase();
     if (q) navigate(`/team/${q}`);
   };
 
-  const loading = eventsLoading || (tab === "skills" ? skillsLoading : roboRankLoading);
+  const loading = tab === "skills" ? skillsLoading : roboRankLoading;
+
+  const filteredSkills = skillsLeaderboard?.filter((t) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.trim().toUpperCase();
+    return t.number.toUpperCase().includes(q) || t.name.toUpperCase().includes(q);
+  });
+
+  const filteredRoboRank = roboRankLeaderboard?.filter((t) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.trim().toUpperCase();
+    return t.number.toUpperCase().includes(q) || t.name.toUpperCase().includes(q);
+  });
 
   return (
     <AppLayout>
@@ -167,7 +134,7 @@ export default function Rankings() {
         <div>
           <h1 className="text-3xl font-display font-bold">Rankings</h1>
           <p className="text-muted-foreground mt-1">
-            {seasonInfo.name} {seasonInfo.year} · {stateFilter === "all" ? "Global" : stateFilter} Leaderboard
+            {seasonInfo.name} {seasonInfo.year} · Global Leaderboard
           </p>
         </div>
 
@@ -181,79 +148,73 @@ export default function Rankings() {
           </Button>
         </div>
 
-        {/* Filters row */}
-        <div className="flex flex-wrap gap-3 items-center">
-          <Select value={stateFilter} onValueChange={setStateFilter}>
-            <SelectTrigger className="w-[200px] bg-card">
-              <MapPin className="h-3.5 w-3.5 mr-1.5" />
-              <SelectValue placeholder="Global" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Global (All States)</SelectItem>
-              {US_STATES.map((state) => (
-                <SelectItem key={state} value={state}>{state}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <form onSubmit={handleSearch} className="flex-1 min-w-[200px]">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Look up team (e.g. 17505B) — press Enter" className="pl-10 bg-card uppercase"
-                value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-            </div>
-          </form>
-        </div>
+        {/* Search */}
+        <form onSubmit={handleSearch} className="max-w-md">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input placeholder="Filter by team number or name..." className="pl-10 bg-card uppercase"
+              value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+          </div>
+        </form>
 
         {loading && (
           <div className="flex flex-col items-center gap-2 py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">
-              {tab === "skills" ? "Loading skills standings..." : "Calculating RoboRank scores..."}
+              {tab === "skills" ? "Loading global skills rankings..." : "Calculating RoboRank scores for top teams..."}
             </p>
           </div>
         )}
 
         {/* Skills Leaderboard */}
-        {!loading && tab === "skills" && skillsLeaderboard && (
-          skillsLeaderboard.length === 0 ? (
+        {!loading && tab === "skills" && filteredSkills && (
+          filteredSkills.length === 0 ? (
             <div className="text-sm text-muted-foreground rounded-lg border border-border/50 card-gradient p-8 text-center">
-              No skills data found for {seasonInfo.name}{stateFilter !== "all" ? ` in ${stateFilter}` : ""}.
+              No skills data found for {seasonInfo.name}.
             </div>
           ) : (
-            <div className="rounded-xl border border-border/50 overflow-hidden">
-              <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                <div className="col-span-1">#</div>
-                <div className="col-span-4">Team</div>
-                <div className="col-span-2 text-center">Driver</div>
-                <div className="col-span-2 text-center">Prog</div>
-                <div className="col-span-3 text-center">Combined</div>
+            <>
+              <div className="rounded-xl border border-border/50 overflow-hidden">
+                <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  <div className="col-span-1">#</div>
+                  <div className="col-span-4">Team</div>
+                  <div className="col-span-2 text-center">Driver</div>
+                  <div className="col-span-2 text-center">Prog</div>
+                  <div className="col-span-3 text-center">Combined</div>
+                </div>
+                {filteredSkills.slice(0, displayCount).map((team, i) => (
+                  <motion.div key={`${team.id}-${team.rank}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(i * 0.01, 0.5) }}
+                    onClick={() => navigate(`/team/${team.number}`)}
+                    className="grid grid-cols-12 gap-2 px-6 py-4 items-center border-t border-border/30 hover:bg-accent/50 transition-colors cursor-pointer">
+                    <div className="col-span-1 stat-number text-muted-foreground">{team.rank}</div>
+                    <div className="col-span-4">
+                      <div className="font-display font-semibold">{team.number}</div>
+                      <div className="text-xs text-muted-foreground truncate">{team.name}</div>
+                    </div>
+                    <div className="col-span-2 text-center stat-number text-sm">{team.driverScore}</div>
+                    <div className="col-span-2 text-center stat-number text-sm">{team.progScore}</div>
+                    <div className="col-span-3 text-center">
+                      <span className="stat-number text-primary text-lg">{team.combined}</span>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
-              {skillsLeaderboard.map((team, i) => (
-                <motion.div key={team.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.015 }}
-                  onClick={() => navigate(`/team/${team.number}`)}
-                  className="grid grid-cols-12 gap-2 px-6 py-4 items-center border-t border-border/30 hover:bg-accent/50 transition-colors cursor-pointer">
-                  <div className="col-span-1 stat-number text-muted-foreground">{i + 1}</div>
-                  <div className="col-span-4">
-                    <div className="font-display font-semibold">{team.number}</div>
-                    <div className="text-xs text-muted-foreground truncate">{team.name}</div>
-                  </div>
-                  <div className="col-span-2 text-center stat-number text-sm">{team.driverScore}</div>
-                  <div className="col-span-2 text-center stat-number text-sm">{team.progScore}</div>
-                  <div className="col-span-3 text-center">
-                    <span className="stat-number text-primary text-lg">{team.combined}</span>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+              {filteredSkills.length > displayCount && (
+                <div className="flex justify-center">
+                  <Button variant="outline" onClick={() => setDisplayCount((c) => c + 50)}>
+                    Show More ({filteredSkills.length - displayCount} remaining)
+                  </Button>
+                </div>
+              )}
+            </>
           )
         )}
 
         {/* RoboRank Leaderboard */}
-        {!loading && tab === "roborank" && roboRankLeaderboard && (
-          roboRankLeaderboard.length === 0 ? (
+        {!loading && tab === "roborank" && filteredRoboRank && (
+          filteredRoboRank.length === 0 ? (
             <div className="text-sm text-muted-foreground rounded-lg border border-border/50 card-gradient p-8 text-center">
-              No teams found for {seasonInfo.name}{stateFilter !== "all" ? ` in ${stateFilter}` : ""}.
+              No teams found for {seasonInfo.name}.
             </div>
           ) : (
             <div className="rounded-xl border border-border/50 overflow-hidden">
@@ -265,8 +226,8 @@ export default function Rankings() {
                 <div className="col-span-2 text-center">Win Rate</div>
                 <div className="col-span-2 text-center hidden sm:block">Events</div>
               </div>
-              {roboRankLeaderboard.map((team, i) => (
-                <motion.div key={team.number} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.015 }}
+              {filteredRoboRank.map((team, i) => (
+                <motion.div key={team.number} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: Math.min(i * 0.015, 0.5) }}
                   onClick={() => navigate(`/team/${team.number}`)}
                   className="grid grid-cols-12 gap-2 px-6 py-4 items-center border-t border-border/30 hover:bg-accent/50 transition-colors cursor-pointer">
                   <div className="col-span-1 stat-number text-muted-foreground">{i + 1}</div>
