@@ -1,5 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
+const CURRENT_SEASON_V5RC = "190"; // High Stakes 2024-2025
+
 export async function fetchRobotEvents(endpoint: string, params?: Record<string, string>) {
   const { data, error } = await supabase.functions.invoke("robotevents-proxy", {
     body: { endpoint, params },
@@ -71,82 +73,109 @@ export async function getEventSkills(eventId: number) {
   return fetchRobotEvents(`/events/${eventId}/skills`);
 }
 
-/** Get a team's match history */
+/** Get a team's match history (current season) */
 export async function getTeamMatches(teamId: number) {
-  return fetchAllPages(`/teams/${teamId}/matches`);
+  return fetchAllPages(`/teams/${teamId}/matches`, { "season[]": CURRENT_SEASON_V5RC });
 }
 
-/** Get a team's rankings across events */
+/** Get a team's rankings across events (current season) - SOURCE OF TRUTH for W/L/T */
 export async function getTeamRankings(teamId: number) {
-  return fetchAllPages(`/teams/${teamId}/rankings`);
+  return fetchAllPages(`/teams/${teamId}/rankings`, { "season[]": CURRENT_SEASON_V5RC });
 }
 
-/** Calculate win/loss/tie from match data for a specific team number */
-export function calculateRecord(matches: any[], teamNumber: string) {
+/** Get a team's awards */
+export async function getTeamAwards(teamId: number) {
+  return fetchAllPages(`/teams/${teamId}/awards`, { "season[]": CURRENT_SEASON_V5RC });
+}
+
+/** Get a team's skills scores */
+export async function getTeamSkills(teamId: number) {
+  return fetchRobotEvents(`/teams/${teamId}/skills`, { "season[]": CURRENT_SEASON_V5RC });
+}
+
+/**
+ * Calculate record from RANKINGS data (official source of truth).
+ * Rankings endpoint provides per-event W/L/T directly.
+ */
+export function calculateRecordFromRankings(rankings: any[]) {
   let wins = 0, losses = 0, ties = 0;
-  let totalScore = 0;
-  let scoredMatches = 0;
+  let totalWP = 0, totalAP = 0, totalSP = 0;
+  let highScore = 0;
+  let totalAvgPoints = 0;
 
-  matches.forEach((m: any) => {
-    if (!m.alliances || m.alliances.length < 2) return;
-
-    // Find which alliance has our team
-    const myAlliance = m.alliances.find((a: any) =>
-      a.teams?.some((t: any) => t.team?.name === teamNumber)
-    );
-    if (!myAlliance) return;
-
-    const oppAlliance = m.alliances.find((a: any) => a.color !== myAlliance.color);
-    if (!oppAlliance) return;
-
-    const myScore = myAlliance.score ?? 0;
-    const oppScore = oppAlliance.score ?? 0;
-
-    // Skip matches where both scores are 0 (likely unscored)
-    if (myScore === 0 && oppScore === 0) return;
-
-    scoredMatches++;
-    totalScore += myScore;
-
-    if (myScore > oppScore) wins++;
-    else if (oppScore > myScore) losses++;
-    else ties++;
+  rankings.forEach((r: any) => {
+    wins += r.wins || 0;
+    losses += r.losses || 0;
+    ties += r.ties || 0;
+    totalWP += r.wp || 0;
+    totalAP += r.ap || 0;
+    totalSP += r.sp || 0;
+    if (r.high_score > highScore) highScore = r.high_score;
+    totalAvgPoints += r.average_points || 0;
   });
 
   const total = wins + losses + ties;
   const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
-  const avgScore = scoredMatches > 0 ? Math.round(totalScore / scoredMatches) : 0;
+  const avgPointsPerEvent = rankings.length > 0 ? Math.round(totalAvgPoints / rankings.length * 10) / 10 : 0;
 
-  return { wins, losses, ties, total, winRate, avgScore };
+  return {
+    wins, losses, ties, total, winRate,
+    totalWP, totalAP, totalSP, highScore,
+    avgPointsPerEvent, eventsAttended: rankings.length,
+  };
 }
 
-/** Calculate a RoboRank composite score (0-100) */
-export function calculateRoboRank(record: ReturnType<typeof calculateRecord>, rankings: any[]) {
-  // Win rate component (40%)
-  const winComponent = record.winRate * 0.4;
+/**
+ * Calculate a RoboRank composite score (0-100).
+ * Components:
+ *   - Win rate (30%)
+ *   - Average event ranking percentile (25%)
+ *   - Average points per match (15%)
+ *   - Event volume / experience (10%)
+ *   - SP strength of schedule (10%)
+ *   - High score bonus (10%)
+ */
+export function calculateRoboRank(rankings: any[]) {
+  if (!rankings || rankings.length === 0) return 0;
 
-  // Average ranking component (25%) - lower rank = better
-  let rankComponent = 0;
-  if (rankings.length > 0) {
-    const avgRank = rankings.reduce((sum: number, r: any) => sum + (r.rank || 50), 0) / rankings.length;
-    const totalTeams = rankings.reduce((sum: number, r: any) => sum + (r.qualifications || 20), 0) / rankings.length;
-    // Percentile: if rank 1 of 50 teams → 98%, rank 25 of 50 → 50%
-    const percentile = totalTeams > 0 ? Math.max(0, (1 - (avgRank - 1) / totalTeams) * 100) : 50;
-    rankComponent = percentile * 0.25;
-  } else {
-    rankComponent = 50 * 0.25; // neutral if no ranking data
-  }
+  const record = calculateRecordFromRankings(rankings);
 
-  // Match volume component (15%) - more matches = more data = bonus
-  const volumeBonus = Math.min(record.total / 50, 1) * 100;
-  const volumeComponent = volumeBonus * 0.15;
+  // 1. Win rate (30%)
+  const winComponent = record.winRate * 0.3;
 
-  // Average score component (10%) - normalized roughly
-  const scoreComponent = Math.min(record.avgScore / 150, 1) * 100 * 0.1;
+  // 2. Average ranking percentile across events (25%)
+  let totalPercentile = 0;
+  let rankedEvents = 0;
+  rankings.forEach((r: any) => {
+    if (r.rank && r.rank > 0) {
+      // Estimate field size from total qualifications played
+      const qualMatches = (r.wins || 0) + (r.losses || 0) + (r.ties || 0);
+      // Rough field size: typical events have 20-60 teams
+      // Use rank directly - lower rank = better
+      const estimatedFieldSize = Math.max(r.rank, 30); // conservative estimate
+      const percentile = Math.max(0, (1 - (r.rank - 1) / estimatedFieldSize) * 100);
+      totalPercentile += percentile;
+      rankedEvents++;
+    }
+  });
+  const avgPercentile = rankedEvents > 0 ? totalPercentile / rankedEvents : 50;
+  const rankComponent = avgPercentile * 0.25;
 
-  // Consistency component (10%) - low tie rate, decisive matches
-  const decisiveRate = record.total > 0 ? ((record.wins + record.losses) / record.total) * 100 : 50;
-  const consistencyComponent = decisiveRate * 0.1;
+  // 3. Average points per match (15%) - normalized to ~60 max realistic
+  const pointsComponent = Math.min(record.avgPointsPerEvent / 60, 1) * 100 * 0.15;
 
-  return Math.round(Math.min(100, winComponent + rankComponent + volumeComponent + scoreComponent + consistencyComponent));
+  // 4. Event volume (10%) - more events = more data
+  const volumeComponent = Math.min(record.eventsAttended / 8, 1) * 100 * 0.1;
+
+  // 5. SP / strength of schedule (10%)
+  const avgSP = record.eventsAttended > 0 ? record.totalSP / record.eventsAttended : 0;
+  const spComponent = Math.min(avgSP / 100, 1) * 100 * 0.1;
+
+  // 6. High score bonus (10%)
+  const highScoreComponent = Math.min(record.highScore / 80, 1) * 100 * 0.1;
+
+  return Math.round(Math.min(100,
+    winComponent + rankComponent + pointsComponent +
+    volumeComponent + spComponent + highScoreComponent
+  ));
 }
