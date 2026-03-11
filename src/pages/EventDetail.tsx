@@ -231,6 +231,17 @@ export default function EventDetail() {
               {event.sku && (
                 <span className="text-xs font-mono text-primary">{event.sku}</span>
               )}
+              {event.sku && (
+                <a
+                  href={`https://www.robotevents.com/robot-competitions/vex-robotics-competition/${event.sku}.html`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-1 text-xs text-primary hover:underline"
+                >
+                  <ExternalLink className="h-3 w-3" /> RobotEvents
+                </a>
+              )}
             </div>
           </motion.div>
         )}
