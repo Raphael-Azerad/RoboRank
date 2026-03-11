@@ -2,7 +2,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { useQuery } from "@tanstack/react-query";
-import { fetchRobotEvents, getEventTeams, getTeamRankings, calculateRecordFromRankings, calculateRoboRank } from "@/lib/robotevents";
+import { fetchRobotEvents, getEventTeams, getTeamRankings, calculateRecordFromRankings, calculateRoboRank, getTeamSkillsScore } from "@/lib/robotevents";
 import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
