@@ -257,6 +257,7 @@ export default function EventDetail() {
             { key: "elims" as DetailTab, label: "Elims", icon: Swords },
             { key: "skills" as DetailTab, label: "Skills", icon: Zap },
             { key: "awards" as DetailTab, label: "Awards", icon: Medal },
+            { key: "predictions" as DetailTab, label: "Predictions", icon: TrendingUp },
           ].map(({ key, label, icon: Icon }) => (
             <Button
               key={key}
