@@ -164,6 +164,7 @@ export default function EventDetail() {
   }, [elimMatches]);
 
   const loading = eventLoading || teamsLoading;
+  const eventIsCompleted = !!event && !event.ongoing && new Date(event.end || event.start).getTime() < Date.now();
 
   const renderMatchRow = (match: any, i: number) => {
     const red = match.alliances?.find((a: any) => a.color === "red");
