@@ -143,43 +143,77 @@ export function calculateRecordFromRankings(rankings: any[]) {
   };
 }
 
-export function calculateRoboRank(rankings: any[]) {
+export function calculateRoboRank(rankings: any[], skillsCombined: number = 0) {
   if (!rankings || rankings.length === 0) return 0;
 
-  const record = calculateRecordFromRankings(rankings);
+  let wins = 0, losses = 0, ties = 0;
+  let highScore = 0, totalAvgPoints = 0;
+  const percentiles: number[] = [];
 
-  // Win rate (30%)
-  const winComponent = record.winRate * 0.3;
-
-  // Average ranking percentile (25%)
-  let totalPercentile = 0;
-  let rankedEvents = 0;
   rankings.forEach((r: any) => {
+    wins += r.wins || 0;
+    losses += r.losses || 0;
+    ties += r.ties || 0;
+    if (r.high_score > highScore) highScore = r.high_score;
+    totalAvgPoints += r.average_points || 0;
+
     if (r.rank && r.rank > 0) {
-      const estimatedFieldSize = Math.max(r.rank, 30);
-      const percentile = Math.max(0, (1 - (r.rank - 1) / estimatedFieldSize) * 100);
-      totalPercentile += percentile;
-      rankedEvents++;
+      const fieldSize = Math.max(r.rank, 24);
+      percentiles.push(Math.max(0, (1 - (r.rank - 1) / fieldSize) * 100));
     }
   });
-  const avgPercentile = rankedEvents > 0 ? totalPercentile / rankedEvents : 50;
-  const rankComponent = avgPercentile * 0.25;
 
-  // Average points (15%)
-  const pointsComponent = Math.min(record.avgPointsPerEvent / 60, 1) * 100 * 0.15;
+  const total = wins + losses + ties;
+  if (total < 3) return 0;
 
-  // Event volume (10%)
-  const volumeComponent = Math.min(record.eventsAttended / 8, 1) * 100 * 0.1;
+  const winRate = total > 0 ? (wins / total) * 100 : 0;
 
-  // SP strength of schedule (10%)
-  const avgSP = record.eventsAttended > 0 ? record.totalSP / record.eventsAttended : 0;
-  const spComponent = Math.min(avgSP / 150, 1) * 100 * 0.1;
+  // 1. Win Rate (25%)
+  const winComponent = winRate * 0.25;
 
-  // High score (10%)
-  const highScoreComponent = Math.min(record.highScore / 100, 1) * 100 * 0.1;
+  // 2. Ranking Percentile (20%)
+  const avgPercentile = percentiles.length > 0
+    ? percentiles.reduce((a, b) => a + b, 0) / percentiles.length
+    : 50;
+  const rankComponent = avgPercentile * 0.20;
 
-  return Math.round(Math.min(100,
-    winComponent + rankComponent + pointsComponent +
-    volumeComponent + spComponent + highScoreComponent
-  ));
+  // 3. Skills Combined (20%) - normalized to ~350
+  const skillsComponent = Math.min(skillsCombined / 350, 1) * 100 * 0.20;
+
+  // 4. Consistency (15%)
+  let consistencyScore = 75;
+  if (percentiles.length >= 2) {
+    const mean = avgPercentile;
+    const variance = percentiles.reduce((sum, p) => sum + (p - mean) ** 2, 0) / percentiles.length;
+    const stdDev = Math.sqrt(variance);
+    consistencyScore = Math.max(0, 100 - stdDev * 2.5);
+  }
+  const consistencyComponent = consistencyScore * 0.15;
+
+  // 5. Event Volume (10%) - caps at 6
+  const eventsAttended = rankings.length;
+  const volumeComponent = Math.min(eventsAttended / 6, 1) * 100 * 0.10;
+
+  // 6. High Score (10%) - normalized to ~100
+  const highScoreComponent = Math.min(highScore / 100, 1) * 100 * 0.10;
+
+  const raw = winComponent + rankComponent + skillsComponent +
+    consistencyComponent + volumeComponent + highScoreComponent;
+
+  return Math.round(Math.min(100, raw));
+}
+
+export async function getTeamSkillsScore(teamId: number, season: SeasonKey = "current"): Promise<number> {
+  try {
+    const skills = await fetchAllPages(`/teams/${teamId}/skills`, { "season[]": SEASONS[season].id });
+    if (!skills || skills.length === 0) return 0;
+    let maxDriver = 0, maxProg = 0;
+    skills.forEach((s: any) => {
+      if (s.type === "driver" && s.score > maxDriver) maxDriver = s.score;
+      if (s.type === "programming" && s.score > maxProg) maxProg = s.score;
+    });
+    return maxDriver + maxProg;
+  } catch {
+    return 0;
+  }
 }
