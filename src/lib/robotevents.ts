@@ -143,6 +143,43 @@ export function calculateRecordFromRankings(rankings: any[]) {
   };
 }
 
+/** Calculate full record from actual match data (includes quals + elims) */
+export function calculateRecordFromMatches(matches: any[], teamNumber: string) {
+  let wins = 0, losses = 0, ties = 0;
+  let highScore = 0;
+  let totalPoints = 0;
+
+  matches.forEach((m: any) => {
+    const myAlliance = m.alliances?.find((a: any) =>
+      a.teams?.some((t: any) => t.team?.name === teamNumber)
+    );
+    const oppAlliance = m.alliances?.find((a: any) => a.color !== myAlliance?.color);
+    if (!myAlliance || !oppAlliance) return;
+    const myScore = myAlliance.score ?? 0;
+    const oppScore = oppAlliance.score ?? 0;
+    totalPoints += myScore;
+    if (myScore > highScore) highScore = myScore;
+    if (myScore > oppScore) wins++;
+    else if (myScore < oppScore) losses++;
+    else if (myScore === oppScore && myScore > 0) ties++;
+  });
+
+  const total = wins + losses + ties;
+  const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+  const avgPoints = total > 0 ? Math.round(totalPoints / total * 10) / 10 : 0;
+
+  return { wins, losses, ties, total, winRate, highScore, avgPoints };
+}
+
+export async function searchTeams(query: string): Promise<any[]> {
+  try {
+    const result = await fetchRobotEvents("/teams", { "number[]": query, "program[]": "1" });
+    return result?.data || [];
+  } catch {
+    return [];
+  }
+}
+
 export function calculateRoboRank(rankings: any[], skillsCombined: number = 0) {
   if (!rankings || rankings.length === 0) return 0;
 
