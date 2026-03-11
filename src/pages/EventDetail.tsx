@@ -6,12 +6,13 @@ import { useQuery } from "@tanstack/react-query";
 import {
   fetchRobotEvents, getEventTeams, getEventRankings, getEventMatches,
   getEventSkills, getTeamRankings, calculateRecordFromRankings,
-  calculateRoboRank, getTeamSkillsScore,
+  calculateRoboRank, getTeamSkillsScore, fetchAllPages,
 } from "@/lib/robotevents";
-import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { EliminationBracket } from "@/components/events/EliminationBracket";
 
 type DetailTab = "teams" | "quals" | "elims" | "skills" | "awards";
 
