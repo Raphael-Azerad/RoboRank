@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
@@ -8,10 +9,12 @@ import { useSeason } from "@/contexts/SeasonContext";
 import { Trophy, Target, Award, MapPin, Building, ArrowLeft, Loader2, TrendingUp, Medal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function TeamDetail() {
   const { teamNumber } = useParams<{ teamNumber: string }>();
   const { season } = useSeason();
+  const [awardsModalOpen, setAwardsModalOpen] = useState(false);
 
   const { data: teamData, isLoading: teamLoading } = useQuery({
     queryKey: ["team", teamNumber],
@@ -98,7 +101,6 @@ export default function TeamDetail() {
           </motion.div>
         </div>
 
-        {/* Stats */}
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
           <StatCard title="Win Rate" value={record ? `${record.winRate}%` : "—"} icon={Trophy}
             subtitle={record ? `${record.wins}W-${record.losses}L-${record.ties}T` : "No data"} />
@@ -108,30 +110,40 @@ export default function TeamDetail() {
             subtitle={record ? `Avg ${record.avgPointsPerEvent} pts/match` : ""} />
           <StatCard title="Total WP" value={record ? String(record.totalWP) : "—"} icon={TrendingUp}
             subtitle={record ? `AP: ${record.totalAP} · SP: ${record.totalSP}` : ""} />
-          <StatCard title="Awards" value={awards ? String(awards.length) : "—"} icon={Medal}
-            subtitle={awards && awards.length > 0 ? "This season" : "No awards yet"} />
+          <button type="button" onClick={() => setAwardsModalOpen(true)} className="text-left">
+            <StatCard title="Awards" value={awards ? String(awards.length) : "—"} icon={Medal}
+              subtitle={awards && awards.length > 0 ? "Tap to open" : "No awards yet"} className="cursor-pointer" />
+          </button>
         </div>
 
-        {/* Awards List */}
-        {awards && awards.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-            <h2 className="text-xl font-display font-semibold mb-4">Awards · {seasonInfo.name}</h2>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {awards.map((award: any, i: number) => (
-                <motion.div key={award.id || i} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
-                  className="rounded-lg border border-border/30 p-4 flex items-start gap-3 hover:bg-accent/30 transition-colors">
-                  <Medal className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium">{award.title}</div>
-                    <div className="text-xs text-muted-foreground truncate">{award.event?.name || "Unknown Event"}</div>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
+        <Dialog open={awardsModalOpen} onOpenChange={setAwardsModalOpen}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle>{teamData.number} Awards</DialogTitle>
+              <DialogDescription>{seasonInfo.name} {seasonInfo.year}</DialogDescription>
+            </DialogHeader>
 
-        {/* Event Results */}
+            <div className="overflow-y-auto pr-1 space-y-2">
+              {awards && awards.length > 0 ? (
+                awards.map((award: any, i: number) => (
+                  <div key={award.id || i} className="rounded-lg border border-border/30 p-4 flex items-start gap-3">
+                    <Medal className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium">{award.title}</div>
+                      <div className="text-xs text-muted-foreground truncate">{award.event?.name || "Unknown Event"}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{award.event?.start || award.event?.end || "Date unavailable"}</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-lg border border-border/30 p-6 text-sm text-muted-foreground text-center">
+                  No awards found for this season.
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {rankings && rankings.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <h2 className="text-xl font-display font-semibold mb-4">Event Results · {seasonInfo.name}</h2>
@@ -151,7 +163,7 @@ export default function TeamDetail() {
                     <div className="text-xs text-muted-foreground">{r.division?.name}</div>
                   </div>
                   <div className="col-span-2 text-center">
-                    <span className={`stat-number text-sm ${r.rank <= 3 ? 'text-primary' : ''}`}>#{r.rank}</span>
+                    <span className={`stat-number text-sm ${r.rank <= 3 ? "text-primary" : ""}`}>#{r.rank}</span>
                   </div>
                   <div className="col-span-2 text-center text-sm">
                     <span className="text-success">{r.wins}W</span>
@@ -172,14 +184,13 @@ export default function TeamDetail() {
           </div>
         )}
 
-        {/* Recent Matches */}
         {matches && matches.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
             <h2 className="text-xl font-display font-semibold mb-4">Recent Matches</h2>
             <div className="grid gap-2">
               {matches.slice(-20).reverse().map((m: any) => {
                 const myAlliance = m.alliances?.find((a: any) =>
-                  a.teams?.some((t: any) => t.team?.name === teamNumber)
+                  a.teams?.some((t: any) => t.team?.name === teamNumber),
                 );
                 const oppAlliance = m.alliances?.find((a: any) => a.color !== myAlliance?.color);
                 const myScore = myAlliance?.score ?? 0;
@@ -194,11 +205,11 @@ export default function TeamDetail() {
                       <div className="text-xs text-muted-foreground">{m.name} · {m.division?.name}</div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0 ml-4">
-                      <span className={`text-sm stat-number ${won ? 'text-success' : tied ? 'text-muted-foreground' : 'text-destructive'}`}>{myScore}</span>
+                      <span className={`text-sm stat-number ${won ? "text-success" : tied ? "text-muted-foreground" : "text-destructive"}`}>{myScore}</span>
                       <span className="text-xs text-muted-foreground">vs</span>
                       <span className="text-sm stat-number text-muted-foreground">{oppScore}</span>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded ${won ? 'bg-success/10 text-success' : tied ? 'bg-muted text-muted-foreground' : 'bg-destructive/10 text-destructive'}`}>
-                        {won ? 'W' : tied ? 'T' : 'L'}
+                      <span className={`text-xs font-medium px-2 py-0.5 rounded ${won ? "bg-success/10 text-success" : tied ? "bg-muted text-muted-foreground" : "bg-destructive/10 text-destructive"}`}>
+                        {won ? "W" : tied ? "T" : "L"}
                       </span>
                     </div>
                   </div>

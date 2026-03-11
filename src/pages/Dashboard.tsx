@@ -69,15 +69,13 @@ export default function Dashboard() {
           </Link>
         </motion.div>
 
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           <StatCard title="Win Rate" value={record ? `${record.winRate}%` : "—"} icon={Trophy}
             subtitle={record ? `${record.wins}W-${record.losses}L-${record.ties}T` : loading ? "Loading..." : "No data"} />
           <StatCard title="Qual Matches" value={record ? String(record.total) : "—"} icon={Target}
             subtitle={record ? `Across ${record.eventsAttended} events` : loading ? "Loading..." : "No data"} />
           <StatCard title="High Score" value={record ? String(record.highScore) : "—"} icon={Award}
             subtitle={record ? `Avg ${record.avgPointsPerEvent} pts/match` : ""} />
-          <StatCard title="Location" value={teamData?.location?.region || "—"} icon={Calendar}
-            subtitle={teamData?.location?.country || ""} />
           <div onClick={() => navigate("/awards")} className="cursor-pointer">
             <StatCard title="Awards" value={awards ? String(awards.length) : "—"} icon={Medal}
               subtitle={awards && awards.length > 0 ? "Tap to view all" : loading ? "Loading..." : "No awards"} />
