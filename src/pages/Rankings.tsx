@@ -379,7 +379,7 @@ export default function Rankings() {
           )
         )}
 
-        {!loading && tab === "roborank" && filteredRoboRank && (
+        {tab === "roborank" && filteredRoboRank && filteredRoboRank.length > 0 ? (
           filteredRoboRank.length === 0 ? (
             <div className="text-sm text-muted-foreground rounded-lg border border-border/50 card-gradient p-8 text-center">
               No teams found for {seasonInfo.name}.
