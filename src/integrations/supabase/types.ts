@@ -14,7 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      api_cache: {
+        Row: {
+          cache_key: string
+          created_at: string
+          data: Json
+          expires_at: string
+          id: string
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          data: Json
+          expires_at: string
+          id?: string
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          data?: Json
+          expires_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          robotevents_team_id: number | null
+          team_name: string | null
+          team_number: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          robotevents_team_id?: number | null
+          team_name?: string | null
+          team_number: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          robotevents_team_id?: number | null
+          team_name?: string | null
+          team_number?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      scouting_reports: {
+        Row: {
+          created_at: string
+          event_id: number
+          event_name: string
+          id: string
+          report_data: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: number
+          event_name: string
+          id?: string
+          report_data?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: number
+          event_name?: string
+          id?: string
+          report_data?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
