@@ -186,9 +186,18 @@ export default function Events() {
   const eventsByDate = useMemo(() => {
     const map = new Map<string, any[]>();
     events.forEach((e: any) => {
-      const dateKey = new Date(e.start).toDateString();
-      if (!map.has(dateKey)) map.set(dateKey, []);
-      map.get(dateKey)!.push(e);
+      const start = new Date(e.start);
+      const end = e.end ? new Date(e.end) : start;
+      // Normalize to local dates to avoid timezone shifts
+      const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+      const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+      const cursor = new Date(startDay);
+      while (cursor <= endDay) {
+        const dateKey = cursor.toDateString();
+        if (!map.has(dateKey)) map.set(dateKey, []);
+        map.get(dateKey)!.push(e);
+        cursor.setDate(cursor.getDate() + 1);
+      }
     });
     return map;
   }, [events]);
