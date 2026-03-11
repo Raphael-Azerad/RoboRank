@@ -721,21 +721,44 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
       t2Matches.forEach((m: any) => t2MatchMap.set(m.id, m));
 
       t1Matches.forEach((m: any) => {
-        if (t2MatchMap.has(m.id)) {
-          const match = m;
-          const red = match.alliances?.find((a: any) => a.color === "red");
-          const blue = match.alliances?.find((a: any) => a.color === "blue");
-          const redTeams = red?.teams?.map((t: any) => t.team?.name) || [];
-          const blueTeams = blue?.teams?.map((t: any) => t.team?.name) || [];
-          const t1IsRed = redTeams.includes(team1);
-          const t1Score = t1IsRed ? (red?.score ?? 0) : (blue?.score ?? 0);
-          const t2Score = t1IsRed ? (blue?.score ?? 0) : (red?.score ?? 0);
+        if (!t2MatchMap.has(m.id)) return;
 
-          sharedMatches.push({ ...match, t1Score, t2Score });
-          if (t1Score > t2Score) t1Wins++;
-          else if (t2Score > t1Score) t2Wins++;
-          else ties++;
-        }
+        const match = m;
+        const red = match.alliances?.find((a: any) => a.color === "red");
+        const blue = match.alliances?.find((a: any) => a.color === "blue");
+        const redTeams = red?.teams?.map((t: any) => t.team?.name) || [];
+
+        const t1IsRed = redTeams.includes(team1);
+        const t1Score = t1IsRed ? (red?.score ?? 0) : (blue?.score ?? 0);
+        const t2Score = t1IsRed ? (blue?.score ?? 0) : (red?.score ?? 0);
+
+        const eventName = match.event?.name || match.event_name || "Unknown Event";
+        const eventSku = match.event?.sku || "";
+        const dateSource = match.started || match.scheduled || match.event?.start || null;
+        const matchDate = dateSource
+          ? new Date(dateSource).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+          : "Date N/A";
+        const matchLabel = match.name || `${roundLabel(match.round)} ${match.matchnum || ""}`.trim();
+
+        sharedMatches.push({
+          ...match,
+          t1Score,
+          t2Score,
+          eventName,
+          eventSku,
+          matchDate,
+          matchLabel,
+        });
+
+        if (t1Score > t2Score) t1Wins++;
+        else if (t2Score > t1Score) t2Wins++;
+        else ties++;
+      });
+
+      sharedMatches.sort((a, b) => {
+        const aTime = a.started ? new Date(a.started).getTime() : 0;
+        const bTime = b.started ? new Date(b.started).getTime() : 0;
+        return bTime - aTime;
       });
 
       const t1RR = calculateRoboRank(t1Rankings, t1Skills);
