@@ -40,6 +40,7 @@ export default function EventDetail() {
   const [tab, setTab] = useState<DetailTab>("teams");
   const [h2hTeams, setH2hTeams] = useState<[string, string] | null>(null);
   const [h2hOpen, setH2hOpen] = useState(false);
+  const [selectedDivisionIdx, setSelectedDivisionIdx] = useState(0);
 
   const { data: eventData, isLoading: eventLoading } = useQuery({
     queryKey: ["event", eventId],
@@ -48,7 +49,10 @@ export default function EventDetail() {
   });
 
   const event = eventData;
-  const divisionId = event?.divisions?.[0]?.id || 1;
+  const divisions = event?.divisions || [];
+  const hasDivisions = divisions.length > 1;
+  const divisionId = divisions[selectedDivisionIdx]?.id || divisions[0]?.id || 1;
+  const divisionName = divisions[selectedDivisionIdx]?.name || "";
 
   const { data: teams, isLoading: teamsLoading } = useQuery({
     queryKey: ["eventTeams", eventId],
@@ -80,12 +84,12 @@ export default function EventDetail() {
     enabled: !!eventId && tab === "skills",
   });
 
-  // Awards
+  // Awards (division-aware for multi-division events)
   const { data: eventAwards, isLoading: awardsLoading } = useQuery({
-    queryKey: ["eventAwards", eventId],
+    queryKey: ["eventAwards", eventId, divisionId],
     queryFn: async () => {
-      const result = await fetchRobotEvents(`/events/${eventId}/awards`);
-      return result?.data || result || [];
+      const result = await fetchAllPages(`/events/${eventId}/divisions/${divisionId}/awards`);
+      return result || [];
     },
     enabled: !!eventId && tab === "awards",
   });
@@ -271,6 +275,24 @@ export default function EventDetail() {
             </Button>
           ))}
         </div>
+
+        {/* Division Selector */}
+        {hasDivisions && (
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Division:</span>
+            {divisions.map((div: any, idx: number) => (
+              <Button
+                key={div.id}
+                variant={selectedDivisionIdx === idx ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedDivisionIdx(idx)}
+                className="text-xs h-7"
+              >
+                {div.name || `Division ${idx + 1}`}
+              </Button>
+            ))}
+          </div>
+        )}
 
         {/* Teams Tab */}
         {tab === "teams" && (

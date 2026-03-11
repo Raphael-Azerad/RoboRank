@@ -111,6 +111,41 @@ function MatchRow({ match, teamNumber }: { match: any; teamNumber: string }) {
   );
 }
 
+function EventMatchGroup({ event, teamNumber }: { event: { eventName: string; eventId?: number; date: string; matches: any[] }; teamNumber: string }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="rounded-lg border border-border/30 overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center gap-3 p-4 hover:bg-accent/30 transition-colors text-left"
+      >
+        <Target className="h-4 w-4 text-primary shrink-0" />
+        <div className="flex-1 min-w-0">
+          <span className="text-sm font-medium truncate block">{event.eventName}</span>
+          {event.date && <span className="text-[10px] text-muted-foreground">{event.date}</span>}
+        </div>
+        <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+          {event.matches.length}
+        </span>
+        {open ? (
+          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        ) : (
+          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        )}
+      </button>
+      {open && (
+        <div className="border-t border-border/20 space-y-1 p-2">
+          {event.matches.map((m: any) => (
+            <MatchRow key={m.id} match={m} teamNumber={teamNumber} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function TeamDetail() {
   const { teamNumber } = useParams<{ teamNumber: string }>();
   const { season } = useSeason();
@@ -156,29 +191,56 @@ export default function TeamDetail() {
   const loading = teamLoading || rankingsLoading;
   const groupedAwards = awards ? groupAwards(awards) : [];
 
-  // All matches sorted newest first
-  const allMatchesSorted = useMemo(() => {
+  // Group matches by event
+  const matchesByEvent = useMemo(() => {
     if (!matches) return [];
-    return [...matches].sort((a: any, b: any) => {
-      const aTime = a.started ? new Date(a.started).getTime() : 0;
-      const bTime = b.started ? new Date(b.started).getTime() : 0;
+    const eventMap = new Map<string, { eventName: string; eventId?: number; date: string; matches: any[] }>();
+    matches.forEach((m: any) => {
+      const eventName = m.event?.name || "Unknown Event";
+      const eventId = m.event?.id;
+      const key = eventId ? String(eventId) : eventName;
+      if (!eventMap.has(key)) {
+        const dateSource = m.started || m.scheduled || m.event?.start || null;
+        eventMap.set(key, {
+          eventName,
+          eventId,
+          date: dateSource ? new Date(dateSource).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "",
+          matches: [],
+        });
+      }
+      eventMap.get(key)!.matches.push(m);
+    });
+    // Sort matches within each event
+    eventMap.forEach((v) => {
+      v.matches.sort((a: any, b: any) => (a.matchnum || 0) - (b.matchnum || 0));
+    });
+    return Array.from(eventMap.values()).sort((a, b) => {
+      const aTime = a.matches[0]?.started ? new Date(a.matches[0].started).getTime() : 0;
+      const bTime = b.matches[0]?.started ? new Date(b.matches[0].started).getTime() : 0;
       return bTime - aTime;
     });
   }, [matches]);
 
   // Total match count (quals + elims)
-  const totalMatchCount = allMatchesSorted.length;
+  const totalMatchCount = matches?.length || 0;
 
-  // Won matches only
+  // Won matches only (flat list)
   const wonMatches = useMemo(() => {
-    return allMatchesSorted.filter((m: any) => {
-      const myAlliance = m.alliances?.find((a: any) =>
-        a.teams?.some((t: any) => t.team?.name === teamNumber),
-      );
-      const oppAlliance = m.alliances?.find((a: any) => a.color !== myAlliance?.color);
-      return (myAlliance?.score ?? 0) > (oppAlliance?.score ?? 0);
-    });
-  }, [allMatchesSorted, teamNumber]);
+    if (!matches) return [];
+    return [...matches]
+      .filter((m: any) => {
+        const myAlliance = m.alliances?.find((a: any) =>
+          a.teams?.some((t: any) => t.team?.name === teamNumber),
+        );
+        const oppAlliance = m.alliances?.find((a: any) => a.color !== myAlliance?.color);
+        return (myAlliance?.score ?? 0) > (oppAlliance?.score ?? 0);
+      })
+      .sort((a: any, b: any) => {
+        const aTime = a.started ? new Date(a.started).getTime() : 0;
+        const bTime = b.started ? new Date(b.started).getTime() : 0;
+        return bTime - aTime;
+      });
+  }, [matches, teamNumber]);
 
   if (loading) {
     return (
@@ -253,20 +315,20 @@ export default function TeamDetail() {
           </button>
         </div>
 
-        {/* All Matches Dialog */}
+        {/* All Matches Dialog — grouped by event */}
         <Dialog open={matchesModalOpen} onOpenChange={setMatchesModalOpen}>
           <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>{teamData.number} — All Matches</DialogTitle>
               <DialogDescription>
-                {seasonInfo.name} {seasonInfo.year} · {totalMatchCount} total matches (Quals + Elims)
+                {seasonInfo.name} {seasonInfo.year} · {totalMatchCount} total matches (Quals + Elims) · {matchesByEvent.length} events
               </DialogDescription>
             </DialogHeader>
             <ScrollArea className="flex-1 pr-2">
               <div className="space-y-2">
-                {allMatchesSorted.length > 0 ? (
-                  allMatchesSorted.map((m: any) => (
-                    <MatchRow key={m.id} match={m} teamNumber={teamNumber!} />
+                {matchesByEvent.length > 0 ? (
+                  matchesByEvent.map((ev, idx) => (
+                    <EventMatchGroup key={idx} event={ev} teamNumber={teamNumber!} />
                   ))
                 ) : (
                   <div className="text-sm text-muted-foreground text-center py-8">No matches found.</div>
