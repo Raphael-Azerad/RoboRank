@@ -1,20 +1,23 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Calendar as CalendarIcon, MapPin, Search, Loader2, Filter, ArrowUpDown, List, Star, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar as CalendarIcon, MapPin, Search, Loader2, Filter, ArrowUpDown, List, Star, CalendarDays, ChevronLeft, ChevronRight, Map as MapIcon, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAllPages, getTeamByNumber, getTeamEvents, SEASONS, US_STATES, type SeasonKey } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { format } from "date-fns";
+import { EventMap } from "@/components/events/EventMap";
 
 type Tab = "all" | "my" | "watchlist";
-type ViewMode = "list" | "calendar";
+type ViewMode = "list" | "calendar" | "map";
 
 function useWatchlist() {
   const [watchlist, setWatchlist] = useState<number[]>(() => {
@@ -38,7 +41,7 @@ function getLevelBadge(name: string): { label: string; className: string } | nul
   const lower = name.toLowerCase();
   if (lower.includes("signature") || lower.includes("sig")) return { label: "SIG", className: "bg-primary/15 text-primary" };
   if (lower.includes("world")) return { label: "WORLDS", className: "bg-[hsl(var(--chart-2))]/15 text-[hsl(var(--chart-2))]" };
-  if (lower.includes("state") && lower.includes("championship") || lower.includes("state championship")) return { label: "STATE", className: "bg-[hsl(var(--chart-4))]/15 text-[hsl(var(--chart-4))]" };
+  if ((lower.includes("state") && lower.includes("championship")) || lower.includes("state championship")) return { label: "STATE", className: "bg-[hsl(var(--chart-4))]/15 text-[hsl(var(--chart-4))]" };
   if (lower.includes("league")) return { label: "LEAGUE", className: "bg-[hsl(var(--chart-3))]/15 text-[hsl(var(--chart-3))]" };
   return null;
 }
@@ -68,15 +71,23 @@ export default function Events() {
   const [tab, setTab] = useState<Tab>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [searchQuery, setSearchQuery] = useState("");
-  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [teamNumber, setTeamNumber] = useState("");
   const [stateFilter, setStateFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("all");
+  const [dateFrom, setDateFrom] = useState<Date | undefined>();
+  const [dateTo, setDateTo] = useState<Date | undefined>();
   const [calendarDate, setCalendarDate] = useState<Date | undefined>(new Date());
   const { watchlist, toggle: toggleWatchlist, isWatched } = useWatchlist();
 
   const seasonInfo = SEASONS[season];
+
+  // Live search debounce
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -96,11 +107,10 @@ export default function Events() {
   const PAGE_SIZE = 50;
 
   const { data: allEventsData, isLoading: allLoading } = useQuery({
-    queryKey: ["events", "all", search, season, stateFilter],
+    queryKey: ["events", "all", season, stateFilter],
     queryFn: () => fetchAllPages("/events", {
       "program[]": "1",
       "season[]": SEASONS[season].id,
-      ...(search ? { name: search } : {}),
       ...(stateFilter !== "all" ? { region: stateFilter } : {}),
     }),
     enabled: tab === "all" || tab === "watchlist",
@@ -116,6 +126,17 @@ export default function Events() {
   let events = tab === "all" || tab === "watchlist" ? (allEventsData || []) : (myEvents || []);
   const isLoading = tab === "all" || tab === "watchlist" ? allLoading : myLoading;
 
+  // Client-side search filter (live)
+  if (debouncedSearch) {
+    const q = debouncedSearch.toLowerCase();
+    events = events.filter((e: any) => {
+      const name = (e.name || "").toLowerCase();
+      const city = (e.location?.city || "").toLowerCase();
+      const region = (e.location?.region || "").toLowerCase();
+      return name.includes(q) || city.includes(q) || region.includes(q);
+    });
+  }
+
   if (tab === "watchlist") {
     events = events.filter((e: any) => watchlist.includes(e.id));
   }
@@ -126,6 +147,16 @@ export default function Events() {
     events = events.filter((e: any) => new Date(e.start) > now);
   } else if (statusFilter === "completed") {
     events = events.filter((e: any) => new Date(e.end || e.start) < now);
+  }
+
+  // Date range filter
+  if (dateFrom) {
+    events = events.filter((e: any) => new Date(e.start) >= dateFrom);
+  }
+  if (dateTo) {
+    const toEnd = new Date(dateTo);
+    toEnd.setHours(23, 59, 59, 999);
+    events = events.filter((e: any) => new Date(e.start) <= toEnd);
   }
 
   if (levelFilter !== "all") {
@@ -177,12 +208,11 @@ export default function Events() {
   const paginatedEvents = events.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // Reset page when filters change
-  useEffect(() => { setPage(1); }, [tab, search, stateFilter, statusFilter, levelFilter]);
+  useEffect(() => { setPage(1); }, [tab, debouncedSearch, stateFilter, statusFilter, levelFilter, dateFrom, dateTo]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSearch(searchQuery);
-  };
+  const handleEventClick = useCallback((eventId: number) => {
+    navigate(`/event/${eventId}`);
+  }, [navigate]);
 
   const renderEventCard = (event: any, i: number) => {
     const eventStart = new Date(event.start);
@@ -192,6 +222,7 @@ export default function Events() {
     const city = location?.city;
     const region = location?.region;
     const locationStr = [city, region].filter(Boolean).join(", ");
+    const teamCount = event.teams_count || event.stats?.teams;
 
     return (
       <motion.div
@@ -200,7 +231,10 @@ export default function Events() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: Math.min(i * 0.02, 0.4) }}
         onClick={() => navigate(`/event/${event.id}`)}
-        className="rounded-xl border border-border/50 card-gradient p-4 hover:border-primary/30 transition-all cursor-pointer group"
+        className={cn(
+          "rounded-xl border border-border/50 card-gradient p-4 hover:border-primary/30 transition-all cursor-pointer group",
+          !isUpcoming && "opacity-70"
+        )}
       >
         <div className="flex items-start gap-3">
           {/* Date block */}
@@ -237,8 +271,17 @@ export default function Events() {
                 <CalendarIcon className="h-3 w-3" />
                 {formatDateRange(event.start, event.end)}
               </span>
+              {teamCount && (
+                <span className="flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  {teamCount} teams
+                </span>
+              )}
               {isUpcoming && (
                 <span className="text-primary font-medium">{daysUntil(event.start)}</span>
+              )}
+              {!isUpcoming && (
+                <span className="text-muted-foreground/60 text-[10px] uppercase font-medium">Completed</span>
               )}
             </div>
           </div>
@@ -306,32 +349,35 @@ export default function Events() {
           </div>
 
           <div className="flex gap-1 border border-border rounded-lg p-0.5">
-            <button
-              onClick={() => setViewMode("list")}
-              className={cn("p-1.5 rounded-md transition-colors", viewMode === "list" ? "bg-accent text-primary" : "text-muted-foreground hover:text-foreground")}
-            >
-              <List className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setViewMode("calendar")}
-              className={cn("p-1.5 rounded-md transition-colors", viewMode === "calendar" ? "bg-accent text-primary" : "text-muted-foreground hover:text-foreground")}
-            >
-              <CalendarDays className="h-4 w-4" />
-            </button>
+            {([
+              { mode: "list" as ViewMode, icon: List },
+              { mode: "calendar" as ViewMode, icon: CalendarDays },
+              { mode: "map" as ViewMode, icon: MapIcon },
+            ]).map(({ mode, icon: Icon }) => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                className={cn("p-1.5 rounded-md transition-colors", viewMode === mode ? "bg-accent text-primary" : "text-muted-foreground hover:text-foreground")}
+              >
+                <Icon className="h-4 w-4" />
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Filters */}
         <div className="flex flex-wrap gap-3">
-          {tab === "all" && (
-            <form onSubmit={handleSearch} className="flex-1 min-w-[200px]">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input placeholder="Search events..." className="pl-10 bg-card" value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)} />
-              </div>
-            </form>
-          )}
+          <div className="flex-1 min-w-[200px]">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search events, cities..."
+                className="pl-10 bg-card"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
 
           <Select value={stateFilter} onValueChange={setStateFilter}>
             <SelectTrigger className="w-[160px] bg-card">
@@ -371,6 +417,34 @@ export default function Events() {
               <SelectItem value="worlds">Worlds</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Date range */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className={cn("gap-1.5 bg-card", (dateFrom || dateTo) && "border-primary text-primary")}>
+                <CalendarIcon className="h-3.5 w-3.5" />
+                {dateFrom && dateTo ? `${format(dateFrom, "MMM d")} – ${format(dateTo, "MMM d")}` :
+                 dateFrom ? `From ${format(dateFrom, "MMM d")}` :
+                 dateTo ? `Until ${format(dateTo, "MMM d")}` :
+                 "Date Range"}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-4 space-y-3" align="end">
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">From</label>
+                <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} className="p-0 pointer-events-auto" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">To</label>
+                <Calendar mode="single" selected={dateTo} onSelect={setDateTo} className="p-0 pointer-events-auto" />
+              </div>
+              {(dateFrom || dateTo) && (
+                <Button variant="ghost" size="sm" className="w-full" onClick={() => { setDateFrom(undefined); setDateTo(undefined); }}>
+                  Clear dates
+                </Button>
+              )}
+            </PopoverContent>
+          </Popover>
         </div>
 
         {isLoading && (
@@ -378,6 +452,16 @@ export default function Events() {
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-sm text-muted-foreground">Loading all events...</p>
             <p className="text-xs text-muted-foreground/60">This may take a moment</p>
+          </div>
+        )}
+
+        {/* Map View */}
+        {!isLoading && viewMode === "map" && (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Showing {events.filter((e: any) => e.location?.coordinates?.lat).length} of {events.length} events with coordinates
+            </p>
+            <EventMap events={events} onEventClick={handleEventClick} />
           </div>
         )}
 
