@@ -146,7 +146,7 @@ function EventMatchGroup({ event, teamNumber }: { event: { eventName: string; ev
   );
 }
 
-
+export default function TeamDetail() {
   const { teamNumber } = useParams<{ teamNumber: string }>();
   const { season } = useSeason();
   const [awardsModalOpen, setAwardsModalOpen] = useState(false);
