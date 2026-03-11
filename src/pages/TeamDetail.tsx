@@ -156,29 +156,56 @@ export default function TeamDetail() {
   const loading = teamLoading || rankingsLoading;
   const groupedAwards = awards ? groupAwards(awards) : [];
 
-  // All matches sorted newest first
-  const allMatchesSorted = useMemo(() => {
+  // Group matches by event
+  const matchesByEvent = useMemo(() => {
     if (!matches) return [];
-    return [...matches].sort((a: any, b: any) => {
-      const aTime = a.started ? new Date(a.started).getTime() : 0;
-      const bTime = b.started ? new Date(b.started).getTime() : 0;
+    const eventMap = new Map<string, { eventName: string; eventId?: number; date: string; matches: any[] }>();
+    matches.forEach((m: any) => {
+      const eventName = m.event?.name || "Unknown Event";
+      const eventId = m.event?.id;
+      const key = eventId ? String(eventId) : eventName;
+      if (!eventMap.has(key)) {
+        const dateSource = m.started || m.scheduled || m.event?.start || null;
+        eventMap.set(key, {
+          eventName,
+          eventId,
+          date: dateSource ? new Date(dateSource).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "",
+          matches: [],
+        });
+      }
+      eventMap.get(key)!.matches.push(m);
+    });
+    // Sort matches within each event
+    eventMap.forEach((v) => {
+      v.matches.sort((a: any, b: any) => (a.matchnum || 0) - (b.matchnum || 0));
+    });
+    return Array.from(eventMap.values()).sort((a, b) => {
+      const aTime = a.matches[0]?.started ? new Date(a.matches[0].started).getTime() : 0;
+      const bTime = b.matches[0]?.started ? new Date(b.matches[0].started).getTime() : 0;
       return bTime - aTime;
     });
   }, [matches]);
 
   // Total match count (quals + elims)
-  const totalMatchCount = allMatchesSorted.length;
+  const totalMatchCount = matches?.length || 0;
 
-  // Won matches only
+  // Won matches only (flat list)
   const wonMatches = useMemo(() => {
-    return allMatchesSorted.filter((m: any) => {
-      const myAlliance = m.alliances?.find((a: any) =>
-        a.teams?.some((t: any) => t.team?.name === teamNumber),
-      );
-      const oppAlliance = m.alliances?.find((a: any) => a.color !== myAlliance?.color);
-      return (myAlliance?.score ?? 0) > (oppAlliance?.score ?? 0);
-    });
-  }, [allMatchesSorted, teamNumber]);
+    if (!matches) return [];
+    return [...matches]
+      .filter((m: any) => {
+        const myAlliance = m.alliances?.find((a: any) =>
+          a.teams?.some((t: any) => t.team?.name === teamNumber),
+        );
+        const oppAlliance = m.alliances?.find((a: any) => a.color !== myAlliance?.color);
+        return (myAlliance?.score ?? 0) > (oppAlliance?.score ?? 0);
+      })
+      .sort((a: any, b: any) => {
+        const aTime = a.started ? new Date(a.started).getTime() : 0;
+        const bTime = b.started ? new Date(b.started).getTime() : 0;
+        return bTime - aTime;
+      });
+  }, [matches, teamNumber]);
 
   if (loading) {
     return (
