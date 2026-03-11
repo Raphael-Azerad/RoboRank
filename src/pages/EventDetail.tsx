@@ -790,7 +790,7 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
           </div>
         )}
         {data && (
-          <div className="space-y-5">
+          <div className="space-y-5 overflow-y-auto pr-1">
             {/* Team comparison header */}
             <div className="grid grid-cols-3 gap-4 text-center py-2">
               <div className="space-y-1.5">
