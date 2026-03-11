@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   getWorldSkillsRankings,
   getTeamRankings,
-  getTeamSkills,
+  getTeamByNumber,
   calculateRecordFromRankings,
   SEASONS,
   type SeasonKey,
@@ -96,16 +96,7 @@ async function getGlobalSkillsPool(season: SeasonKey, gradeLevel: GradeLevel): P
 }
 
 /**
- * Improved RoboRank v2 algorithm
- * Combines competition record with skills performance for a holistic score.
- *
- * Components (total = 100):
- * - Win Rate (25%): raw win percentage
- * - Ranking Percentile (20%): average placement across events
- * - Skills Combined (20%): global skills score normalized
- * - Consistency (15%): low variance in event placements
- * - Event Volume (10%): number of events attended
- * - High Score (10%): best single match score
+ * Improved RoboRank v2 algorithm — scaled so top teams reach 95-100.
  */
 function calculateRoboRankV2(
   rankings: any[],
@@ -114,14 +105,13 @@ function calculateRoboRankV2(
   if (!rankings || rankings.length === 0) return 0;
 
   let wins = 0, losses = 0, ties = 0;
-  let totalWP = 0, highScore = 0, totalAvgPoints = 0;
+  let highScore = 0, totalAvgPoints = 0;
   const percentiles: number[] = [];
 
   rankings.forEach((r: any) => {
     wins += r.wins || 0;
     losses += r.losses || 0;
     ties += r.ties || 0;
-    totalWP += r.wp || 0;
     if (r.high_score > highScore) highScore = r.high_score;
     totalAvgPoints += r.average_points || 0;
 
@@ -145,31 +135,30 @@ function calculateRoboRankV2(
     : 50;
   const rankComponent = avgPercentile * 0.20;
 
-  // 3. Skills Combined (20%) - normalized to ~450 max realistic score
-  const skillsComponent = Math.min(skillsCombined / 450, 1) * 100 * 0.20;
+  // 3. Skills Combined (20%) - normalized to ~350 for realistic top scores
+  const skillsComponent = Math.min(skillsCombined / 350, 1) * 100 * 0.20;
 
   // 4. Consistency (15%) - low std dev in percentiles = high consistency
-  let consistencyScore = 75; // default if only 1 event
+  let consistencyScore = 75;
   if (percentiles.length >= 2) {
     const mean = avgPercentile;
     const variance = percentiles.reduce((sum, p) => sum + (p - mean) ** 2, 0) / percentiles.length;
     const stdDev = Math.sqrt(variance);
-    // Lower std dev = better. 0 stddev = 100, 40+ stddev = 0
     consistencyScore = Math.max(0, 100 - stdDev * 2.5);
   }
   const consistencyComponent = consistencyScore * 0.15;
 
-  // 5. Event Volume (10%) - caps at 8 events
+  // 5. Event Volume (10%) - caps at 6 events
   const eventsAttended = rankings.length;
-  const volumeComponent = Math.min(eventsAttended / 8, 1) * 100 * 0.10;
+  const volumeComponent = Math.min(eventsAttended / 6, 1) * 100 * 0.10;
 
-  // 6. High Score (10%) - normalized to ~120 max realistic
-  const highScoreComponent = Math.min(highScore / 120, 1) * 100 * 0.10;
+  // 6. High Score (10%) - normalized to ~100
+  const highScoreComponent = Math.min(highScore / 100, 1) * 100 * 0.10;
 
-  return Math.round(Math.min(100,
-    winComponent + rankComponent + skillsComponent +
-    consistencyComponent + volumeComponent + highScoreComponent
-  ));
+  const raw = winComponent + rankComponent + skillsComponent +
+    consistencyComponent + volumeComponent + highScoreComponent;
+
+  return Math.round(Math.min(100, raw));
 }
 
 export default function Rankings() {
@@ -190,6 +179,7 @@ export default function Rankings() {
     staleTime: 15 * 60 * 1000,
   });
 
+  // Cache RoboRank results so we can look up scores for skills tab
   const { data: roboRankLeaderboard, isLoading: roboRankLoading } = useQuery({
     queryKey: ["globalRoboRank", season, gradeLevel],
     queryFn: async () => {
@@ -232,7 +222,6 @@ export default function Rankings() {
           }),
         );
 
-        // Update streamed results progressively so users see teams appearing
         const sorted = [...results].sort((a, b) => b.score - a.score || b.skillsCombined - a.skillsCombined);
         setStreamedResults(sorted);
         setProgress({ processed: Math.min(i + 25, candidates.length), total: candidates.length, done: false });
@@ -249,6 +238,7 @@ export default function Rankings() {
     staleTime: 15 * 60 * 1000,
   });
 
+  // Search navigates to team page directly (works for ANY team, not just top 2000)
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const q = searchQuery.trim().toUpperCase();
@@ -257,8 +247,13 @@ export default function Rankings() {
 
   const loading = tab === "skills" ? skillsLoading : (roboRankLoading && streamedResults.length === 0);
 
-  // Use streamed results while still loading, final data when done
   const activeRoboRank = roboRankLeaderboard ?? streamedResults;
+
+  // Build a lookup map for RoboRank scores to show in skills tab
+  const roboRankMap = new Map<number, number>();
+  (roboRankLeaderboard ?? streamedResults)?.forEach((t) => {
+    roboRankMap.set(t.id, t.score);
+  });
 
   const filteredSkills = skillsLeaderboard?.filter((t) => {
     if (!searchQuery.trim()) return true;
@@ -298,12 +293,13 @@ export default function Rankings() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Filter by team number or name..."
+              placeholder="Search any team number (press Enter to view)..."
               className="pl-10 bg-card"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
+          <p className="text-xs text-muted-foreground mt-1">Press Enter to look up any team globally. Type to filter the leaderboard below.</p>
         </form>
 
         {loading && (
@@ -315,7 +311,6 @@ export default function Rankings() {
           </div>
         )}
 
-        {/* Progress bar while RoboRank is streaming */}
         {tab === "roborank" && roboRankLoading && streamedResults.length > 0 && (
           <div className="space-y-1">
             <div className="flex justify-between text-xs text-muted-foreground">
@@ -341,10 +336,11 @@ export default function Rankings() {
               <div className="rounded-xl border border-border/50 overflow-hidden">
                 <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   <div className="col-span-1">#</div>
-                  <div className="col-span-4">Team</div>
+                  <div className="col-span-3">Team</div>
                   <div className="col-span-2 text-center">Driver</div>
                   <div className="col-span-2 text-center">Prog</div>
-                  <div className="col-span-3 text-center">Combined</div>
+                  <div className="col-span-2 text-center">Combined</div>
+                  <div className="col-span-2 text-center">RoboRank</div>
                 </div>
                 {filteredSkills.slice(0, displayCount).map((team, i) => (
                   <motion.div
@@ -356,14 +352,21 @@ export default function Rankings() {
                     className="grid grid-cols-12 gap-2 px-6 py-4 items-center border-t border-border/30 hover:bg-accent/50 transition-colors cursor-pointer"
                   >
                     <div className="col-span-1 stat-number text-muted-foreground">{team.rank}</div>
-                    <div className="col-span-4">
+                    <div className="col-span-3">
                       <div className="font-display font-semibold">{team.number}</div>
                       <div className="text-xs text-muted-foreground truncate">{team.name}</div>
                     </div>
                     <div className="col-span-2 text-center stat-number text-sm">{team.driverScore}</div>
                     <div className="col-span-2 text-center stat-number text-sm">{team.progScore}</div>
-                    <div className="col-span-3 text-center">
+                    <div className="col-span-2 text-center">
                       <span className="stat-number text-primary text-lg">{team.combined}</span>
+                    </div>
+                    <div className="col-span-2 flex justify-center">
+                      {roboRankMap.has(team.id) ? (
+                        <RoboRankScore score={roboRankMap.get(team.id)!} size="sm" />
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </div>
                   </motion.div>
                 ))}
