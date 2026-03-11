@@ -780,7 +780,7 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">{team1} vs {team2}</DialogTitle>
         </DialogHeader>
@@ -790,7 +790,7 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
           </div>
         )}
         {data && (
-          <div className="space-y-5">
+          <div className="space-y-5 overflow-y-auto pr-1">
             {/* Team comparison header */}
             <div className="grid grid-cols-3 gap-4 text-center py-2">
               <div className="space-y-1.5">
@@ -832,7 +832,7 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
                   <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{data.sharedMatches.length}</span>
                 </div>
                 <div className="divide-y divide-border/20">
-                  {data.sharedMatches.slice(0, 15).map((m: any) => (
+                  {data.sharedMatches.map((m: any) => (
                     <div key={m.id} className="px-3 py-2.5 text-xs hover:bg-accent/20 transition-colors">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
@@ -864,11 +864,6 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
                     </div>
                   ))}
                 </div>
-                {data.sharedMatches.length > 15 && (
-                  <div className="px-3 py-2 text-[10px] text-muted-foreground text-center bg-muted/30">
-                    +{data.sharedMatches.length - 15} more matches
-                  </div>
-                )}
               </div>
             ) : (
               <div className="text-sm text-muted-foreground rounded-lg border border-border/30 border-dashed p-6 text-center">

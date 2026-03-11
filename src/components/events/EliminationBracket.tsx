@@ -33,34 +33,13 @@ interface SeriesResult {
 
 interface LineCoord { x1: number; y1: number; x2: number; y2: number }
 
-function roundLabel(round: number): string {
-  switch (round) {
-    case 3:
-      return "Round of 16";
-    case 4:
-      return "Quarterfinals";
-    case 5:
-      return "Semifinals";
-    case 6:
-      return "Finals";
-    default:
-      return `Round ${round}`;
-  }
-}
-
-function expectedSeriesCount(round: number): number {
-  switch (round) {
-    case 3:
-      return 8;
-    case 4:
-      return 4;
-    case 5:
-      return 2;
-    case 6:
-      return 1;
-    default:
-      return 0;
-  }
+function deriveLabelFromSeriesCount(count: number): string {
+  if (count >= 8) return "Round of 16";
+  if (count === 4) return "Quarterfinals";
+  if (count === 2) return "Semifinals";
+  if (count === 1) return "Finals";
+  if (count === 3) return "Quarterfinals"; // 3 remaining QF series
+  return `Round (${count} series)`;
 }
 
 function groupMatchesBySeries(matches: BracketMatch[]): SeriesResult[] {
@@ -169,24 +148,8 @@ function BracketSeriesCard({ series, delay }: { series: SeriesResult; delay: num
   );
 }
 
-function PlaceholderSeriesCard({ delay }: { delay: number }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay }}
-      className="rounded-lg border border-border/30 border-dashed overflow-hidden bg-card/50 w-full"
-    >
-      <div className="flex items-center justify-center px-3 py-2 text-xs text-muted-foreground/60">TBD</div>
-      <div className="h-px bg-border/20" />
-      <div className="flex items-center justify-center px-3 py-2 text-xs text-muted-foreground/60">TBD</div>
-    </motion.div>
-  );
-}
-
 export function EliminationBracket({
   rounds,
-  showPlaceholders = true,
 }: {
   rounds: BracketRound[];
   showPlaceholders?: boolean;
@@ -195,40 +158,24 @@ export function EliminationBracket({
   const cardRefsMap = useRef<Map<string, HTMLDivElement>>(new Map());
   const [lines, setLines] = useState<LineCoord[]>([]);
 
+  // Group each API round into series, then sort by series count descending
+  // to derive correct tournament labels (most series = earliest round)
   const seriesByRound = useMemo(() => {
-    const baseRounds = rounds
+    const roundsWithSeries = rounds
       .map((round) => ({
         round: round.round,
-        realCount: groupMatchesBySeries(round.matches).length,
         series: groupMatchesBySeries(round.matches),
       }))
-      .sort((a, b) => a.round - b.round);
+      .filter((r) => r.series.length > 0)
+      .sort((a, b) => b.series.length - a.series.length); // most series first = earliest round
 
-    if (!showPlaceholders) return baseRounds;
-
-    return baseRounds.map((roundData) => {
-      const targetCount = expectedSeriesCount(roundData.round);
-      if (targetCount <= 0 || roundData.series.length >= targetCount) return roundData;
-
-      const padded = [...roundData.series];
-      while (padded.length < targetCount) {
-        padded.push({
-          instance: -(padded.length + 1),
-          redTeams: "TBD",
-          blueTeams: "TBD",
-          redWins: 0,
-          blueWins: 0,
-          scores: [],
-          winner: "tbd",
-        });
-      }
-
-      return {
-        ...roundData,
-        series: padded,
-      };
-    });
-  }, [rounds, showPlaceholders]);
+    // Now assign labels based on series count order
+    return roundsWithSeries.map((r) => ({
+      ...r,
+      label: deriveLabelFromSeriesCount(r.series.length),
+      realCount: r.series.length,
+    }));
+  }, [rounds]);
 
   const registerCard = useCallback((key: string, el: HTMLDivElement | null) => {
     if (el) cardRefsMap.current.set(key, el);
@@ -250,8 +197,8 @@ export function EliminationBracket({
           const targetIndex = Math.floor(seriesIndex / 2);
           if (targetIndex >= nextRound.series.length) continue;
 
-          const sourceCard = cardRefsMap.current.get(`${currentRound.round}-${seriesIndex}`);
-          const targetCard = cardRefsMap.current.get(`${nextRound.round}-${targetIndex}`);
+          const sourceCard = cardRefsMap.current.get(`${roundIndex}-${seriesIndex}`);
+          const targetCard = cardRefsMap.current.get(`${roundIndex + 1}-${targetIndex}`);
 
           if (!sourceCard || !targetCard) continue;
 
@@ -301,18 +248,14 @@ export function EliminationBracket({
       {seriesByRound.map((roundData, roundIndex) => (
         <div key={roundData.round} className="flex flex-col gap-2 min-w-[240px] relative z-10">
           <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider text-center mb-1">
-            {roundLabel(roundData.round)}
+            {roundData.label}
             <span className="ml-1.5 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{roundData.realCount}</span>
           </div>
 
           <div className="flex flex-col gap-3 justify-around flex-1">
             {roundData.series.map((series, seriesIndex) => (
-              <div key={`${roundData.round}-${seriesIndex}`} ref={(el) => registerCard(`${roundData.round}-${seriesIndex}`, el)}>
-                {series.instance > 0 ? (
-                  <BracketSeriesCard series={series} delay={roundIndex * 0.1 + seriesIndex * 0.03} />
-                ) : (
-                  <PlaceholderSeriesCard delay={roundIndex * 0.1 + seriesIndex * 0.03} />
-                )}
+              <div key={`${roundIndex}-${seriesIndex}`} ref={(el) => registerCard(`${roundIndex}-${seriesIndex}`, el)}>
+                <BracketSeriesCard series={series} delay={roundIndex * 0.1 + seriesIndex * 0.03} />
               </div>
             ))}
           </div>
