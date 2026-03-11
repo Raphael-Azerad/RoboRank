@@ -6,7 +6,7 @@ import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getTeamByNumber, getTeamRankings, getTeamAwards, calculateRecordFromRankings, calculateRoboRank, SEASONS } from "@/lib/robotevents";
+import { getTeamByNumber, getTeamRankings, getTeamAwards, calculateRecordFromRankings, calculateRoboRank, getTeamSkillsScore, SEASONS } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
