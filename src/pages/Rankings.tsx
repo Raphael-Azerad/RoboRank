@@ -255,7 +255,10 @@ export default function Rankings() {
     if (q) navigate(`/team/${q}`);
   };
 
-  const loading = tab === "skills" ? skillsLoading : roboRankLoading;
+  const loading = tab === "skills" ? skillsLoading : (roboRankLoading && streamedResults.length === 0);
+
+  // Use streamed results while still loading, final data when done
+  const activeRoboRank = roboRankLeaderboard ?? streamedResults;
 
   const filteredSkills = skillsLeaderboard?.filter((t) => {
     if (!searchQuery.trim()) return true;
@@ -263,7 +266,7 @@ export default function Rankings() {
     return t.number.toUpperCase().includes(q) || t.name.toUpperCase().includes(q);
   });
 
-  const filteredRoboRank = roboRankLeaderboard?.filter((t) => {
+  const filteredRoboRank = activeRoboRank?.filter((t) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.trim().toUpperCase();
     return t.number.toUpperCase().includes(q) || t.name.toUpperCase().includes(q);
