@@ -413,23 +413,32 @@ export default function EventDetail() {
               No elimination matches found.
             </div>
           ) : (
-            <div className="space-y-4">
-              {bracketRounds.map(({ round, label, matches }) => (
-                <div key={round} className="rounded-xl border border-border/50 overflow-hidden">
-                  <div className="px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
-                    <Swords className="h-3.5 w-3.5" />
-                    {label}
-                    <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{matches.length}</span>
+            <div className="space-y-6">
+              {/* Visual Bracket */}
+              <div className="rounded-xl border border-border/50 card-gradient p-4 overflow-x-auto">
+                <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Elimination Bracket</h3>
+                <EliminationBracket rounds={bracketRounds} />
+              </div>
+
+              {/* Detailed match list fallback */}
+              <div className="space-y-4">
+                {bracketRounds.map(({ round, label, matches }) => (
+                  <div key={round} className="rounded-xl border border-border/50 overflow-hidden">
+                    <div className="px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+                      <Swords className="h-3.5 w-3.5" />
+                      {label}
+                      <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{matches.length}</span>
+                    </div>
+                    <div className="grid grid-cols-12 gap-1 px-4 py-1.5 bg-muted/30 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                      <div className="col-span-2">Match</div>
+                      <div className="col-span-4">Red Alliance</div>
+                      <div className="col-span-2 text-center">Score</div>
+                      <div className="col-span-4 text-right">Blue Alliance</div>
+                    </div>
+                    {matches.map((m: any, i: number) => renderMatchRow(m, i))}
                   </div>
-                  <div className="grid grid-cols-12 gap-1 px-4 py-1.5 bg-muted/30 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                    <div className="col-span-2">Match</div>
-                    <div className="col-span-4">Red Alliance</div>
-                    <div className="col-span-2 text-center">Score</div>
-                    <div className="col-span-4 text-right">Blue Alliance</div>
-                  </div>
-                  {matches.map((m: any, i: number) => renderMatchRow(m, i))}
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )
         )}
