@@ -6,7 +6,7 @@ import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getTeamByNumber, getTeamRankings, getTeamAwards, calculateRecordFromRankings, calculateRoboRank, SEASONS } from "@/lib/robotevents";
+import { getTeamByNumber, getTeamRankings, getTeamAwards, calculateRecordFromRankings, calculateRoboRank, getTeamSkillsScore, SEASONS } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -43,8 +43,14 @@ export default function Dashboard() {
     enabled: !!teamId,
   });
 
+  const { data: skillsScore } = useQuery({
+    queryKey: ["teamSkillsScore", teamId, season],
+    queryFn: () => getTeamSkillsScore(teamId!, season),
+    enabled: !!teamId,
+  });
+
   const record = rankings ? calculateRecordFromRankings(rankings) : null;
-  const roboRank = rankings ? calculateRoboRank(rankings) : null;
+  const roboRank = rankings ? calculateRoboRank(rankings, skillsScore ?? 0) : null;
   const loading = teamLoading || rankingsLoading;
 
   return (

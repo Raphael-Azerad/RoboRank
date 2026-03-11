@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
@@ -10,7 +10,9 @@ import {
   getWorldSkillsRankings,
   getTeamRankings,
   getTeamByNumber,
+  getTeamSkillsScore,
   calculateRecordFromRankings,
+  calculateRoboRank,
   SEASONS,
   type SeasonKey,
 } from "@/lib/robotevents";
@@ -95,71 +97,7 @@ async function getGlobalSkillsPool(season: SeasonKey, gradeLevel: GradeLevel): P
     .map((team, index) => ({ ...team, rank: index + 1 }));
 }
 
-/**
- * Improved RoboRank v2 algorithm — scaled so top teams reach 95-100.
- */
-function calculateRoboRankV2(
-  rankings: any[],
-  skillsCombined: number
-): number {
-  if (!rankings || rankings.length === 0) return 0;
-
-  let wins = 0, losses = 0, ties = 0;
-  let highScore = 0, totalAvgPoints = 0;
-  const percentiles: number[] = [];
-
-  rankings.forEach((r: any) => {
-    wins += r.wins || 0;
-    losses += r.losses || 0;
-    ties += r.ties || 0;
-    if (r.high_score > highScore) highScore = r.high_score;
-    totalAvgPoints += r.average_points || 0;
-
-    if (r.rank && r.rank > 0) {
-      const fieldSize = Math.max(r.rank, 24);
-      percentiles.push(Math.max(0, (1 - (r.rank - 1) / fieldSize) * 100));
-    }
-  });
-
-  const total = wins + losses + ties;
-  if (total < 3) return 0;
-
-  const winRate = total > 0 ? (wins / total) * 100 : 0;
-
-  // 1. Win Rate (25%)
-  const winComponent = winRate * 0.25;
-
-  // 2. Ranking Percentile (20%)
-  const avgPercentile = percentiles.length > 0
-    ? percentiles.reduce((a, b) => a + b, 0) / percentiles.length
-    : 50;
-  const rankComponent = avgPercentile * 0.20;
-
-  // 3. Skills Combined (20%) - normalized to ~350 for realistic top scores
-  const skillsComponent = Math.min(skillsCombined / 350, 1) * 100 * 0.20;
-
-  // 4. Consistency (15%) - low std dev in percentiles = high consistency
-  let consistencyScore = 75;
-  if (percentiles.length >= 2) {
-    const mean = avgPercentile;
-    const variance = percentiles.reduce((sum, p) => sum + (p - mean) ** 2, 0) / percentiles.length;
-    const stdDev = Math.sqrt(variance);
-    consistencyScore = Math.max(0, 100 - stdDev * 2.5);
-  }
-  const consistencyComponent = consistencyScore * 0.15;
-
-  // 5. Event Volume (10%) - caps at 6 events
-  const eventsAttended = rankings.length;
-  const volumeComponent = Math.min(eventsAttended / 6, 1) * 100 * 0.10;
-
-  // 6. High Score (10%) - normalized to ~100
-  const highScoreComponent = Math.min(highScore / 100, 1) * 100 * 0.10;
-
-  const raw = winComponent + rankComponent + skillsComponent +
-    consistencyComponent + volumeComponent + highScoreComponent;
-
-  return Math.round(Math.min(100, raw));
-}
+// Re-use the shared calculateRoboRank from robotevents.ts
 
 export default function Rankings() {
   const navigate = useNavigate();
@@ -169,6 +107,7 @@ export default function Rankings() {
   const [displayCount, setDisplayCount] = useState(50);
   const [streamedResults, setStreamedResults] = useState<RankedTeam[]>([]);
   const [progress, setProgress] = useState({ processed: 0, total: 0, done: false });
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const seasonInfo = SEASONS[season];
 
@@ -199,7 +138,7 @@ export default function Rankings() {
             try {
               const rankings = await getTeamRankings(team.id, season);
               const record = calculateRecordFromRankings(rankings);
-              const score = calculateRoboRankV2(rankings, team.combined);
+              const score = calculateRoboRank(rankings, team.combined);
 
               if (score > 0 && record.total >= 5) {
                 results.push({
@@ -238,6 +177,46 @@ export default function Rankings() {
     staleTime: 15 * 60 * 1000,
   });
 
+  // Debounce search for live lookup
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery.trim().toUpperCase()), 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Live search: fetch any team not in top 2000 and calculate their RoboRank
+  const { data: liveSearchResult, isLoading: liveSearchLoading } = useQuery({
+    queryKey: ["liveRoboRankSearch", debouncedSearch, season],
+    queryFn: async () => {
+      const teamData = await getTeamByNumber(debouncedSearch);
+      if (!teamData) return null;
+      // Check if already in leaderboard
+      const existing = activeRoboRankBase?.find((t) => t.number.toUpperCase() === debouncedSearch);
+      if (existing) return null;
+      const [rankings, skillsScore] = await Promise.all([
+        getTeamRankings(teamData.id, season),
+        getTeamSkillsScore(teamData.id, season),
+      ]);
+      const record = calculateRecordFromRankings(rankings);
+      const score = calculateRoboRank(rankings, skillsScore);
+      if (score <= 0) return null;
+      return {
+        number: teamData.number,
+        name: teamData.team_name || "",
+        id: teamData.id,
+        score,
+        wins: record.wins,
+        losses: record.losses,
+        ties: record.ties,
+        total: record.total,
+        winRate: `${record.winRate}%`,
+        eventsAttended: record.eventsAttended,
+        skillsCombined: skillsScore,
+      } as RankedTeam;
+    },
+    enabled: tab === "roborank" && debouncedSearch.length >= 2,
+    staleTime: 5 * 60 * 1000,
+  });
+
   // Search navigates to team page directly (works for ANY team, not just top 2000)
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -247,11 +226,11 @@ export default function Rankings() {
 
   const loading = tab === "skills" ? skillsLoading : (roboRankLoading && streamedResults.length === 0);
 
-  const activeRoboRank = roboRankLeaderboard ?? streamedResults;
+  const activeRoboRankBase = roboRankLeaderboard ?? streamedResults;
 
   // Build a lookup map for RoboRank scores to show in skills tab
   const roboRankMap = new Map<number, number>();
-  (roboRankLeaderboard ?? streamedResults)?.forEach((t) => {
+  activeRoboRankBase?.forEach((t) => {
     roboRankMap.set(t.id, t.score);
   });
 
@@ -261,11 +240,18 @@ export default function Rankings() {
     return t.number.toUpperCase().includes(q) || t.name.toUpperCase().includes(q);
   });
 
-  const filteredRoboRank = activeRoboRank?.filter((t) => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.trim().toUpperCase();
-    return t.number.toUpperCase().includes(q) || t.name.toUpperCase().includes(q);
-  });
+  const filteredRoboRank = (() => {
+    let results = activeRoboRankBase?.filter((t) => {
+      if (!searchQuery.trim()) return true;
+      const q = searchQuery.trim().toUpperCase();
+      return t.number.toUpperCase().includes(q) || t.name.toUpperCase().includes(q);
+    }) ?? [];
+    // Append live search result if not already in list
+    if (liveSearchResult && !results.find((t) => t.id === liveSearchResult.id)) {
+      results = [...results, liveSearchResult];
+    }
+    return results;
+  })();
 
   const gradeBadge = gradeLevel === "Both" ? "All" : gradeLevel === "High School" ? "HS" : "MS";
 
@@ -299,7 +285,10 @@ export default function Rankings() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-1">Press Enter to look up any team globally. Type to filter the leaderboard below.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {tab === "roborank" ? "Type to filter or search any team globally. Press Enter to view profile." : "Press Enter to look up any team globally. Type to filter the leaderboard below."}
+            {liveSearchLoading && tab === "roborank" && <span className="ml-2 text-primary">Searching...</span>}
+          </p>
         </form>
 
         {loading && (

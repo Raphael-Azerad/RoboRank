@@ -20,15 +20,23 @@ export function RoboRankScore({ score, size = "md" }: RoboRankScoreProps) {
     return { stroke: "hsl(0, 72%, 51%)", text: "text-destructive" };
   };
 
-  // Smooth HSL interpolation: red(0) → green(145)
+  // Smooth HSL interpolation: red(0) → yellow(45) → green(145)
   const getInterpolatedStroke = (s: number) => {
     const clamped = Math.max(0, Math.min(100, s));
-    // Hue: 0 (red) → 145 (green)
-    const hue = (clamped / 100) * 145;
-    // Saturation: keep vibrant
-    const sat = 70 + (clamped / 100) * 5;
-    // Lightness: slightly brighter in middle
-    const light = 45 + Math.sin((clamped / 100) * Math.PI) * 10;
+    const t = clamped / 100;
+    // Use cubic easing through yellow zone for smoother mid-range
+    let hue: number;
+    if (t < 0.5) {
+      // 0→50: red(0) to yellow(45), ease-out
+      const t2 = t * 2; // normalize to 0-1
+      hue = t2 * 45;
+    } else {
+      // 50→100: yellow(45) to green(145), ease-in
+      const t2 = (t - 0.5) * 2; // normalize to 0-1
+      hue = 45 + t2 * 100;
+    }
+    const sat = 72;
+    const light = 48 - Math.abs(t - 0.5) * 10;
     return `hsl(${hue}, ${sat}%, ${light}%)`;
   };
 
