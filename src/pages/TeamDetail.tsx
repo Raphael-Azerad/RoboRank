@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
@@ -10,6 +10,8 @@ import { Trophy, Target, Award, MapPin, Building, ArrowLeft, Loader2, TrendingUp
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 interface GroupedAward {
   title: string;
@@ -69,10 +71,52 @@ function AwardGroup({ group }: { group: GroupedAward }) {
   );
 }
 
+function roundLabel(round: number): string {
+  switch (round) {
+    case 1: return "Practice";
+    case 2: return "Qual";
+    case 3: return "R16";
+    case 4: return "QF";
+    case 5: return "SF";
+    case 6: return "Final";
+    default: return `R${round}`;
+  }
+}
+
+function MatchRow({ match, teamNumber }: { match: any; teamNumber: string }) {
+  const myAlliance = match.alliances?.find((a: any) =>
+    a.teams?.some((t: any) => t.team?.name === teamNumber),
+  );
+  const oppAlliance = match.alliances?.find((a: any) => a.color !== myAlliance?.color);
+  const myScore = myAlliance?.score ?? 0;
+  const oppScore = oppAlliance?.score ?? 0;
+  const won = myScore > oppScore;
+  const tied = myScore === oppScore && myScore > 0;
+
+  return (
+    <div className="rounded-lg border border-border/30 p-3 flex items-center justify-between hover:bg-accent/30 transition-colors">
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium truncate">{match.event?.name || "Unknown Event"}</div>
+        <div className="text-xs text-muted-foreground">{match.name || `${roundLabel(match.round)} ${match.matchnum}`} · {match.division?.name}</div>
+      </div>
+      <div className="flex items-center gap-3 shrink-0 ml-4">
+        <span className={cn("text-sm stat-number", won ? "text-[hsl(var(--success))]" : tied ? "text-muted-foreground" : "text-destructive")}>{myScore}</span>
+        <span className="text-xs text-muted-foreground">vs</span>
+        <span className="text-sm stat-number text-muted-foreground">{oppScore}</span>
+        <span className={cn("text-xs font-medium px-2 py-0.5 rounded", won ? "bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]" : tied ? "bg-muted text-muted-foreground" : "bg-destructive/10 text-destructive")}>
+          {won ? "W" : tied ? "T" : "L"}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export default function TeamDetail() {
   const { teamNumber } = useParams<{ teamNumber: string }>();
   const { season } = useSeason();
   const [awardsModalOpen, setAwardsModalOpen] = useState(false);
+  const [matchesModalOpen, setMatchesModalOpen] = useState(false);
+  const [winsModalOpen, setWinsModalOpen] = useState(false);
 
   const { data: teamData, isLoading: teamLoading } = useQuery({
     queryKey: ["team", teamNumber],
@@ -111,6 +155,30 @@ export default function TeamDetail() {
   const roboRank = rankings ? calculateRoboRank(rankings, skillsScore ?? 0) : null;
   const loading = teamLoading || rankingsLoading;
   const groupedAwards = awards ? groupAwards(awards) : [];
+
+  // All matches sorted newest first
+  const allMatchesSorted = useMemo(() => {
+    if (!matches) return [];
+    return [...matches].sort((a: any, b: any) => {
+      const aTime = a.started ? new Date(a.started).getTime() : 0;
+      const bTime = b.started ? new Date(b.started).getTime() : 0;
+      return bTime - aTime;
+    });
+  }, [matches]);
+
+  // Total match count (quals + elims)
+  const totalMatchCount = allMatchesSorted.length;
+
+  // Won matches only
+  const wonMatches = useMemo(() => {
+    return allMatchesSorted.filter((m: any) => {
+      const myAlliance = m.alliances?.find((a: any) =>
+        a.teams?.some((t: any) => t.team?.name === teamNumber),
+      );
+      const oppAlliance = m.alliances?.find((a: any) => a.color !== myAlliance?.color);
+      return (myAlliance?.score ?? 0) > (oppAlliance?.score ?? 0);
+    });
+  }, [allMatchesSorted, teamNumber]);
 
   if (loading) {
     return (
@@ -167,10 +235,14 @@ export default function TeamDetail() {
         </div>
 
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
-          <StatCard title="Win Rate" value={record ? `${record.winRate}%` : "—"} icon={Trophy}
-            subtitle={record ? `${record.wins}W-${record.losses}L-${record.ties}T` : "No data"} />
-          <StatCard title="Qual Matches" value={record ? String(record.total) : "—"} icon={Target}
-            subtitle={record ? `Across ${record.eventsAttended} events` : "No data"} />
+          <button type="button" onClick={() => setWinsModalOpen(true)} className="text-left">
+            <StatCard title="Win Rate" value={record ? `${record.winRate}%` : "—"} icon={Trophy}
+              subtitle={record ? `${record.wins}W-${record.losses}L-${record.ties}T · Tap to view wins` : "No data"} className="cursor-pointer" />
+          </button>
+          <button type="button" onClick={() => setMatchesModalOpen(true)} className="text-left">
+            <StatCard title="Matches Played" value={String(totalMatchCount)} icon={Target}
+              subtitle={`Quals + Elims · Tap to view all`} className="cursor-pointer" />
+          </button>
           <StatCard title="High Score" value={record ? String(record.highScore) : "—"} icon={Award}
             subtitle={record ? `Avg ${record.avgPointsPerEvent} pts/match` : ""} />
           <StatCard title="Total WP" value={record ? String(record.totalWP) : "—"} icon={TrendingUp}
@@ -181,6 +253,53 @@ export default function TeamDetail() {
           </button>
         </div>
 
+        {/* All Matches Dialog */}
+        <Dialog open={matchesModalOpen} onOpenChange={setMatchesModalOpen}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle>{teamData.number} — All Matches</DialogTitle>
+              <DialogDescription>
+                {seasonInfo.name} {seasonInfo.year} · {totalMatchCount} total matches (Quals + Elims)
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="flex-1 pr-2">
+              <div className="space-y-2">
+                {allMatchesSorted.length > 0 ? (
+                  allMatchesSorted.map((m: any) => (
+                    <MatchRow key={m.id} match={m} teamNumber={teamNumber!} />
+                  ))
+                ) : (
+                  <div className="text-sm text-muted-foreground text-center py-8">No matches found.</div>
+                )}
+              </div>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
+
+        {/* Won Matches Dialog */}
+        <Dialog open={winsModalOpen} onOpenChange={setWinsModalOpen}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle>{teamData.number} — Wins</DialogTitle>
+              <DialogDescription>
+                {seasonInfo.name} {seasonInfo.year} · {wonMatches.length} wins out of {totalMatchCount} matches ({record ? record.winRate : 0}%)
+              </DialogDescription>
+            </DialogHeader>
+            <ScrollArea className="flex-1 pr-2">
+              <div className="space-y-2">
+                {wonMatches.length > 0 ? (
+                  wonMatches.map((m: any) => (
+                    <MatchRow key={m.id} match={m} teamNumber={teamNumber!} />
+                  ))
+                ) : (
+                  <div className="text-sm text-muted-foreground text-center py-8">No wins found.</div>
+                )}
+              </div>
+            </ScrollArea>
+          </DialogContent>
+        </Dialog>
+
+        {/* Awards Dialog */}
         <Dialog open={awardsModalOpen} onOpenChange={setAwardsModalOpen}>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
             <DialogHeader>
@@ -226,7 +345,7 @@ export default function TeamDetail() {
                     <span className={`stat-number text-sm ${r.rank <= 3 ? "text-primary" : ""}`}>#{r.rank}</span>
                   </div>
                   <div className="col-span-2 text-center text-sm">
-                    <span className="text-success">{r.wins}W</span>
+                    <span className="text-[hsl(var(--success))]">{r.wins}W</span>
                     <span className="text-muted-foreground mx-0.5">-</span>
                     <span className="text-destructive">{r.losses}L</span>
                   </div>
@@ -242,41 +361,6 @@ export default function TeamDetail() {
           <div className="text-center py-8 text-muted-foreground">
             No event results for {seasonInfo.name} ({seasonInfo.year}).
           </div>
-        )}
-
-        {matches && matches.length > 0 && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <h2 className="text-xl font-display font-semibold mb-4">Recent Matches</h2>
-            <div className="grid gap-2">
-              {matches.slice(-20).reverse().map((m: any) => {
-                const myAlliance = m.alliances?.find((a: any) =>
-                  a.teams?.some((t: any) => t.team?.name === teamNumber),
-                );
-                const oppAlliance = m.alliances?.find((a: any) => a.color !== myAlliance?.color);
-                const myScore = myAlliance?.score ?? 0;
-                const oppScore = oppAlliance?.score ?? 0;
-                const won = myScore > oppScore;
-                const tied = myScore === oppScore && myScore > 0;
-
-                return (
-                  <div key={m.id} className="rounded-lg border border-border/30 p-4 flex items-center justify-between hover:bg-accent/30 transition-colors">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{m.event?.name}</div>
-                      <div className="text-xs text-muted-foreground">{m.name} · {m.division?.name}</div>
-                    </div>
-                    <div className="flex items-center gap-3 shrink-0 ml-4">
-                      <span className={`text-sm stat-number ${won ? "text-success" : tied ? "text-muted-foreground" : "text-destructive"}`}>{myScore}</span>
-                      <span className="text-xs text-muted-foreground">vs</span>
-                      <span className="text-sm stat-number text-muted-foreground">{oppScore}</span>
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded ${won ? "bg-success/10 text-success" : tied ? "bg-muted text-muted-foreground" : "bg-destructive/10 text-destructive"}`}>
-                        {won ? "W" : tied ? "T" : "L"}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </motion.div>
         )}
       </div>
     </AppLayout>
