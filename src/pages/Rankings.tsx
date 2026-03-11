@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
@@ -11,6 +11,7 @@ import {
   getTeamRankings,
   getTeamByNumber,
   getTeamSkillsScore,
+  fetchRobotEvents,
   calculateRecordFromRankings,
   calculateRoboRank,
   SEASONS,
@@ -97,8 +98,6 @@ async function getGlobalSkillsPool(season: SeasonKey, gradeLevel: GradeLevel): P
     .map((team, index) => ({ ...team, rank: index + 1 }));
 }
 
-// Re-use the shared calculateRoboRank from robotevents.ts
-
 export default function Rankings() {
   const navigate = useNavigate();
   const { season, gradeLevel } = useSeason();
@@ -118,7 +117,6 @@ export default function Rankings() {
     staleTime: 15 * 60 * 1000,
   });
 
-  // Cache RoboRank results so we can look up scores for skills tab
   const { data: roboRankLeaderboard, isLoading: roboRankLoading } = useQuery({
     queryKey: ["globalRoboRank", season, gradeLevel],
     queryFn: async () => {
@@ -156,7 +154,7 @@ export default function Rankings() {
                 });
               }
             } catch {
-              // ignore individual team failures
+              // ignore
             }
           }),
         );
@@ -177,47 +175,72 @@ export default function Rankings() {
     staleTime: 15 * 60 * 1000,
   });
 
-  // Debounce search for live lookup
+  // Debounce search for live API lookup
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchQuery.trim().toUpperCase()), 400);
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery.trim().toUpperCase()), 500);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Live search: fetch any team not in top 2000 and calculate their RoboRank
-  const { data: liveSearchResult, isLoading: liveSearchLoading } = useQuery({
-    queryKey: ["liveRoboRankSearch", debouncedSearch, season],
+  // Live search: search the RobotEvents API for teams matching the query
+  const { data: liveSearchResults, isLoading: liveSearchLoading } = useQuery({
+    queryKey: ["liveTeamSearch", debouncedSearch, season, tab],
     queryFn: async () => {
-      const teamData = await getTeamByNumber(debouncedSearch);
-      if (!teamData) return null;
-      // Check if already in leaderboard
-      const existing = activeRoboRankBase?.find((t) => t.number.toUpperCase() === debouncedSearch);
-      if (existing) return null;
-      const [rankings, skillsScore] = await Promise.all([
-        getTeamRankings(teamData.id, season),
-        getTeamSkillsScore(teamData.id, season),
-      ]);
-      const record = calculateRecordFromRankings(rankings);
-      const score = calculateRoboRank(rankings, skillsScore);
-      if (score <= 0) return null;
-      return {
-        number: teamData.number,
-        name: teamData.team_name || "",
-        id: teamData.id,
-        score,
-        wins: record.wins,
-        losses: record.losses,
-        ties: record.ties,
-        total: record.total,
-        winRate: `${record.winRate}%`,
-        eventsAttended: record.eventsAttended,
-        skillsCombined: skillsScore,
-      } as RankedTeam;
+      // Search the API for teams matching the query
+      const result = await fetchRobotEvents("/teams", {
+        "number[]": debouncedSearch,
+        "program[]": "1",
+        per_page: "10",
+      });
+      const teams = result?.data || [];
+      if (teams.length === 0) return [];
+
+      // For RoboRank tab, calculate scores for found teams
+      if (tab === "roborank") {
+        const ranked: RankedTeam[] = [];
+        await Promise.all(
+          teams.map(async (team: any) => {
+            // Skip if already in leaderboard
+            const existing = (roboRankLeaderboard ?? streamedResults)?.find((t) => t.id === team.id);
+            if (existing) return;
+            try {
+              const [rankings, skillsScore] = await Promise.all([
+                getTeamRankings(team.id, season),
+                getTeamSkillsScore(team.id, season),
+              ]);
+              const record = calculateRecordFromRankings(rankings);
+              const score = calculateRoboRank(rankings, skillsScore);
+              ranked.push({
+                number: team.number,
+                name: team.team_name || "",
+                id: team.id,
+                score,
+                wins: record.wins,
+                losses: record.losses,
+                ties: record.ties,
+                total: record.total,
+                winRate: `${record.winRate}%`,
+                eventsAttended: record.eventsAttended,
+                skillsCombined: skillsScore,
+              });
+            } catch {
+              // ignore
+            }
+          })
+        );
+        return ranked;
+      }
+
+      // For skills tab, return basic team info for filtering
+      return teams.map((t: any) => ({
+        id: t.id,
+        number: t.number,
+        name: t.team_name || "",
+      }));
     },
-    enabled: tab === "roborank" && debouncedSearch.length >= 2,
+    enabled: debouncedSearch.length >= 2,
     staleTime: 5 * 60 * 1000,
   });
 
-  // Search navigates to team page directly (works for ANY team, not just top 2000)
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const q = searchQuery.trim().toUpperCase();
@@ -246,9 +269,14 @@ export default function Rankings() {
       const q = searchQuery.trim().toUpperCase();
       return t.number.toUpperCase().includes(q) || t.name.toUpperCase().includes(q);
     }) ?? [];
-    // Append live search result if not already in list
-    if (liveSearchResult && !results.find((t) => t.id === liveSearchResult.id)) {
-      results = [...results, liveSearchResult];
+    // Append live search results that aren't already in the list
+    if (liveSearchResults && tab === "roborank") {
+      const liveRanked = liveSearchResults as RankedTeam[];
+      liveRanked.forEach((lr) => {
+        if (!results.find((t) => t.id === lr.id)) {
+          results = [...results, lr];
+        }
+      });
     }
     return results;
   })();
@@ -279,15 +307,15 @@ export default function Rankings() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Search any team number (press Enter to view)..."
+              placeholder="Search any team number..."
               className="pl-10 bg-card"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            {tab === "roborank" ? "Type to filter or search any team globally. Press Enter to view profile." : "Press Enter to look up any team globally. Type to filter the leaderboard below."}
-            {liveSearchLoading && tab === "roborank" && <span className="ml-2 text-primary">Searching...</span>}
+            Type to search globally. Press Enter to view profile.
+            {liveSearchLoading && <span className="ml-2 text-primary">Searching...</span>}
           </p>
         </form>
 
@@ -416,7 +444,9 @@ export default function Rankings() {
         
         {tab === "roborank" && !loading && filteredRoboRank && filteredRoboRank.length === 0 && (
           <div className="text-sm text-muted-foreground rounded-lg border border-border/50 card-gradient p-8 text-center">
-            No teams found for {seasonInfo.name}.
+            {debouncedSearch.length >= 2 && liveSearchLoading
+              ? "Searching..."
+              : `No teams found for ${seasonInfo.name}.`}
           </div>
         )}
       </div>
