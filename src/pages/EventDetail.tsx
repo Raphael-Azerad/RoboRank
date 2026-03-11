@@ -832,7 +832,7 @@ function HeadToHeadDialog({ open, onOpenChange, team1, team2 }: {
                   <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{data.sharedMatches.length}</span>
                 </div>
                 <div className="divide-y divide-border/20">
-                  {data.sharedMatches.slice(0, 15).map((m: any) => (
+                  {data.sharedMatches.map((m: any) => (
                     <div key={m.id} className="px-3 py-2.5 text-xs hover:bg-accent/20 transition-colors">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
