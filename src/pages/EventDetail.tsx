@@ -38,6 +38,8 @@ export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const [tab, setTab] = useState<DetailTab>("teams");
+  const [h2hTeams, setH2hTeams] = useState<[string, string] | null>(null);
+  const [h2hOpen, setH2hOpen] = useState(false);
 
   const { data: eventData, isLoading: eventLoading } = useQuery({
     queryKey: ["event", eventId],
