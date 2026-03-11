@@ -666,42 +666,72 @@ export default function Events() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-border bg-card shadow-xl p-4 max-w-3xl w-[95vw]"
+            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-border bg-card shadow-xl p-4 w-[95vw] max-w-4xl max-h-[50vh] overflow-hidden flex flex-col"
           >
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 shrink-0">
               <h3 className="text-sm font-display font-semibold">Comparing {compareEvents.length} Events</h3>
               <Button variant="ghost" size="sm" onClick={() => { setCompareIds([]); setShowCompare(false); }}>
                 <X className="h-3.5 w-3.5 mr-1" /> Clear
               </Button>
             </div>
-            <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${Math.min(compareEvents.length, 4)}, 1fr)` }}>
-              {compareEvents.map((event: any) => {
-                const loc = event.location;
-                return (
-                  <div key={event.id} className="rounded-lg border border-border/50 p-3 text-xs space-y-1.5">
-                    <div className="font-display font-semibold text-sm line-clamp-2">{event.name}</div>
-                    <div className="text-muted-foreground flex items-center gap-1">
-                      <CalendarIcon className="h-3 w-3" />
-                      {formatDateRange(event.start, event.end)}
-                    </div>
-                    {loc?.city && (
-                      <div className="text-muted-foreground flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        {loc.city}, {loc.region}
-                      </div>
-                    )}
-                    {(event.teams_count || event.stats?.teams) && (
-                      <div className="text-muted-foreground flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        {event.teams_count || event.stats?.teams} teams
-                      </div>
-                    )}
-                    <Button variant="outline" size="sm" className="w-full mt-2 text-xs" onClick={() => navigate(`/event/${event.id}`)}>
-                      View Details
-                    </Button>
-                  </div>
-                );
-              })}
+            <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+              <table className="w-full min-w-[500px] text-xs">
+                <thead>
+                  <tr className="border-b border-border/30">
+                    <th className="text-left py-2 px-3 text-muted-foreground uppercase tracking-wider font-medium w-24">Detail</th>
+                    {compareEvents.map((event: any) => (
+                      <th key={event.id} className="text-center py-2 px-3 min-w-[140px]">
+                        <div className="font-display font-semibold text-sm line-clamp-2">{event.name}</div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b border-border/20">
+                    <td className="py-2 px-3 text-muted-foreground font-medium">Date</td>
+                    {compareEvents.map((event: any) => (
+                      <td key={event.id} className="py-2 px-3 text-center">{formatDateRange(event.start, event.end)}</td>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-border/20">
+                    <td className="py-2 px-3 text-muted-foreground font-medium">Location</td>
+                    {compareEvents.map((event: any) => (
+                      <td key={event.id} className="py-2 px-3 text-center">
+                        {[event.location?.city, event.location?.region].filter(Boolean).join(", ") || "—"}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-border/20">
+                    <td className="py-2 px-3 text-muted-foreground font-medium">Teams</td>
+                    {compareEvents.map((event: any) => (
+                      <td key={event.id} className="py-2 px-3 text-center stat-number">
+                        {event.teams_count || event.stats?.teams || "—"}
+                      </td>
+                    ))}
+                  </tr>
+                  <tr className="border-b border-border/20">
+                    <td className="py-2 px-3 text-muted-foreground font-medium">Level</td>
+                    {compareEvents.map((event: any) => {
+                      const badge = getLevelBadge(event.name || "");
+                      return (
+                        <td key={event.id} className="py-2 px-3 text-center">
+                          {badge ? <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded", badge.className)}>{badge.label}</span> : "Standard"}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                  <tr>
+                    <td className="py-2 px-3" />
+                    {compareEvents.map((event: any) => (
+                      <td key={event.id} className="py-2 px-3 text-center">
+                        <Button variant="outline" size="sm" className="text-xs" onClick={() => navigate(`/event/${event.id}`)}>
+                          View Details
+                        </Button>
+                      </td>
+                    ))}
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </motion.div>
         )}
