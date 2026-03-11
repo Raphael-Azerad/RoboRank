@@ -280,20 +280,20 @@ export default function TeamDetail() {
           </button>
         </div>
 
-        {/* All Matches Dialog */}
+        {/* All Matches Dialog — grouped by event */}
         <Dialog open={matchesModalOpen} onOpenChange={setMatchesModalOpen}>
           <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
             <DialogHeader>
               <DialogTitle>{teamData.number} — All Matches</DialogTitle>
               <DialogDescription>
-                {seasonInfo.name} {seasonInfo.year} · {totalMatchCount} total matches (Quals + Elims)
+                {seasonInfo.name} {seasonInfo.year} · {totalMatchCount} total matches (Quals + Elims) · {matchesByEvent.length} events
               </DialogDescription>
             </DialogHeader>
             <ScrollArea className="flex-1 pr-2">
               <div className="space-y-2">
-                {allMatchesSorted.length > 0 ? (
-                  allMatchesSorted.map((m: any) => (
-                    <MatchRow key={m.id} match={m} teamNumber={teamNumber!} />
+                {matchesByEvent.length > 0 ? (
+                  matchesByEvent.map((ev, idx) => (
+                    <EventMatchGroup key={idx} event={ev} teamNumber={teamNumber!} />
                   ))
                 ) : (
                   <div className="text-sm text-muted-foreground text-center py-8">No matches found.</div>
