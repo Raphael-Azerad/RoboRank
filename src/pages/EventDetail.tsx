@@ -422,7 +422,7 @@ export default function EventDetail() {
               {/* Visual Bracket */}
               <div className="rounded-xl border border-border/50 card-gradient p-4 overflow-x-auto">
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">Elimination Bracket</h3>
-                <EliminationBracket rounds={bracketRounds} />
+                <EliminationBracket rounds={bracketRounds} showPlaceholders={!eventIsCompleted} />
               </div>
 
               {/* Detailed match list fallback */}
