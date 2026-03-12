@@ -36,6 +36,13 @@ export default function Dashboard() {
   const [addingGoal, setAddingGoal] = useState(false);
   const [goalLabel, setGoalLabel] = useState("");
   const seasonInfo = SEASONS[season];
+  const { status: teamStatus } = useTeamStatus();
+
+  useEffect(() => {
+    if (teamStatus === "no-team") {
+      navigate("/join-team");
+    }
+  }, [teamStatus, navigate]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
