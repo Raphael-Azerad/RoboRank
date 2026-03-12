@@ -157,7 +157,20 @@ export default function Dashboard() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* ============ HERO SECTION ============ */}
+        {/* Pending team approval banner */}
+        {teamStatus === "pending" && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-[hsl(var(--chart-4))]/30 bg-[hsl(var(--chart-4))]/5 p-4 flex items-center gap-3"
+          >
+            <Clock className="h-5 w-5 text-[hsl(var(--chart-4))] shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Awaiting team approval</p>
+              <p className="text-xs text-muted-foreground">Your team admin needs to approve your membership. You can browse stats in the meantime, but can't create scouting reports or notes.</p>
+            </div>
+          </motion.div>
+        )}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
