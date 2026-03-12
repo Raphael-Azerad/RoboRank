@@ -361,7 +361,7 @@ export default function EventDetail() {
           ))}
         </div>
 
-        {/* Division Selector — below tabs */}
+        {/* Division Selector - below tabs */}
         {hasDivisions && (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Division:</span>
