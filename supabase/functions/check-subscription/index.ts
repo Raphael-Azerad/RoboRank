@@ -96,7 +96,7 @@ serve(async (req) => {
 
     // 2. Check if any teammate has an active subscription (team-wide premium)
     // Find user's team
-    const { data: membership } = await supabaseClient
+    const { data: teamMembership } = await supabaseClient
       .from("team_members")
       .select("team_number")
       .eq("user_id", user.id)
