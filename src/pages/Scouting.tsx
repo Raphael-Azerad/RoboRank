@@ -128,15 +128,15 @@ export default function Scouting() {
   });
 
   const handleGenerate = (event: any) => {
-    if (!teamNumber) {
+    if (!teamNumber && !subscribed) {
       toast.error("You need a team to generate free scouting reports");
       return;
     }
-    if (!hasSeasonEvents) {
+    if (!subscribed && !hasSeasonEvents) {
       toast.error("Your team has no events this season. Upgrade to generate reports.");
       return;
     }
-    if (!canGenerateFree) {
+    if (!canGenerate) {
       toast.error("Free tier limit reached (1 report/month). Upgrade for unlimited.");
       return;
     }
