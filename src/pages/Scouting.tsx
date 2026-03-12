@@ -313,6 +313,13 @@ export default function Scouting() {
           <p className="text-muted-foreground mt-1">Generate detailed reports for your events</p>
         </div>
 
+        {teamStatus === "pending" && (
+          <div className="rounded-lg border border-[hsl(var(--chart-4))]/30 bg-[hsl(var(--chart-4))]/5 px-4 py-3 text-sm text-muted-foreground flex items-center gap-2">
+            <Clock className="h-4 w-4 text-[hsl(var(--chart-4))] shrink-0" />
+            Your team membership is pending approval. You can view existing reports but can't generate new ones until approved.
+          </div>
+        )
+
         {!teamNumber && (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-muted-foreground">
             <Lock className="h-4 w-4 inline mr-2 text-destructive" />
