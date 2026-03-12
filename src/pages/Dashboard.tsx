@@ -15,14 +15,14 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 
 // Season goals stored in localStorage
-function loadGoals(): { label: string; target: number; current: number }[] {
+function loadGoals(): { label: string; done: boolean }[] {
   try {
-    const stored = localStorage.getItem("roborank-season-goals");
+    const stored = localStorage.getItem("roborank-season-goals-v2");
     return stored ? JSON.parse(stored) : [];
   } catch { return []; }
 }
-function saveGoals(goals: { label: string; target: number; current: number }[]) {
-  localStorage.setItem("roborank-season-goals", JSON.stringify(goals));
+function saveGoals(goals: { label: string; done: boolean }[]) {
+  localStorage.setItem("roborank-season-goals-v2", JSON.stringify(goals));
 }
 
 export default function Dashboard() {
