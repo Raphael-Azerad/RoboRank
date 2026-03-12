@@ -36,7 +36,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "robo-rank-central"
+const SITE_NAME = "RoboRank Admin"
 const SENDER_DOMAIN = "notify.roborank.site"
 const ROOT_DOMAIN = "roborank.site"
 const FROM_DOMAIN = "roborank.site" // Domain shown in From address (may be root or sender subdomain)
