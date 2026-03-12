@@ -116,10 +116,10 @@ export default function Profile() {
     enabled: !!user.team_number,
   });
 
-  const { data: teamMembers } = useQuery({
-    queryKey: ["teamMembers", user.team_number],
+  const { data: teamMembers, refetch: refetchMembers } = useQuery({
+    queryKey: ["teamMembers", user.team_number, user.id],
     queryFn: async () => {
-      if (!user.team_number) return [];
+      if (!user.team_number || !user.id) return [];
       const { data: members } = await supabase.from("team_members")
         .select("*")
         .eq("team_number", user.team_number);
