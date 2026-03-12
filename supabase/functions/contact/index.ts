@@ -50,7 +50,6 @@ serve(async (req) => {
     const { error: enqueueError } = await supabaseClient.rpc("enqueue_email", {
       queue_name: "transactional_emails",
       payload: {
-        run_id: crypto.randomUUID(),
         message_id: messageId,
         to: NOTIFICATION_EMAIL,
         from: "RoboRank Admin <noreply@roborank.site>",
