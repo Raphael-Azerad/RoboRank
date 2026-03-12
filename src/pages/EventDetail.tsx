@@ -655,7 +655,7 @@ export default function EventDetail() {
                 <TrendingUp className="h-4 w-4 text-primary" /> What is this?
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                <strong className="text-foreground">Power Rankings</strong> predict team performance using <strong className="text-foreground">RoboRank</strong> — a composite score based on win rate, strength of schedule (AP/SP), consistency, skills scores, and event count. Higher RoboRank = stronger predicted performance.
+                <strong className="text-foreground">Power Rankings</strong> predict team performance using <strong className="text-foreground">RoboRank</strong> - a composite score based on win rate, strength of schedule (AP/SP), consistency, skills scores, and event count. Higher RoboRank = stronger predicted performance.
               </p>
               <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground pt-1">
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary" /> RoboRank score (0–100)</span>
