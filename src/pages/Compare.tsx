@@ -5,7 +5,7 @@ import { Search, Loader2, Plus, X, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { getTeamByNumber, getTeamRankings, getTeamSkillsScore, getTeamMatches, calculateRecordFromRankings, calculateRecordFromMatches, calculateRoboRank, fetchRobotEvents, SEASONS } from "@/lib/robotevents";
+import { getTeamByNumber, getTeamRankings, getTeamSkillsScore, getTeamMatches, calculateRecordFromRankings, calculateRecordFromMatches, calculateRoboRank, searchTeamsPartial, SEASONS } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -68,8 +68,15 @@ function TeamSearchInput({
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
       try {
-        const result = await fetchRobotEvents("/teams", { "number[]": value, "program[]": "1" });
-        setSuggestions(result?.data?.slice(0, 8) || []);
+        const results = await searchTeamsPartial(value);
+        // Also filter by team name if query looks like text
+        const q = value.toLowerCase();
+        const filtered = results.filter((t: any) => {
+          const num = (t.number || "").toLowerCase();
+          const name = (t.team_name || "").toLowerCase();
+          return num.includes(q) || name.includes(q);
+        });
+        setSuggestions(filtered.slice(0, 8));
       } catch {
         setSuggestions([]);
       }

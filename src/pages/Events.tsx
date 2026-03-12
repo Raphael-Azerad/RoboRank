@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAllPages, getTeamByNumber, getTeamEvents, SEASONS, US_STATES, type SeasonKey } from "@/lib/robotevents";
+import { fetchAllPages, getTeamByNumber, getTeamEvents, getEventTeams, getEventSkills, getEventRankings, SEASONS, US_STATES, type SeasonKey } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
@@ -233,6 +233,64 @@ export default function Events() {
     const allEvents = allEventsData || myEvents || [];
     return allEvents.filter((e: any) => compareIds.includes(e.id));
   }, [allEventsData, myEvents, compareIds]);
+
+  // Fetch detailed comparison data for selected events
+  const { data: compareDetails, isLoading: compareDetailsLoading } = useQuery({
+    queryKey: ["compareEventDetails", compareIds],
+    queryFn: async () => {
+      const details = await Promise.all(compareIds.map(async (id) => {
+        try {
+          const [teamsData, skillsData] = await Promise.all([
+            getEventTeams(id),
+            getEventSkills(id).catch(() => []),
+          ]);
+          
+          // Get event rankings for first division
+          const evt = compareEvents.find((e: any) => e.id === id);
+          const divId = evt?.divisions?.[0]?.id || 1;
+          const rankingsData = await getEventRankings(id, divId).catch(() => null);
+          const rankings = rankingsData?.data || rankingsData || [];
+          
+          // Calculate stats
+          const teamCount = teamsData?.length || 0;
+          
+          // Skills stats
+          const teamSkillsMap = new Map<number, { driver: number; prog: number }>();
+          (skillsData || []).forEach((s: any) => {
+            const tid = s.team?.id;
+            if (!tid) return;
+            if (!teamSkillsMap.has(tid)) teamSkillsMap.set(tid, { driver: 0, prog: 0 });
+            const e = teamSkillsMap.get(tid)!;
+            if (s.type === "driver" && s.score > e.driver) e.driver = s.score;
+            if (s.type === "programming" && s.score > e.prog) e.prog = s.score;
+          });
+          
+          const skillsTeams = Array.from(teamSkillsMap.values());
+          const avgSkills = skillsTeams.length > 0
+            ? Math.round(skillsTeams.reduce((s, t) => s + t.driver + t.prog, 0) / skillsTeams.length)
+            : 0;
+          const topSkills = skillsTeams.length > 0
+            ? Math.max(...skillsTeams.map(t => t.driver + t.prog))
+            : 0;
+          
+          // Rankings stats
+          let avgWP = 0, highScore = 0, totalMatches = 0;
+          if (Array.isArray(rankings) && rankings.length > 0) {
+            avgWP = Math.round(rankings.reduce((s: number, r: any) => s + (r.wp || 0), 0) / rankings.length * 10) / 10;
+            highScore = Math.max(...rankings.map((r: any) => r.high_score || 0));
+            totalMatches = rankings.reduce((s: number, r: any) => s + (r.wins || 0) + (r.losses || 0) + (r.ties || 0), 0);
+          }
+          
+          return { eventId: id, teamCount, avgSkills, topSkills, avgWP, highScore, totalMatches, skillsTeams: skillsTeams.length };
+        } catch {
+          return { eventId: id, teamCount: 0, avgSkills: 0, topSkills: 0, avgWP: 0, highScore: 0, totalMatches: 0, skillsTeams: 0 };
+        }
+      }));
+      return details;
+    },
+    enabled: compareIds.length >= 2,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, any[]>();
@@ -674,11 +732,16 @@ export default function Events() {
                 <X className="h-3.5 w-3.5 mr-1" /> Clear
               </Button>
             </div>
+            {compareDetailsLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground py-4 justify-center">
+                <Loader2 className="h-4 w-4 animate-spin" /> Loading comparison data...
+              </div>
+            )}
             <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
               <table className="w-full min-w-[500px] text-xs">
                 <thead>
                   <tr className="border-b border-border/30">
-                    <th className="text-left py-2 px-3 text-muted-foreground uppercase tracking-wider font-medium w-24">Detail</th>
+                    <th className="text-left py-2 px-3 text-muted-foreground uppercase tracking-wider font-medium w-28">Metric</th>
                     {compareEvents.map((event: any) => (
                       <th key={event.id} className="text-center py-2 px-3 min-w-[140px]">
                         <div className="font-display font-semibold text-sm line-clamp-2">{event.name}</div>
@@ -687,39 +750,51 @@ export default function Events() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="border-b border-border/20">
-                    <td className="py-2 px-3 text-muted-foreground font-medium">Date</td>
-                    {compareEvents.map((event: any) => (
-                      <td key={event.id} className="py-2 px-3 text-center">{formatDateRange(event.start, event.end)}</td>
-                    ))}
-                  </tr>
-                  <tr className="border-b border-border/20">
-                    <td className="py-2 px-3 text-muted-foreground font-medium">Location</td>
-                    {compareEvents.map((event: any) => (
-                      <td key={event.id} className="py-2 px-3 text-center">
-                        {[event.location?.city, event.location?.region].filter(Boolean).join(", ") || "—"}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr className="border-b border-border/20">
-                    <td className="py-2 px-3 text-muted-foreground font-medium">Teams</td>
-                    {compareEvents.map((event: any) => (
-                      <td key={event.id} className="py-2 px-3 text-center stat-number">
-                        {event.teams_count || event.stats?.teams || "—"}
-                      </td>
-                    ))}
-                  </tr>
-                  <tr className="border-b border-border/20">
-                    <td className="py-2 px-3 text-muted-foreground font-medium">Level</td>
-                    {compareEvents.map((event: any) => {
-                      const badge = getLevelBadge(event.name || "");
-                      return (
-                        <td key={event.id} className="py-2 px-3 text-center">
-                          {badge ? <span className={cn("text-[9px] font-bold px-1.5 py-0.5 rounded", badge.className)}>{badge.label}</span> : "Standard"}
-                        </td>
-                      );
-                    })}
-                  </tr>
+                  {[
+                    { label: "Date", getValue: (e: any) => formatDateRange(e.start, e.end) },
+                    { label: "Location", getValue: (e: any) => [e.location?.city, e.location?.region].filter(Boolean).join(", ") || "—" },
+                    { label: "Level", getValue: (e: any) => {
+                      const badge = getLevelBadge(e.name || "");
+                      return badge ? badge.label : "Standard";
+                    }},
+                  ].map(({ label, getValue }) => (
+                    <tr key={label} className="border-b border-border/20">
+                      <td className="py-2 px-3 text-muted-foreground font-medium">{label}</td>
+                      {compareEvents.map((event: any) => (
+                        <td key={event.id} className="py-2 px-3 text-center">{getValue(event)}</td>
+                      ))}
+                    </tr>
+                  ))}
+                  {compareDetails && [
+                    { label: "Teams", key: "teamCount", highlight: true },
+                    { label: "Total Matches", key: "totalMatches", highlight: true },
+                    { label: "Avg WP", key: "avgWP", highlight: true },
+                    { label: "High Score", key: "highScore", highlight: true },
+                    { label: "Avg Skills", key: "avgSkills", highlight: true },
+                    { label: "Top Skills", key: "topSkills", highlight: true },
+                    { label: "Skills Entries", key: "skillsTeams", highlight: false },
+                  ].map(({ label, key, highlight }) => {
+                    const values = compareDetails.map((d: any) => d[key] || 0);
+                    const best = Math.max(...values);
+                    const allSame = values.every((v: number) => v === values[0]);
+                    return (
+                      <tr key={label} className="border-b border-border/20">
+                        <td className="py-2 px-3 text-muted-foreground font-medium">{label}</td>
+                        {compareEvents.map((event: any) => {
+                          const detail = compareDetails.find((d: any) => d.eventId === event.id);
+                          const val = detail?.[key] || 0;
+                          return (
+                            <td key={event.id} className={cn(
+                              "py-2 px-3 text-center stat-number",
+                              highlight && !allSame && val === best ? "text-[hsl(var(--success))]" : ""
+                            )}>
+                              {val}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
                   <tr>
                     <td className="py-2 px-3" />
                     {compareEvents.map((event: any) => (

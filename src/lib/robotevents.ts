@@ -30,9 +30,9 @@ export const US_STATES = [
   "Wisconsin", "Wyoming"
 ];
 
-export async function fetchRobotEvents(endpoint: string, params?: Record<string, string>) {
+export async function fetchRobotEvents(endpoint: string, params?: Record<string, string>, arrayParams?: Record<string, string[]>) {
   const { data, error } = await supabase.functions.invoke("robotevents-proxy", {
-    body: { endpoint, params },
+    body: { endpoint, params, arrayParams },
   });
   if (error) throw new Error(error.message);
   if (data?.error) throw new Error(data.error);
@@ -180,6 +180,36 @@ export async function searchTeams(query: string): Promise<any[]> {
   }
 }
 
+/** Search teams with partial number matching and team name support */
+export async function searchTeamsPartial(query: string): Promise<any[]> {
+  if (!query || query.length < 1) return [];
+  const trimmed = query.trim();
+  
+  try {
+    // Check if query ends with a letter (exact team number like "17505B")
+    const endsWithLetter = /[a-zA-Z]$/.test(trimmed);
+    
+    if (endsWithLetter) {
+      // Exact search
+      const result = await fetchRobotEvents("/teams", { "number[]": trimmed.toUpperCase(), "program[]": "1" });
+      return result?.data || [];
+    }
+    
+    // Partial number: generate variants with letter suffixes A-Z
+    const base = trimmed.toUpperCase();
+    const variants = [base];
+    for (let c = 65; c <= 90; c++) {
+      variants.push(base + String.fromCharCode(c));
+    }
+    
+    // Use array params to search all variants at once
+    const result = await fetchRobotEvents("/teams", { "program[]": "1" }, { "number[]": variants });
+    return result?.data?.slice(0, 20) || [];
+  } catch {
+    return [];
+  }
+}
+
 export function calculateRoboRank(rankings: any[], skillsCombined: number = 0) {
   if (!rankings || rankings.length === 0) return 0;
 
@@ -253,4 +283,164 @@ export async function getTeamSkillsScore(teamId: number, season: SeasonKey = "cu
   } catch {
     return 0;
   }
+}
+
+export interface MatchDifficulty {
+  matchNumber: number;
+  matchName: string;
+  alliancePartners: { number: string; roboRank: number; hasData: boolean }[];
+  opponents: { number: string; roboRank: number; hasData: boolean }[];
+  allianceAvgRR: number;
+  opponentAvgRR: number;
+  difficulty: number; // 0-100
+  lowConfidence: boolean;
+}
+
+export interface TeamScheduleDifficulty {
+  teamNumber: string;
+  teamId: number;
+  teamName: string;
+  overallDifficulty: number;
+  label: string;
+  matchDifficulties: MatchDifficulty[];
+  lowConfidence: boolean;
+}
+
+function getDifficultyLabel(score: number): string {
+  if (score >= 75) return "Elite";
+  if (score >= 60) return "Hard";
+  if (score >= 40) return "Medium";
+  if (score >= 20) return "Easy";
+  return "Very Easy";
+}
+
+/** Calculate schedule difficulty for all teams at an event */
+export async function calculateEventScheduleDifficulty(
+  eventId: number,
+  divisionId: number,
+  season: SeasonKey = "current"
+): Promise<TeamScheduleDifficulty[]> {
+  // 1. Get all qual matches
+  const allMatches = await fetchAllPages(`/events/${eventId}/divisions/${divisionId}/matches`);
+  const qualMatches = allMatches.filter((m: any) => m.round === 2);
+  
+  if (qualMatches.length === 0) return [];
+
+  // 2. Collect all unique team numbers from matches
+  const teamNumbers = new Set<string>();
+  qualMatches.forEach((m: any) => {
+    m.alliances?.forEach((a: any) => {
+      a.teams?.forEach((t: any) => {
+        if (t.team?.name) teamNumbers.add(t.team.name);
+      });
+    });
+  });
+
+  // 3. Fetch RoboRank for all teams (batch)
+  const roboRankMap = new Map<string, { roboRank: number; hasData: boolean; teamId: number; teamName: string }>();
+  const teamArr = Array.from(teamNumbers);
+  
+  for (let i = 0; i < teamArr.length; i += 15) {
+    const batch = teamArr.slice(i, i + 15);
+    await Promise.all(batch.map(async (num) => {
+      try {
+        const teamData = await fetchRobotEvents("/teams", { "number[]": num, "program[]": "1" });
+        const team = teamData?.data?.[0];
+        if (!team) {
+          roboRankMap.set(num, { roboRank: 50, hasData: false, teamId: 0, teamName: num });
+          return;
+        }
+        const [rankings, skillsScore] = await Promise.all([
+          getTeamRankings(team.id, season),
+          getTeamSkillsScore(team.id, season),
+        ]);
+        const rr = calculateRoboRank(rankings, skillsScore);
+        roboRankMap.set(num, { roboRank: rr || 50, hasData: rr > 0, teamId: team.id, teamName: team.team_name || num });
+      } catch {
+        roboRankMap.set(num, { roboRank: 50, hasData: false, teamId: 0, teamName: num });
+      }
+    }));
+  }
+
+  // 4. For each team, calculate per-match and overall difficulty
+  const results: TeamScheduleDifficulty[] = [];
+
+  for (const teamNum of teamArr) {
+    const teamInfo = roboRankMap.get(teamNum)!;
+    const teamMatches = qualMatches.filter((m: any) =>
+      m.alliances?.some((a: any) => a.teams?.some((t: any) => t.team?.name === teamNum))
+    );
+
+    if (teamMatches.length === 0) continue;
+
+    const matchDifficulties: MatchDifficulty[] = [];
+    let totalDifficulty = 0;
+    let hasLowConfidence = false;
+
+    teamMatches.forEach((m: any) => {
+      const myAlliance = m.alliances?.find((a: any) =>
+        a.teams?.some((t: any) => t.team?.name === teamNum)
+      );
+      const oppAlliance = m.alliances?.find((a: any) => a.color !== myAlliance?.color);
+      if (!myAlliance || !oppAlliance) return;
+
+      const partners = myAlliance.teams
+        ?.filter((t: any) => t.team?.name && t.team.name !== teamNum)
+        .map((t: any) => {
+          const info = roboRankMap.get(t.team.name);
+          return { number: t.team.name, roboRank: info?.roboRank ?? 50, hasData: info?.hasData ?? false };
+        }) || [];
+
+      const opponents = oppAlliance.teams
+        ?.filter((t: any) => t.team?.name)
+        .map((t: any) => {
+          const info = roboRankMap.get(t.team.name);
+          return { number: t.team.name, roboRank: info?.roboRank ?? 50, hasData: info?.hasData ?? false };
+        }) || [];
+
+      const allianceAvgRR = partners.length > 0 
+        ? partners.reduce((s: number, p: any) => s + p.roboRank, 0) / partners.length 
+        : 50;
+      const opponentAvgRR = opponents.length > 0 
+        ? opponents.reduce((s: number, o: any) => s + o.roboRank, 0) / opponents.length 
+        : 50;
+
+      // Difficulty = how strong opponents are relative to your alliance
+      // Higher opponent RR and lower alliance RR = harder schedule
+      const rawDiff = (opponentAvgRR - allianceAvgRR + 100) / 2; // normalize to 0-100
+      const difficulty = Math.max(0, Math.min(100, Math.round(rawDiff)));
+
+      const matchLowConf = [...partners, ...opponents].some(p => !p.hasData);
+      if (matchLowConf) hasLowConfidence = true;
+
+      matchDifficulties.push({
+        matchNumber: m.matchnum,
+        matchName: m.name || `Qual ${m.matchnum}`,
+        alliancePartners: partners,
+        opponents,
+        allianceAvgRR,
+        opponentAvgRR,
+        difficulty,
+        lowConfidence: matchLowConf,
+      });
+
+      totalDifficulty += difficulty;
+    });
+
+    const overallDifficulty = matchDifficulties.length > 0
+      ? Math.round(totalDifficulty / matchDifficulties.length)
+      : 50;
+
+    results.push({
+      teamNumber: teamNum,
+      teamId: teamInfo.teamId,
+      teamName: teamInfo.teamName,
+      overallDifficulty,
+      label: getDifficultyLabel(overallDifficulty),
+      matchDifficulties,
+      lowConfidence: hasLowConfidence,
+    });
+  }
+
+  return results.sort((a, b) => b.overallDifficulty - a.overallDifficulty);
 }

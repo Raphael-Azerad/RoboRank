@@ -7,15 +7,17 @@ import {
   fetchRobotEvents, getEventTeams, getEventRankings, getEventMatches,
   getEventSkills, getTeamRankings, calculateRecordFromRankings,
   calculateRoboRank, getTeamSkillsScore, fetchAllPages, getTeamMatches,
+  calculateEventScheduleDifficulty,
 } from "@/lib/robotevents";
-import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare } from "lucide-react";
+import { useSeason } from "@/contexts/SeasonContext";
+import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { EliminationBracket } from "@/components/events/EliminationBracket";
 
-type DetailTab = "teams" | "quals" | "elims" | "skills" | "awards" | "predictions";
+type DetailTab = "teams" | "quals" | "elims" | "skills" | "awards" | "predictions" | "schedule";
 
 // Match round types: 1=Practice, 2=Qualification, 3=R128..6=Finals
 function roundLabel(round: number): string {
@@ -37,10 +39,12 @@ function isElimRound(round: number): boolean {
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
+  const { season } = useSeason();
   const [tab, setTab] = useState<DetailTab>("teams");
   const [h2hTeams, setH2hTeams] = useState<[string, string] | null>(null);
   const [h2hOpen, setH2hOpen] = useState(false);
   const [selectedDivisionIdx, setSelectedDivisionIdx] = useState(0);
+  const [expandedScheduleTeam, setExpandedScheduleTeam] = useState<string | null>(null);
 
   // Reset division when navigating to a new event
   const prevEventId = useRef(eventId);
@@ -135,6 +139,14 @@ export default function EventDetail() {
       return results.sort((a, b) => b.roboRank - a.roboRank);
     },
     enabled: !!teams && teams.length > 0 && (tab === "teams" || tab === "predictions"),
+  });
+
+  // Schedule Difficulty
+  const { data: scheduleDifficulty, isLoading: scheduleLoading } = useQuery({
+    queryKey: ["eventScheduleDifficulty", eventId, divisionId, season],
+    queryFn: () => calculateEventScheduleDifficulty(Number(eventId), divisionId, season),
+    enabled: !!eventId && tab === "schedule",
+    staleTime: 10 * 60 * 1000,
   });
 
   // Split matches
@@ -278,6 +290,7 @@ export default function EventDetail() {
             { key: "skills" as DetailTab, label: "Skills", icon: Zap },
             { key: "awards" as DetailTab, label: "Awards", icon: Medal },
             { key: "predictions" as DetailTab, label: "Predictions", icon: TrendingUp },
+            { key: "schedule" as DetailTab, label: "Schedule Difficulty", icon: BarChart3 },
           ].map(({ key, label, icon: Icon }) => (
             <Button
               key={key}
@@ -706,6 +719,143 @@ export default function EventDetail() {
             {statsLoading && (
               <div className="flex items-center gap-2 text-sm text-muted-foreground py-8 justify-center">
                 <Loader2 className="h-4 w-4 animate-spin" /> Calculating predictions...
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Schedule Difficulty Tab */}
+        {tab === "schedule" && (
+          <div className="space-y-6">
+            <div className="rounded-xl border border-border/50 card-gradient p-4 space-y-2">
+              <h3 className="text-sm font-display font-semibold flex items-center gap-1.5">
+                <BarChart3 className="h-4 w-4 text-primary" /> Schedule Difficulty
+              </h3>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Measures how difficult each team's <strong className="text-foreground">qualification schedule</strong> was based on opponent vs alliance RoboRank strength. Higher score = harder opponents relative to alliance partners.
+              </p>
+              <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground pt-1">
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-destructive" /> Elite (75+)</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[hsl(var(--chart-4))]" /> Hard (60-74)</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[hsl(var(--chart-3))]" /> Medium (40-59)</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[hsl(var(--success))]" /> Easy (&lt;40)</span>
+              </div>
+            </div>
+
+            {scheduleLoading && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground py-8 justify-center">
+                <Loader2 className="h-4 w-4 animate-spin" /> Calculating schedule difficulty for all teams... This may take a moment.
+              </div>
+            )}
+
+            {scheduleDifficulty && scheduleDifficulty.length > 0 && (
+              <div className="rounded-xl border border-border/50 overflow-hidden">
+                <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-muted/50 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                  <div className="col-span-1">#</div>
+                  <div className="col-span-3">Team</div>
+                  <div className="col-span-2 text-center">Difficulty</div>
+                  <div className="col-span-2 text-center">Score</div>
+                  <div className="col-span-2 text-center">Label</div>
+                  <div className="col-span-2 text-center">Confidence</div>
+                </div>
+                {scheduleDifficulty.map((team, i) => (
+                  <div key={team.teamNumber}>
+                    <div
+                      onClick={() => setExpandedScheduleTeam(expandedScheduleTeam === team.teamNumber ? null : team.teamNumber)}
+                      className="grid grid-cols-12 gap-2 px-4 py-3 items-center border-t border-border/20 hover:bg-accent/30 transition-colors cursor-pointer"
+                    >
+                      <div className="col-span-1 stat-number text-xs text-muted-foreground">{i + 1}</div>
+                      <div className="col-span-3">
+                        <div className="font-display font-semibold text-sm">{team.teamNumber}</div>
+                        <div className="text-[10px] text-muted-foreground truncate">{team.teamName}</div>
+                      </div>
+                      <div className="col-span-2 flex justify-center">
+                        <RoboRankScore score={team.overallDifficulty} size="sm" />
+                      </div>
+                      <div className="col-span-2 text-center stat-number text-sm">{team.overallDifficulty}</div>
+                      <div className="col-span-2 text-center">
+                        <span className={cn(
+                          "text-[10px] font-bold px-2 py-0.5 rounded",
+                          team.overallDifficulty >= 75 ? "bg-destructive/15 text-destructive" :
+                          team.overallDifficulty >= 60 ? "bg-[hsl(var(--chart-4))]/15 text-[hsl(var(--chart-4))]" :
+                          team.overallDifficulty >= 40 ? "bg-[hsl(var(--chart-3))]/15 text-[hsl(var(--chart-3))]" :
+                          "bg-[hsl(var(--success))]/15 text-[hsl(var(--success))]"
+                        )}>
+                          {team.label}
+                        </span>
+                      </div>
+                      <div className="col-span-2 text-center">
+                        {team.lowConfidence ? (
+                          <span className="text-[10px] text-[hsl(var(--chart-4))] flex items-center justify-center gap-1">
+                            <AlertTriangle className="h-3 w-3" /> Low
+                          </span>
+                        ) : (
+                          <span className="text-[10px] text-[hsl(var(--success))]">High</span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Expanded per-match breakdown */}
+                    {expandedScheduleTeam === team.teamNumber && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        className="border-t border-border/20 bg-muted/20 px-4 py-3"
+                      >
+                        <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-2">
+                          Per-Match Breakdown
+                        </div>
+                        <div className="space-y-1.5">
+                          {team.matchDifficulties.map((md) => (
+                            <div key={md.matchNumber} className="grid grid-cols-12 gap-2 items-center text-xs py-1">
+                              <div className="col-span-2 text-muted-foreground font-mono">{md.matchName}</div>
+                              <div className="col-span-3">
+                                <span className="text-[10px] text-muted-foreground">Partners: </span>
+                                {md.alliancePartners.map(p => (
+                                  <span key={p.number} className={cn("text-[10px] mr-1", p.hasData ? "text-foreground" : "text-muted-foreground/60")}>
+                                    {p.number}({p.roboRank})
+                                  </span>
+                                ))}
+                              </div>
+                              <div className="col-span-3">
+                                <span className="text-[10px] text-muted-foreground">Opponents: </span>
+                                {md.opponents.map(o => (
+                                  <span key={o.number} className={cn("text-[10px] mr-1", o.hasData ? "text-foreground" : "text-muted-foreground/60")}>
+                                    {o.number}({o.roboRank})
+                                  </span>
+                                ))}
+                              </div>
+                              <div className="col-span-2 text-center">
+                                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                  <div
+                                    className={cn(
+                                      "h-full rounded-full",
+                                      md.difficulty >= 75 ? "bg-destructive" :
+                                      md.difficulty >= 60 ? "bg-[hsl(var(--chart-4))]" :
+                                      md.difficulty >= 40 ? "bg-[hsl(var(--chart-3))]" :
+                                      "bg-[hsl(var(--success))]"
+                                    )}
+                                    style={{ width: `${md.difficulty}%` }}
+                                  />
+                                </div>
+                              </div>
+                              <div className="col-span-2 text-center stat-number text-[10px]">
+                                {md.difficulty}
+                                {md.lowConfidence && <AlertTriangle className="h-2.5 w-2.5 inline ml-0.5 text-[hsl(var(--chart-4))]" />}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!scheduleLoading && (!scheduleDifficulty || scheduleDifficulty.length === 0) && (
+              <div className="text-sm text-muted-foreground rounded-lg border border-border/50 card-gradient p-8 text-center">
+                No qualification matches found for this event. Schedule difficulty requires completed or scheduled qualification matches.
               </div>
             )}
           </div>
