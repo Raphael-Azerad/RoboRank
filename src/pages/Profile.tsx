@@ -537,7 +537,7 @@ export default function Profile() {
                 </div>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Team number (e.g. 17505B)"
+                    placeholder="Team number (e.g. 1234A)"
                     value={joinTeamNumber}
                     onChange={(e) => setJoinTeamNumber(e.target.value)}
                     className="bg-card uppercase"

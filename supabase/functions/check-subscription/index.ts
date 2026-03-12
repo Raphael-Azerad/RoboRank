@@ -33,14 +33,14 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
-    // 0. Check if the user's team is permanently premium (e.g. 17505B)
+    // 0. Check if the user's team is permanently premium
     const { data: profile } = await supabaseClient
       .from("profiles")
       .select("team_number")
       .eq("id", user.id)
       .single();
 
-    const PERMANENT_PREMIUM_TEAMS = ["17505B"];
+    const PERMANENT_PREMIUM_TEAMS: string[] = [];
     if (profile?.team_number && PERMANENT_PREMIUM_TEAMS.includes(profile.team_number.toUpperCase())) {
       return new Response(JSON.stringify({
         subscribed: true,

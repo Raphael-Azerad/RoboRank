@@ -38,11 +38,8 @@ export default function Dashboard() {
   const seasonInfo = SEASONS[season];
   const { status: teamStatus } = useTeamStatus();
 
-  useEffect(() => {
-    if (teamStatus === "no-team") {
-      navigate("/join-team");
-    }
-  }, [teamStatus, navigate]);
+  // Don't auto-redirect to join-team - let users use dashboard even without a team
+  // They can join a team from the Profile > Team tab
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {

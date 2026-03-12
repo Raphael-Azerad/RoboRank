@@ -125,7 +125,7 @@ export default function JoinTeam() {
             <div className="relative">
               <Input
                 id="team"
-                placeholder="e.g. 17505B"
+                placeholder="e.g. 1234A"
                 value={teamNumber}
                 onChange={(e) => { setTeamNumber(e.target.value); setTeamValid(null); setTeamName(null); }}
                 onBlur={handleTeamBlur}
