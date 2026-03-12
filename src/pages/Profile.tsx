@@ -113,10 +113,10 @@ export default function Profile() {
         .select("*")
         .eq("team_number", user.team_number);
       if (!members || members.length === 0) return [];
-      const approvedIds = members.filter(m => m.status === "approved").map(m => m.user_id);
+      const allUserIds = members.map(m => m.user_id);
       const { data: profiles } = await supabase.from("profiles")
         .select("id, email")
-        .in("id", approvedIds);
+        .in("id", allUserIds);
       const emailMap = new Map((profiles || []).map(p => [p.id, p.email]));
       return members.map(m => ({ ...m, email: emailMap.get(m.user_id) || null }));
     },
