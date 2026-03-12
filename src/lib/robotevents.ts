@@ -180,6 +180,36 @@ export async function searchTeams(query: string): Promise<any[]> {
   }
 }
 
+/** Search teams with partial number matching and team name support */
+export async function searchTeamsPartial(query: string): Promise<any[]> {
+  if (!query || query.length < 1) return [];
+  const trimmed = query.trim();
+  
+  try {
+    // Check if query ends with a letter (exact team number like "17505B")
+    const endsWithLetter = /[a-zA-Z]$/.test(trimmed);
+    
+    if (endsWithLetter) {
+      // Exact search
+      const result = await fetchRobotEvents("/teams", { "number[]": trimmed.toUpperCase(), "program[]": "1" });
+      return result?.data || [];
+    }
+    
+    // Partial number: generate variants with letter suffixes A-Z
+    const base = trimmed.toUpperCase();
+    const variants = [base];
+    for (let c = 65; c <= 90; c++) {
+      variants.push(base + String.fromCharCode(c));
+    }
+    
+    // Use array params to search all variants at once
+    const result = await fetchRobotEvents("/teams", { "program[]": "1" }, { "number[]": variants });
+    return result?.data?.slice(0, 20) || [];
+  } catch {
+    return [];
+  }
+}
+
 export function calculateRoboRank(rankings: any[], skillsCombined: number = 0) {
   if (!rankings || rankings.length === 0) return 0;
 
