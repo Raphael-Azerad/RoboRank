@@ -33,6 +33,45 @@ serve(async (req) => {
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
 
+    // 0. Check if the user's team is permanently premium (e.g. 17505B)
+    const { data: profile } = await supabaseClient
+      .from("profiles")
+      .select("team_number")
+      .eq("id", user.id)
+      .single();
+
+    const PERMANENT_PREMIUM_TEAMS = ["17505B"];
+    if (profile?.team_number && PERMANENT_PREMIUM_TEAMS.includes(profile.team_number.toUpperCase())) {
+      return new Response(JSON.stringify({
+        subscribed: true,
+        subscription_end: null,
+        source: "permanent",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
+    // Also check via team_members table
+    const { data: membership } = await supabaseClient
+      .from("team_members")
+      .select("team_number")
+      .eq("user_id", user.id)
+      .eq("status", "approved")
+      .limit(1)
+      .single();
+
+    if (membership?.team_number && PERMANENT_PREMIUM_TEAMS.includes(membership.team_number.toUpperCase())) {
+      return new Response(JSON.stringify({
+        subscribed: true,
+        subscription_end: null,
+        source: "permanent",
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     // 1. Check if the user themselves has an active subscription
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     if (customers.data.length > 0) {
