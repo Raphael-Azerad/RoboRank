@@ -58,22 +58,33 @@ export default function Profile() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      const u = data.user;
+    async function loadUser() {
+      const { data: authData } = await supabase.auth.getUser();
+      const u = authData.user;
+      if (!u) return;
+
+      // Get team from team_members (source of truth)
+      const { data: membership } = await supabase
+        .from("team_members")
+        .select("team_number")
+        .eq("user_id", u.id)
+        .eq("status", "approved")
+        .limit(1)
+        .maybeSingle();
+
       setUser({
-        id: u?.id,
-        email: u?.email,
-        team_number: u?.user_metadata?.team_number || null,
+        id: u.id,
+        email: u.email,
+        team_number: membership?.team_number || u.user_metadata?.team_number || null,
       });
+
       // Load logo
-      if (u?.id) {
-        const { data: files } = supabase.storage.from("team-logos").getPublicUrl(`${u.id}/logo`);
-        // Check if file exists by trying to fetch it
-        fetch(files.publicUrl, { method: "HEAD" }).then(res => {
-          if (res.ok) setLogoUrl(files.publicUrl + "?t=" + Date.now());
-        }).catch(() => {});
-      }
-    });
+      const { data: files } = supabase.storage.from("team-logos").getPublicUrl(`${u.id}/logo`);
+      fetch(files.publicUrl, { method: "HEAD" }).then(res => {
+        if (res.ok) setLogoUrl(files.publicUrl + "?t=" + Date.now());
+      }).catch(() => {});
+    }
+    loadUser();
   }, []);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
