@@ -390,7 +390,7 @@ export default function Scouting() {
                           variant="hero"
                           size="sm"
                           onClick={() => handleGenerate(event)}
-                          disabled={generateMutation.isPending || !canGenerateFree}
+                          disabled={generateMutation.isPending || !canGenerate}
                           className="gap-1.5"
                         >
                           {generateMutation.isPending ? (
