@@ -59,13 +59,45 @@ export default function Profile() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
+      const u = data.user;
       setUser({
-        id: data.user?.id,
-        email: data.user?.email,
-        team_number: data.user?.user_metadata?.team_number || null,
+        id: u?.id,
+        email: u?.email,
+        team_number: u?.user_metadata?.team_number || null,
       });
+      // Load logo
+      if (u?.id) {
+        const { data: files } = supabase.storage.from("team-logos").getPublicUrl(`${u.id}/logo`);
+        // Check if file exists by trying to fetch it
+        fetch(files.publicUrl, { method: "HEAD" }).then(res => {
+          if (res.ok) setLogoUrl(files.publicUrl + "?t=" + Date.now());
+        }).catch(() => {});
+      }
     });
   }, []);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user.id) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2MB");
+      return;
+    }
+    setUploadingLogo(true);
+    const { error } = await supabase.storage.from("team-logos").upload(`${user.id}/logo`, file, { upsert: true });
+    if (error) {
+      toast.error("Upload failed: " + error.message);
+    } else {
+      const { data } = supabase.storage.from("team-logos").getPublicUrl(`${user.id}/logo`);
+      setLogoUrl(data.publicUrl + "?t=" + Date.now());
+      toast.success("Logo updated!");
+    }
+    setUploadingLogo(false);
+  };
 
   const { data: teamData, isLoading } = useQuery({
     queryKey: ["teamProfile", user.team_number],
