@@ -96,7 +96,7 @@ serve(async (req) => {
 
     // 2. Check if any teammate has an active subscription (team-wide premium)
     // Find user's team
-    const { data: membership } = await supabaseClient
+    const { data: teamMembership } = await supabaseClient
       .from("team_members")
       .select("team_number")
       .eq("user_id", user.id)
@@ -104,12 +104,12 @@ serve(async (req) => {
       .limit(1)
       .single();
 
-    if (membership?.team_number) {
+    if (teamMembership?.team_number) {
       // Get all approved teammates
       const { data: teammates } = await supabaseClient
         .from("team_members")
         .select("user_id")
-        .eq("team_number", membership.team_number)
+        .eq("team_number", teamMembership.team_number)
         .eq("status", "approved")
         .neq("user_id", user.id);
 
