@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Search, FileText, Lock, Loader2, Download, ChevronDown, ChevronUp, Trophy, Target, Zap, Medal, BarChart3 } from "lucide-react";
+import { Search, FileText, Lock, Loader2, Download, ChevronDown, ChevronUp, Trophy, Target, Zap, Medal, BarChart3, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAllPages, getTeamByNumber, getTeamEvents, SEASONS } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { generateScoutingReport, downloadCSV, downloadExcel, type ScoutingReport } from "@/lib/scoutingReport";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { toast } from "sonner";
