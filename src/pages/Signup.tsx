@@ -173,7 +173,7 @@ export default function Signup() {
               <div className="relative">
                 <Input
                   id="team"
-                  placeholder="e.g. 17505B"
+                  placeholder="e.g. 1234A"
                   value={teamNumber}
                   onChange={(e) => { setTeamNumber(e.target.value); setTeamValid(null); setTeamName(null); }}
                   onBlur={handleTeamBlur}
@@ -189,7 +189,7 @@ export default function Signup() {
             {teamName && teamValid && !noTeam && (
               <p className="text-xs text-[hsl(var(--success))]">{teamName}</p>
             )}
-            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+             <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
               <input
                 type="checkbox"
                 checked={noTeam}
@@ -207,7 +207,7 @@ export default function Signup() {
             </label>
             {noTeam && (
               <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-                You can browse events and rankings, but scouting reports require a team unless you upgrade to a paid plan.
+                This option is for coaches, parents, mentors, or anyone not officially on a VEX team. You can still browse events, rankings, and team profiles. Scouting reports and team notes require a team membership or a paid plan.
               </p>
             )}
           </div>

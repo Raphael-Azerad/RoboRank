@@ -36,19 +36,21 @@ export default function Dashboard() {
   const [addingGoal, setAddingGoal] = useState(false);
   const [goalLabel, setGoalLabel] = useState("");
   const seasonInfo = SEASONS[season];
-  const { status: teamStatus } = useTeamStatus();
+  const { status: teamStatus, teamNumber: memberTeamNumber } = useTeamStatus();
+
+  // Don't auto-redirect to join-team - let users use dashboard even without a team
+  // They can join a team from the Profile > Team tab
 
   useEffect(() => {
-    if (teamStatus === "no-team") {
-      navigate("/join-team");
+    // Use team_members as source of truth, fall back to user_metadata
+    if (memberTeamNumber) {
+      setTeamNumber(memberTeamNumber);
+    } else {
+      supabase.auth.getUser().then(({ data }) => {
+        setTeamNumber(data.user?.user_metadata?.team_number || "");
+      });
     }
-  }, [teamStatus, navigate]);
-
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setTeamNumber(data.user?.user_metadata?.team_number || "");
-    });
-  }, []);
+  }, [memberTeamNumber]);
 
   const { data: teamData, isLoading: teamLoading } = useQuery({
     queryKey: ["team", teamNumber],

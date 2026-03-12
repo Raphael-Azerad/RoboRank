@@ -294,7 +294,7 @@ export default function TeamNotes() {
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Tag className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <Input placeholder="Tag with team # (e.g. 17505B)" value={taggedTeam} onChange={(e) => setTaggedTeam(e.target.value)} className="bg-card pl-9 uppercase text-sm" />
+                  <Input placeholder="Tag with team # (e.g. 1234A)" value={taggedTeam} onChange={(e) => setTaggedTeam(e.target.value)} className="bg-card pl-9 uppercase text-sm" />
                 </div>
               </div>
               <div className="flex gap-1.5 flex-wrap">

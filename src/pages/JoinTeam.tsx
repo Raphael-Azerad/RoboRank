@@ -26,7 +26,7 @@ export default function JoinTeam() {
       }
       setUserId(data.user.id);
 
-      // Check team_members table for existing membership (not stale user_metadata)
+      // Check team_members table for existing membership
       const { data: membership } = await supabase
         .from("team_members")
         .select("team_number, status")
@@ -36,6 +36,23 @@ export default function JoinTeam() {
 
       if (membership) {
         navigate("/dashboard");
+        return;
+      }
+
+      // If user signed up with a team number but team_member row wasn't created
+      // (e.g. email confirmation was required), create it now
+      const metaTeam = data.user.user_metadata?.team_number;
+      if (metaTeam) {
+        const num = String(metaTeam).trim().toUpperCase();
+        if (num) {
+          const { error } = await supabase
+            .from("team_members")
+            .insert({ team_number: num, user_id: data.user.id });
+          if (!error || error.code === "23505") {
+            navigate("/dashboard");
+            return;
+          }
+        }
       }
     }
     checkUser();
@@ -125,7 +142,7 @@ export default function JoinTeam() {
             <div className="relative">
               <Input
                 id="team"
-                placeholder="e.g. 17505B"
+                placeholder="e.g. 1234A"
                 value={teamNumber}
                 onChange={(e) => { setTeamNumber(e.target.value); setTeamValid(null); setTeamName(null); }}
                 onBlur={handleTeamBlur}
