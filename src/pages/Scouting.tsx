@@ -331,7 +331,6 @@ export default function Scouting() {
               <Crown className="h-3.5 w-3.5" /> Upgrade — $10/mo
             </Button>
           </div>
-          </div>
         )}
 
         {/* Search */}
