@@ -64,23 +64,15 @@ export default function JoinTeam() {
 
     const num = teamNumber.trim().toUpperCase();
 
-    // Check if team already has members
-    const { data: existingMembers } = await supabase
+    // Insert membership and let backend enforce owner/pending rules
+    const { data: membership, error } = await supabase
       .from("team_members")
-      .select("id")
-      .eq("team_number", num)
-      .eq("status", "approved")
-      .limit(1);
-
-    const isFirstMember = !existingMembers || existingMembers.length === 0;
-
-    // Insert team membership
-    const { error } = await supabase.from("team_members").insert({
-      team_number: num,
-      user_id: userId,
-      role: isFirstMember ? "owner" : "member",
-      status: isFirstMember ? "approved" : "pending",
-    });
+      .insert({
+        team_number: num,
+        user_id: userId,
+      })
+      .select("role, status")
+      .single();
 
     if (error) {
       if (error.code === "23505") {
@@ -92,12 +84,7 @@ export default function JoinTeam() {
       return;
     }
 
-    // Update user metadata
-    await supabase.auth.updateUser({
-      data: { team_number: num, team_name: teamName },
-    });
-
-    if (isFirstMember) {
+    if (membership?.role === "owner" && membership?.status === "approved") {
       toast.success("Team created! You're the owner.");
     } else {
       toast.success("Join request sent! Waiting for admin approval.");

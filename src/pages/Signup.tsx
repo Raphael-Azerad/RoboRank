@@ -66,23 +66,27 @@ export default function Signup() {
     if (error) {
       toast.error(error.message);
     } else {
-      if (!noTeam && signUpData.user) {
-        // Check if team already has approved members
-        const { data: existingMembers } = await supabase
+      if (!noTeam && signUpData.user && signUpData.session) {
+        const { data: membership, error: membershipError } = await supabase
           .from("team_members")
-          .select("id")
-          .eq("team_number", teamNumber.toUpperCase())
-          .eq("status", "approved")
-          .limit(1);
+          .insert({
+            team_number: teamNumber.toUpperCase(),
+            user_id: signUpData.user.id,
+          })
+          .select("role, status")
+          .single();
 
-        const isFirstMember = !existingMembers || existingMembers.length === 0;
+        if (membershipError && membershipError.code !== "23505") {
+          toast.error(membershipError.message);
+          setLoading(false);
+          return;
+        }
 
-        await supabase.from("team_members").insert({
-          team_number: teamNumber.toUpperCase(),
-          user_id: signUpData.user.id,
-          role: isFirstMember ? "owner" : "member",
-          status: isFirstMember ? "approved" : "pending",
-        });
+        if (membership?.role === "owner" && membership?.status === "approved") {
+          toast.success("Team created! You're the owner.");
+        } else if (membership) {
+          toast.success("Join request sent! Waiting for admin approval.");
+        }
       }
       toast.success("Account created! Check your email to verify.");
       navigate("/login");
