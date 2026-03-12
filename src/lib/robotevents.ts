@@ -186,7 +186,7 @@ export async function searchTeamsPartial(query: string): Promise<any[]> {
   const trimmed = query.trim();
   
   try {
-    // Check if query ends with a letter (exact team number like "17505B")
+    // Check if query ends with a letter (exact team number like "1234A")
     const endsWithLetter = /[a-zA-Z]$/.test(trimmed);
     
     if (endsWithLetter) {
