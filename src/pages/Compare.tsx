@@ -5,7 +5,7 @@ import { Search, Loader2, Plus, X, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
-import { getTeamByNumber, getTeamRankings, getTeamSkillsScore, getTeamMatches, calculateRecordFromRankings, calculateRecordFromMatches, calculateRoboRank, fetchRobotEvents, SEASONS } from "@/lib/robotevents";
+import { getTeamByNumber, getTeamRankings, getTeamSkillsScore, getTeamMatches, calculateRecordFromRankings, calculateRecordFromMatches, calculateRoboRank, searchTeamsPartial, SEASONS } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
