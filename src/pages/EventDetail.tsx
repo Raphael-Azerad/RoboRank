@@ -581,7 +581,7 @@ export default function EventDetail() {
                 >
                   <div className="col-span-1 stat-number text-xs text-muted-foreground">{i + 1}</div>
                   <div className="col-span-3">
-                    <div className="font-display font-semibold text-sm">{entry.team?.name || entry.team?.team || "—"}</div>
+                    <div className="font-display font-semibold text-sm">{entry.team?.name || entry.team?.team || "-"}</div>
                   </div>
                   <div className="col-span-2 text-center stat-number text-sm">{entry.driver}</div>
                   <div className="col-span-2 text-center stat-number text-sm">{entry.programming}</div>
