@@ -413,7 +413,7 @@ export default function EventDetail() {
                     >
                       <div className="col-span-1 stat-number text-xs text-muted-foreground">{r.rank}</div>
                       <div className="col-span-3">
-                        <div className="font-display font-semibold text-sm">{r.team?.name || "—"}</div>
+                        <div className="font-display font-semibold text-sm">{r.team?.name || "-"}</div>
                       </div>
                       <div className="col-span-2 text-center text-xs">
                         <span className="text-[hsl(var(--success))]">{r.wins}W</span>
