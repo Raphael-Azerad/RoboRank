@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchRobotEvents, getEventTeams, getEventRankings, getEventMatches,
   getEventSkills, getTeamRankings, calculateRecordFromRankings,
@@ -10,12 +10,15 @@ import {
   calculateEventScheduleDifficulty,
 } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
-import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { EliminationBracket } from "@/components/events/EliminationBracket";
+import { supabase } from "@/integrations/supabase/client";
+import { generateScoutingReport, downloadCSV, downloadExcel } from "@/lib/scoutingReport";
+import { toast } from "sonner";
 
 type DetailTab = "teams" | "quals" | "elims" | "skills" | "awards" | "predictions" | "schedule";
 
