@@ -38,6 +38,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          link: string | null
+          message: string
+          read: boolean
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string
+          read?: boolean
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string
+          read?: boolean
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -65,6 +98,45 @@ export type Database = {
           team_name?: string | null
           team_number?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      saved_predictions: {
+        Row: {
+          blue_team_1: string
+          blue_team_2: string | null
+          created_at: string
+          id: string
+          label: string | null
+          red_team_1: string
+          red_team_2: string | null
+          season: string
+          user_id: string
+          win_prob_red: number
+        }
+        Insert: {
+          blue_team_1: string
+          blue_team_2?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          red_team_1: string
+          red_team_2?: string | null
+          season?: string
+          user_id: string
+          win_prob_red?: number
+        }
+        Update: {
+          blue_team_1?: string
+          blue_team_2?: string | null
+          created_at?: string
+          id?: string
+          label?: string | null
+          red_team_1?: string
+          red_team_2?: string | null
+          season?: string
+          user_id?: string
+          win_prob_red?: number
         }
         Relationships: []
       }
@@ -127,9 +199,11 @@ export type Database = {
       }
       team_notes: {
         Row: {
+          category: string | null
           content: string
           created_at: string
           id: string
+          pinned: boolean
           tagged_team: string | null
           team_number: string
           title: string
@@ -137,9 +211,11 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category?: string | null
           content?: string
           created_at?: string
           id?: string
+          pinned?: boolean
           tagged_team?: string | null
           team_number: string
           title?: string
@@ -147,9 +223,11 @@ export type Database = {
           user_id: string
         }
         Update: {
+          category?: string | null
           content?: string
           created_at?: string
           id?: string
+          pinned?: boolean
           tagged_team?: string | null
           team_number?: string
           title?: string
