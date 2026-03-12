@@ -17,7 +17,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { EliminationBracket } from "@/components/events/EliminationBracket";
 
-type DetailTab = "teams" | "quals" | "elims" | "skills" | "awards" | "predictions";
+type DetailTab = "teams" | "quals" | "elims" | "skills" | "awards" | "predictions" | "schedule";
 
 // Match round types: 1=Practice, 2=Qualification, 3=R128..6=Finals
 function roundLabel(round: number): string {
