@@ -1,0 +1,1 @@
+DELETE FROM auth.users WHERE id = 'd6833603-f7ea-4717-a020-ea5493a00afd';
