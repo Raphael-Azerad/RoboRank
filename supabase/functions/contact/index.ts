@@ -36,32 +36,55 @@ serve(async (req) => {
 
     if (error) throw error;
 
-    // Send notification email via the email queue
-    try {
-      await supabaseClient.rpc("enqueue_email", {
-        queue_name: "transactional_email_queue",
-        payload: {
-          to: NOTIFICATION_EMAIL,
-          subject: `[RoboRank Contact] ${subject}`,
-          html: `
-            <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
-              <h2 style="color: hsl(0, 85%, 50%); margin-bottom: 16px;">New Contact Form Submission</h2>
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr><td style="padding: 8px 0; color: #888; width: 80px;">Name</td><td style="padding: 8px 0;">${name}</td></tr>
-                <tr><td style="padding: 8px 0; color: #888;">Email</td><td style="padding: 8px 0;"><a href="mailto:${email}">${email}</a></td></tr>
-                <tr><td style="padding: 8px 0; color: #888;">Subject</td><td style="padding: 8px 0;">${subject}</td></tr>
-              </table>
-              <div style="margin-top: 16px; padding: 16px; background: #f5f5f5; border-radius: 8px;">
-                <p style="margin: 0; white-space: pre-wrap;">${message}</p>
-              </div>
-              <p style="margin-top: 24px; font-size: 12px; color: #888;">Sent from the RoboRank contact form</p>
+    // Queue notification email via transactional email queue
+    const messageId = crypto.randomUUID();
+
+    const { error: pendingLogError } = await supabaseClient.from("email_send_log").insert({
+      message_id: messageId,
+      template_name: "contact-form",
+      recipient_email: NOTIFICATION_EMAIL,
+      status: "pending",
+    });
+    if (pendingLogError) throw pendingLogError;
+
+    const { error: enqueueError } = await supabaseClient.rpc("enqueue_email", {
+      queue_name: "transactional_emails",
+      payload: {
+        message_id: messageId,
+        to: NOTIFICATION_EMAIL,
+        from: "RoboRank Admin <noreply@roborank.site>",
+        sender_domain: "roborank.site",
+        subject: `[RoboRank Contact] ${subject}`,
+        html: `
+          <div style="font-family: 'Space Grotesk', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
+            <h2 style="color: hsl(0, 85%, 50%); margin-bottom: 16px;">New Contact Form Submission</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 8px 0; color: #888; width: 80px;">Name</td><td style="padding: 8px 0;">${name}</td></tr>
+              <tr><td style="padding: 8px 0; color: #888;">Email</td><td style="padding: 8px 0;"><a href="mailto:${email}">${email}</a></td></tr>
+              <tr><td style="padding: 8px 0; color: #888;">Subject</td><td style="padding: 8px 0;">${subject}</td></tr>
+            </table>
+            <div style="margin-top: 16px; padding: 16px; background: #f5f5f5; border-radius: 8px;">
+              <p style="margin: 0; white-space: pre-wrap;">${message}</p>
             </div>
-          `,
-        },
+            <p style="margin-top: 24px; font-size: 12px; color: #888;">Sent from the RoboRank contact form</p>
+          </div>
+        `,
+        text: `New Contact Form Submission\n\nName: ${name}\nEmail: ${email}\nSubject: ${subject}\n\nMessage:\n${message}`,
+        purpose: "transactional",
+        label: "contact-form",
+        queued_at: new Date().toISOString(),
+      },
+    });
+
+    if (enqueueError) {
+      await supabaseClient.from("email_send_log").insert({
+        message_id: messageId,
+        template_name: "contact-form",
+        recipient_email: NOTIFICATION_EMAIL,
+        status: "failed",
+        error_message: "Failed to enqueue contact email",
       });
-    } catch (emailErr) {
-      // Don't fail the request if email fails - message is still saved
-      console.error("Failed to enqueue notification email:", emailErr);
+      throw enqueueError;
     }
 
     return new Response(JSON.stringify({ success: true }), {

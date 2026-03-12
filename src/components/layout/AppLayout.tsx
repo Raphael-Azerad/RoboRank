@@ -62,7 +62,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-50 glass border-b border-border/50">
         <div className="container flex h-16 items-center justify-between">
           <Link to="/dashboard" className="flex items-center gap-2">
@@ -200,7 +200,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
-      <main className="container py-6">{children}</main>
+      <main className="container py-6 flex-1 w-full">{children}</main>
 
       <footer className="border-t border-border/30 bg-card/30 mt-auto">
         <div className="container py-6 flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
