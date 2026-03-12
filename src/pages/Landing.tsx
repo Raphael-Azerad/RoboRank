@@ -68,11 +68,6 @@ const stats = [
   { value: "100", label: "RoboRank Scale" },
 ];
 
-const testimonials = [
-  { quote: "RoboRank completely changed how we prepare for tournaments. The scouting reports are incredibly accurate.", team: "Team 17505B", role: "Team Captain" },
-  { quote: "The 2v2 predictor helped us choose alliance partners wisely. We won our first tournament using it.", team: "Team 2011A", role: "Strategy Lead" },
-  { quote: "Having the whole team share premium is a game changer. Best $10/month investment for our program.", team: "Team 8838B", role: "Coach" },
-];
 
 export default function Landing() {
   return (
