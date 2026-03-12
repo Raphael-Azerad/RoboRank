@@ -212,7 +212,7 @@ export default function TeamNotes() {
   if (!user.team_number) {
     return (
       <AppLayout>
-        <div className="max-w-2xl space-y-6">
+        <div className="max-w-2xl mx-auto space-y-6">
           <h1 className="text-3xl font-display font-bold">Team Notes</h1>
           <div className="rounded-xl border border-border/50 card-gradient p-8 text-center space-y-3">
             <StickyNote className="h-10 w-10 text-muted-foreground mx-auto" />
@@ -225,7 +225,7 @@ export default function TeamNotes() {
 
   return (
     <AppLayout>
-      <div className="max-w-2xl space-y-6">
+      <div className="max-w-2xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-display font-bold">Team Notes</h1>

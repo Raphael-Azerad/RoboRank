@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
-import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check } from "lucide-react";
+import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check, Clock, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { MatchesPlayedModal, WinsModal, groupMatchesByEvent, filterWonMatches } 
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { useTeamStatus } from "@/hooks/useTeamStatus";
 
 // Season goals stored in localStorage
 function loadGoals(): { label: string; done: boolean }[] {
@@ -35,6 +36,13 @@ export default function Dashboard() {
   const [addingGoal, setAddingGoal] = useState(false);
   const [goalLabel, setGoalLabel] = useState("");
   const seasonInfo = SEASONS[season];
+  const { status: teamStatus } = useTeamStatus();
+
+  useEffect(() => {
+    if (teamStatus === "no-team") {
+      navigate("/join-team");
+    }
+  }, [teamStatus, navigate]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -149,7 +157,20 @@ export default function Dashboard() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* ============ HERO SECTION ============ */}
+        {/* Pending team approval banner */}
+        {teamStatus === "pending" && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-[hsl(var(--chart-4))]/30 bg-[hsl(var(--chart-4))]/5 p-4 flex items-center gap-3"
+          >
+            <Clock className="h-5 w-5 text-[hsl(var(--chart-4))] shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Awaiting team approval</p>
+              <p className="text-xs text-muted-foreground">Your team admin needs to approve your membership. You can browse stats in the meantime, but can't create scouting reports or notes.</p>
+            </div>
+          </motion.div>
+        )}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}

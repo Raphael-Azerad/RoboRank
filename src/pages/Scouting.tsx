@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Search, FileText, Lock, Loader2, Download, ChevronDown, ChevronUp, Trophy, Target, Zap, Medal, BarChart3, Crown } from "lucide-react";
+import { Search, FileText, Lock, Loader2, Download, ChevronDown, ChevronUp, Trophy, Target, Zap, Medal, BarChart3, Crown, Clock } from "lucide-react";
+import { useTeamStatus } from "@/hooks/useTeamStatus";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
@@ -22,6 +23,7 @@ export default function Scouting() {
   const { season } = useSeason();
   const { subscribed, startCheckout } = useSubscription();
   const queryClient = useQueryClient();
+  const { status: teamStatus } = useTeamStatus();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [teamNumber, setTeamNumber] = useState<string | null>(null);
@@ -128,6 +130,10 @@ export default function Scouting() {
   });
 
   const handleGenerate = (event: any) => {
+    if (teamStatus === "pending") {
+      toast.error("Your team membership is pending approval. You can't generate reports yet.");
+      return;
+    }
     if (!teamNumber && !subscribed) {
       toast.error("You need a team to generate free scouting reports");
       return;
@@ -310,6 +316,13 @@ export default function Scouting() {
           <h1 className="text-3xl font-display font-bold">Scouting Reports</h1>
           <p className="text-muted-foreground mt-1">Generate detailed reports for your events</p>
         </div>
+
+        {teamStatus === "pending" && (
+          <div className="rounded-lg border border-[hsl(var(--chart-4))]/30 bg-[hsl(var(--chart-4))]/5 px-4 py-3 text-sm text-muted-foreground flex items-center gap-2">
+            <Clock className="h-4 w-4 text-[hsl(var(--chart-4))] shrink-0" />
+            Your team membership is pending approval. You can view existing reports but can't generate new ones until approved.
+          </div>
+        )}
 
         {!teamNumber && (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-muted-foreground">
