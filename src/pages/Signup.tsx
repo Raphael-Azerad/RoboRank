@@ -17,8 +17,10 @@ export default function Signup() {
   const [validating, setValidating] = useState(false);
   const [teamValid, setTeamValid] = useState<boolean | null>(null);
   const [teamName, setTeamName] = useState<string | null>(null);
+  const [noTeam, setNoTeam] = useState(false);
 
   const handleTeamBlur = async () => {
+    if (noTeam) return;
     const num = teamNumber.trim().toUpperCase();
     if (!num) return;
     setValidating(true);
@@ -30,7 +32,6 @@ export default function Signup() {
         toast.error(`Team "${num}" not found on RobotEvents`);
       }
     } catch {
-      // If validation fails, allow signup
       setTeamValid(true);
     }
     setValidating(false);
@@ -38,28 +39,40 @@ export default function Signup() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!teamNumber.trim()) {
-      toast.error("Please enter your team number");
+    if (!noTeam && !teamNumber.trim()) {
+      toast.error("Please enter your team number or select 'No team'");
       return;
     }
-    if (teamValid === false) {
+    if (!noTeam && teamValid === false) {
       toast.error("Please enter a valid VEX team number");
       return;
     }
     setLoading(true);
 
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: window.location.origin,
-        data: { team_number: teamNumber.toUpperCase(), team_name: teamName },
+        data: {
+          team_number: noTeam ? null : teamNumber.toUpperCase(),
+          team_name: noTeam ? null : teamName,
+        },
       },
     });
 
     if (error) {
       toast.error(error.message);
     } else {
+      // If user has a team, auto-create team_members entry as owner
+      if (!noTeam && signUpData.user) {
+        await supabase.from("team_members").insert({
+          team_number: teamNumber.toUpperCase(),
+          user_id: signUpData.user.id,
+          role: "owner",
+          status: "approved",
+        });
+      }
       toast.success("Account created! Check your email to verify.");
       navigate("/login");
     }
@@ -81,24 +94,46 @@ export default function Signup() {
         <form onSubmit={handleSignup} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="team">Team Number</Label>
-            <div className="relative">
-              <Input
-                id="team"
-                placeholder="e.g. 17505B"
-                value={teamNumber}
-                onChange={(e) => { setTeamNumber(e.target.value); setTeamValid(null); setTeamName(null); }}
-                onBlur={handleTeamBlur}
-                required
-                className="bg-card uppercase pr-10"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                {validating && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                {!validating && teamValid === true && <CheckCircle2 className="h-4 w-4 text-success" />}
-                {!validating && teamValid === false && <XCircle className="h-4 w-4 text-destructive" />}
+            {!noTeam && (
+              <div className="relative">
+                <Input
+                  id="team"
+                  placeholder="e.g. 17505B"
+                  value={teamNumber}
+                  onChange={(e) => { setTeamNumber(e.target.value); setTeamValid(null); setTeamName(null); }}
+                  onBlur={handleTeamBlur}
+                  className="bg-card uppercase pr-10"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {validating && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                  {!validating && teamValid === true && <CheckCircle2 className="h-4 w-4 text-[hsl(var(--success))]" />}
+                  {!validating && teamValid === false && <XCircle className="h-4 w-4 text-destructive" />}
+                </div>
               </div>
-            </div>
-            {teamName && teamValid && (
-              <p className="text-xs text-success">{teamName}</p>
+            )}
+            {teamName && teamValid && !noTeam && (
+              <p className="text-xs text-[hsl(var(--success))]">{teamName}</p>
+            )}
+            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
+              <input
+                type="checkbox"
+                checked={noTeam}
+                onChange={(e) => {
+                  setNoTeam(e.target.checked);
+                  if (e.target.checked) {
+                    setTeamNumber("");
+                    setTeamValid(null);
+                    setTeamName(null);
+                  }
+                }}
+                className="rounded border-border"
+              />
+              I don't have a team
+            </label>
+            {noTeam && (
+              <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
+                You can browse events and rankings, but scouting reports require a team unless you upgrade to a paid plan.
+              </p>
             )}
           </div>
           <div className="space-y-2">
@@ -126,7 +161,7 @@ export default function Signup() {
               className="bg-card"
             />
           </div>
-          <Button type="submit" className="w-full" disabled={loading || teamValid === false}>
+          <Button type="submit" className="w-full" disabled={loading || (!noTeam && teamValid === false)}>
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account"}
           </Button>
         </form>
