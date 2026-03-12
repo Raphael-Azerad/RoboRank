@@ -468,7 +468,7 @@ export default function EventDetail() {
                           <span className="text-muted-foreground mx-0.5">-</span>
                           <span className="text-destructive">{team.record.losses}L</span>
                         </>
-                      ) : "—"}
+                      ) : "-"}
                     </div>
                     <div className="col-span-2 text-center stat-number text-sm">
                       {team.record ? `${team.record.winRate}%` : "—"}
