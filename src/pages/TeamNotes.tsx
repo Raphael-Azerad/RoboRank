@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { StickyNote, Plus, Trash2, Edit3, Save, X, Clock, User, Tag, Search } from "lucide-react";
+import { StickyNote, Plus, Trash2, Edit3, Save, Clock, User, Tag, Pin, PinOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,13 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
+const CATEGORIES = [
+  { value: "strategy", label: "Strategy", color: "bg-[hsl(var(--chart-2))]/15 text-[hsl(var(--chart-2))] border-[hsl(var(--chart-2))]/30" },
+  { value: "strengths", label: "Strengths", color: "bg-[hsl(var(--success))]/15 text-[hsl(var(--success))] border-[hsl(var(--success))]/30" },
+  { value: "weaknesses", label: "Weaknesses", color: "bg-destructive/15 text-destructive border-destructive/30" },
+  { value: "general", label: "General", color: "bg-muted text-muted-foreground border-border" },
+];
+
 interface Note {
   id: string;
   team_number: string;
@@ -19,6 +26,8 @@ interface Note {
   title: string;
   content: string;
   tagged_team: string | null;
+  pinned: boolean;
+  category: string | null;
   created_at: string;
   updated_at: string;
   authorEmail?: string;
@@ -32,8 +41,10 @@ export default function TeamNotes() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [taggedTeam, setTaggedTeam] = useState("");
+  const [category, setCategory] = useState("general");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [filterTeam, setFilterTeam] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -67,16 +78,25 @@ export default function TeamNotes() {
       return notesData.map(n => ({
         ...n,
         tagged_team: (n as any).tagged_team || null,
+        pinned: (n as any).pinned || false,
+        category: (n as any).category || null,
         authorEmail: emailMap.get(n.user_id) || null,
       })) as Note[];
     },
     enabled: !!user.team_number,
   });
 
-  const filteredNotes = notes?.filter(n => {
-    if (!filterTeam) return true;
-    return n.tagged_team?.toLowerCase().includes(filterTeam.toLowerCase());
-  }) || [];
+  const filteredNotes = (notes || [])
+    .filter(n => {
+      if (filterTeam && !n.tagged_team?.toLowerCase().includes(filterTeam.toLowerCase())) return false;
+      if (filterCategory && n.category !== filterCategory) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (a.pinned && !b.pinned) return -1;
+      if (!a.pinned && b.pinned) return 1;
+      return 0;
+    });
 
   const uniqueTags = [...new Set((notes || []).map(n => n.tagged_team).filter(Boolean))] as string[];
 
@@ -88,6 +108,7 @@ export default function TeamNotes() {
       title: title.trim(),
       content: content.trim(),
       tagged_team: taggedTeam.trim().toUpperCase() || null,
+      category,
     } as any);
     if (error) { toast.error(error.message); return; }
     toast.success("Note created");
@@ -101,12 +122,21 @@ export default function TeamNotes() {
         title: title.trim(),
         content: content.trim(),
         tagged_team: taggedTeam.trim().toUpperCase() || null,
+        category,
         updated_at: new Date().toISOString(),
       } as any)
       .eq("id", noteId);
     if (error) { toast.error(error.message); return; }
     toast.success("Note updated");
     resetForm();
+    queryClient.invalidateQueries({ queryKey: ["teamNotes"] });
+  };
+
+  const handleTogglePin = async (note: Note) => {
+    const { error } = await supabase.from("team_notes")
+      .update({ pinned: !note.pinned } as any)
+      .eq("id", note.id);
+    if (error) { toast.error(error.message); return; }
     queryClient.invalidateQueries({ queryKey: ["teamNotes"] });
   };
 
@@ -123,6 +153,7 @@ export default function TeamNotes() {
     setTitle(note.title);
     setContent(note.content);
     setTaggedTeam(note.tagged_team || "");
+    setCategory(note.category || "general");
     setCreating(false);
   };
 
@@ -132,6 +163,11 @@ export default function TeamNotes() {
     setTitle("");
     setContent("");
     setTaggedTeam("");
+    setCategory("general");
+  };
+
+  const getCategoryStyle = (cat: string | null) => {
+    return CATEGORIES.find(c => c.value === cat)?.color || CATEGORIES[3].color;
   };
 
   if (!user.team_number) {
@@ -159,24 +195,35 @@ export default function TeamNotes() {
             </p>
           </div>
           {!creating && !editingId && (
-            <Button onClick={() => { setCreating(true); resetForm(); setCreating(true); }} className="gap-1.5">
+            <Button onClick={() => { resetForm(); setCreating(true); }} className="gap-1.5">
               <Plus className="h-4 w-4" /> New Note
             </Button>
           )}
         </div>
 
-        {/* Filter by tagged team */}
-        {uniqueTags.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Button
-                variant={filterTeam === "" ? "default" : "outline"}
-                size="sm"
-                className="h-7 text-xs"
-                onClick={() => setFilterTeam("")}
-              >
-                All
-              </Button>
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Category filters */}
+          {CATEGORIES.map(cat => (
+            <Button
+              key={cat.value}
+              variant={filterCategory === cat.value ? "default" : "outline"}
+              size="sm"
+              className="h-7 text-xs"
+              onClick={() => setFilterCategory(filterCategory === cat.value ? "" : cat.value)}
+            >
+              {cat.label}
+            </Button>
+          ))}
+          {filterCategory && (
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setFilterCategory("")}>
+              Clear
+            </Button>
+          )}
+          {/* Team tag filters */}
+          {uniqueTags.length > 0 && (
+            <>
+              <div className="w-px h-5 bg-border mx-1" />
               {uniqueTags.map(tag => (
                 <Button
                   key={tag}
@@ -188,9 +235,9 @@ export default function TeamNotes() {
                   <Tag className="h-3 w-3" /> {tag}
                 </Button>
               ))}
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </div>
 
         {/* Create/Edit Form */}
         <AnimatePresence>
@@ -217,6 +264,22 @@ export default function TeamNotes() {
                     className="bg-card pl-9 uppercase text-sm"
                   />
                 </div>
+              </div>
+              <div className="flex gap-1.5">
+                {CATEGORIES.map(cat => (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => setCategory(cat.value)}
+                    className={cn(
+                      "px-3 py-1 rounded-full text-xs font-medium border transition-all",
+                      cat.color,
+                      category === cat.value ? "ring-2 ring-primary/50 scale-105" : "opacity-60 hover:opacity-100"
+                    )}
+                  >
+                    {cat.label}
+                  </button>
+                ))}
               </div>
               <Textarea
                 placeholder="Write your strategy, observations, or notes here..."
@@ -253,12 +316,21 @@ export default function TeamNotes() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.03 }}
-                className="rounded-xl border border-border/50 card-gradient p-5 space-y-3 group"
+                className={cn(
+                  "rounded-xl border p-5 space-y-3 group",
+                  note.pinned ? "border-primary/30 bg-primary/5" : "border-border/50 card-gradient"
+                )}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {note.pinned && <Pin className="h-3.5 w-3.5 text-primary shrink-0" />}
                       <h3 className="font-display font-semibold truncate">{note.title || "Untitled"}</h3>
+                      {note.category && (
+                        <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium border", getCategoryStyle(note.category))}>
+                          {CATEGORIES.find(c => c.value === note.category)?.label}
+                        </span>
+                      )}
                       {note.tagged_team && (
                         <Badge variant="secondary" className="gap-1 text-[10px] shrink-0">
                           <Tag className="h-2.5 w-2.5" /> {note.tagged_team}
@@ -278,6 +350,9 @@ export default function TeamNotes() {
                   </div>
                   {note.user_id === user.id && (
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => handleTogglePin(note)}>
+                        {note.pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+                      </Button>
                       <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => startEdit(note)}>
                         <Edit3 className="h-3.5 w-3.5" />
                       </Button>
@@ -297,17 +372,16 @@ export default function TeamNotes() {
           <div className="rounded-xl border border-border/50 card-gradient p-8 text-center space-y-3">
             <StickyNote className="h-10 w-10 text-muted-foreground mx-auto" />
             <p className="text-muted-foreground">
-              {filterTeam ? `No notes tagged with "${filterTeam}"` : "No notes yet. Create one to share strategy with your team!"}
+              {filterTeam || filterCategory ? "No notes match your filters" : "No notes yet. Create one to share strategy with your team!"}
             </p>
           </div>
         )}
 
-        {/* Delete Confirmation Dialog */}
         <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Delete Note</DialogTitle>
-              <DialogDescription>Are you sure you want to delete this note? This action cannot be undone.</DialogDescription>
+              <DialogDescription>Are you sure? This can't be undone.</DialogDescription>
             </DialogHeader>
             <DialogFooter>
               <Button variant="ghost" onClick={() => setDeleteConfirm(null)}>Cancel</Button>

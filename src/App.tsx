@@ -22,7 +22,7 @@ import EventDetail from "./pages/EventDetail";
 import Awards from "./pages/Awards";
 import MatchPredictor from "./pages/MatchPredictor";
 import TeamNotes from "./pages/TeamNotes";
-
+import SeasonProgress from "./pages/SeasonProgress";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +77,7 @@ const App = () => (
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/predictor" element={<ProtectedRoute><MatchPredictor /></ProtectedRoute>} />
               <Route path="/notes" element={<ProtectedRoute><TeamNotes /></ProtectedRoute>} />
+              <Route path="/progress" element={<ProtectedRoute><SeasonProgress /></ProtectedRoute>} />
               <Route path="/team/:teamNumber" element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />
               <Route path="/event/:eventId" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
               <Route path="/awards" element={<ProtectedRoute><Awards /></ProtectedRoute>} />

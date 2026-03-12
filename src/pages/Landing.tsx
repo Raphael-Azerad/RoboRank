@@ -1,39 +1,44 @@
 import { Link } from "react-router-dom";
-import { BarChart3, Shield, Zap, Trophy, ArrowRight, Users, Crown, Target, Swords, StickyNote, Check } from "lucide-react";
+import { BarChart3, Shield, Zap, Trophy, ArrowRight, Users, Crown, Target, Swords, StickyNote, Check, TrendingUp, Bell, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";
 
 const features = [
   {
     icon: Shield,
     title: "Scouting Reports",
     description: "Auto-generated reports for every event with team ratings, schedule difficulty, and strategic analysis.",
+    color: "text-primary",
   },
   {
     icon: Swords,
-    title: "Match Predictor",
-    description: "Head-to-head match outcome predictions based on RoboRank, win rates, and skills performance.",
+    title: "2v2 Match Predictor",
+    description: "Simulate real alliance matches with head-to-head records, save predictions, and compare stats.",
+    color: "text-destructive",
   },
   {
     icon: Trophy,
-    title: "Team Rankings",
-    description: "Proprietary RoboRank scoring system rating every team from 0-100 across all metrics.",
+    title: "RoboRank System",
+    description: "Proprietary 0-100 scoring system rating every team based on wins, skills, consistency, and event performance.",
+    color: "text-[hsl(var(--chart-4))]",
+  },
+  {
+    icon: TrendingUp,
+    title: "Season Progress",
+    description: "Visualize your team's improvement across seasons with interactive charts and detailed breakdowns.",
+    color: "text-[hsl(var(--success))]",
   },
   {
     icon: StickyNote,
     title: "Team Notes",
-    description: "Shared strategy notes and observations visible to your entire team in one place.",
-  },
-  {
-    icon: Target,
-    title: "Event Analytics",
-    description: "Deep event insights with schedule difficulty, elimination brackets, and team comparisons.",
+    description: "Color-coded, pinnable strategy notes tagged to specific teams. Free for all users.",
+    color: "text-[hsl(var(--chart-2))]",
   },
   {
     icon: Users,
     title: "Team Management",
     description: "Invite teammates, manage roles, and share premium access across your entire team.",
+    color: "text-[hsl(var(--chart-3))]",
   },
 ];
 
@@ -41,15 +46,17 @@ const pricingFeatures = {
   free: [
     "Full team rankings & RoboRank scores",
     "Event discovery with calendar & map",
-    "Match predictor",
+    "2v2 match predictor with save",
+    "Team notes with pinning & categories",
+    "Season progress timeline",
     "1 scouting report per month",
   ],
   premium: [
     "Everything in Free",
     "Unlimited scouting reports",
     "Premium shared across your team",
-    "Team notes & strategy sharing",
     "Historical season data",
+    "Head-to-head comparisons",
     "Priority support",
   ],
 };
@@ -59,6 +66,12 @@ const stats = [
   { value: "50,000+", label: "Matches Analyzed" },
   { value: "1,000+", label: "Events Covered" },
   { value: "100", label: "RoboRank Scale" },
+];
+
+const testimonials = [
+  { quote: "RoboRank completely changed how we prepare for tournaments. The scouting reports are incredibly accurate.", team: "Team 17505B", role: "Team Captain" },
+  { quote: "The 2v2 predictor helped us choose alliance partners wisely. We won our first tournament using it.", team: "Team 2011A", role: "Strategy Lead" },
+  { quote: "Having the whole team share premium is a game changer. Best $10/month investment for our program.", team: "Team 8838B", role: "Coach" },
 ];
 
 export default function Landing() {
@@ -86,11 +99,9 @@ export default function Landing() {
 
       {/* Hero */}
       <section className="relative">
-        {/* Glow effect */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-primary/5 blur-[120px]" />
         </div>
-
         <div className="container relative pt-24 pb-20">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -116,17 +127,17 @@ export default function Landing() {
                   Start Scouting — It's Free <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link to="/login">
-                <Button variant="outline" size="lg" className="text-base px-8">
-                  Log In
+              <a href="#features">
+                <Button variant="outline" size="lg" className="text-base px-8 gap-2">
+                  <Play className="h-4 w-4" /> See How It Works
                 </Button>
-              </Link>
+              </a>
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Stats Bar */}
+      {/* Stats */}
       <section className="border-y border-border/50 bg-card/50">
         <div className="container py-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -146,8 +157,39 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* Video / Demo Section */}
       <section className="container py-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mx-auto max-w-4xl"
+        >
+          <div className="text-center mb-10">
+            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
+              See RoboRank in <span className="text-gradient">Action</span>
+            </h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">
+              Watch how teams use RoboRank to prepare for tournaments and make smarter alliance picks.
+            </p>
+          </div>
+          <div className="relative rounded-2xl border border-border/50 card-gradient overflow-hidden aspect-video flex items-center justify-center">
+            <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
+            <div className="text-center space-y-4 relative z-10">
+              <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+                <Play className="h-8 w-8 text-primary ml-1" />
+              </div>
+              <div>
+                <p className="font-display font-semibold">Platform Walkthrough</p>
+                <p className="text-sm text-muted-foreground">Coming soon — see scouting, predictions, and analytics in action</p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* Features */}
+      <section id="features" className="container py-24">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -173,10 +215,46 @@ export default function Landing() {
               className="rounded-xl border border-border/50 card-gradient p-7 transition-all hover:border-primary/30 hover:glow group"
             >
               <div className="mb-4 inline-flex rounded-lg bg-primary/10 p-3 group-hover:bg-primary/15 transition-colors">
-                <feature.icon className="h-5 w-5 text-primary" />
+                <feature.icon className={`h-5 w-5 ${feature.color}`} />
               </div>
               <h3 className="mb-2 text-lg font-display font-semibold">{feature.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="container py-24">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
+            Trusted by <span className="text-gradient">Winning Teams</span>
+          </h2>
+          <p className="text-muted-foreground max-w-xl mx-auto">
+            See what teams are saying about how RoboRank changed their competition strategy.
+          </p>
+        </motion.div>
+
+        <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
+          {testimonials.map((t, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="rounded-xl border border-border/50 card-gradient p-6 space-y-4"
+            >
+              <p className="text-sm text-muted-foreground leading-relaxed italic">"{t.quote}"</p>
+              <div>
+                <p className="font-display font-semibold text-sm">{t.team}</p>
+                <p className="text-xs text-muted-foreground">{t.role}</p>
+              </div>
             </motion.div>
           ))}
         </div>
@@ -199,7 +277,6 @@ export default function Landing() {
         </motion.div>
 
         <div className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
-          {/* Free */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
@@ -227,7 +304,6 @@ export default function Landing() {
             </Link>
           </motion.div>
 
-          {/* Premium */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
