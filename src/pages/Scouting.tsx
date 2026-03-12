@@ -20,6 +20,7 @@ type SortField = "roboRank" | "matches" | "winPct" | "wins" | "totalAwards" | "c
 export default function Scouting() {
   const navigate = useNavigate();
   const { season } = useSeason();
+  const { subscribed, startCheckout } = useSubscription();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
