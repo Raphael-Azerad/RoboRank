@@ -124,7 +124,7 @@ export default function Landing() {
               </Link>
               <a href="#features">
                 <Button variant="outline" size="lg" className="text-base px-8 gap-2">
-                  <Play className="h-4 w-4" /> See How It Works
+                  See Features ↓
                 </Button>
               </a>
             </div>
