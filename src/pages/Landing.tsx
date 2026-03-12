@@ -157,36 +157,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Video / Demo Section */}
-      <section className="container py-24">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mx-auto max-w-4xl"
-        >
-          <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
-              See RoboRank in <span className="text-gradient">Action</span>
-            </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              Watch how teams use RoboRank to prepare for tournaments and make smarter alliance picks.
-            </p>
-          </div>
-          <div className="relative rounded-2xl border border-border/50 card-gradient overflow-hidden aspect-video flex items-center justify-center">
-            <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
-            <div className="text-center space-y-4 relative z-10">
-              <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-                <Play className="h-8 w-8 text-primary ml-1" />
-              </div>
-              <div>
-                <p className="font-display font-semibold">Platform Walkthrough</p>
-                <p className="text-sm text-muted-foreground">Coming soon — see scouting, predictions, and analytics in action</p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </section>
 
       {/* Features */}
       <section id="features" className="container py-24">
