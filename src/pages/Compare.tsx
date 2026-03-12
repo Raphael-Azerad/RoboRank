@@ -68,8 +68,15 @@ function TeamSearchInput({
     setLoading(true);
     debounceRef.current = setTimeout(async () => {
       try {
-        const result = await fetchRobotEvents("/teams", { "number[]": value, "program[]": "1" });
-        setSuggestions(result?.data?.slice(0, 8) || []);
+        const results = await searchTeamsPartial(value);
+        // Also filter by team name if query looks like text
+        const q = value.toLowerCase();
+        const filtered = results.filter((t: any) => {
+          const num = (t.number || "").toLowerCase();
+          const name = (t.team_name || "").toLowerCase();
+          return num.includes(q) || name.includes(q);
+        });
+        setSuggestions(filtered.slice(0, 8));
       } catch {
         setSuggestions([]);
       }
