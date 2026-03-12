@@ -1,0 +1,1 @@
+ALTER TABLE public.team_notes ADD COLUMN tagged_team text DEFAULT null;

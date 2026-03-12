@@ -130,6 +130,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          tagged_team: string | null
           team_number: string
           title: string
           updated_at: string
@@ -139,6 +140,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          tagged_team?: string | null
           team_number: string
           title?: string
           updated_at?: string
@@ -148,6 +150,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          tagged_team?: string | null
           team_number?: string
           title?: string
           updated_at?: string
