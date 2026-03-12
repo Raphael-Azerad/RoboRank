@@ -245,11 +245,29 @@ export default function Profile() {
           className="rounded-xl border border-border/50 card-gradient p-6"
         >
           <div className="flex items-center gap-5">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-display font-bold text-primary-foreground shrink-0"
-              style={{ background: getAvatarColor(avatarStr) }}
-            >
-              {getInitials(user.team_number, user.email)}
+            <div className="relative group">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt="Team logo"
+                  className="w-16 h-16 rounded-2xl object-cover shrink-0"
+                />
+              ) : (
+                <div
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-display font-bold text-primary-foreground shrink-0"
+                  style={{ background: getAvatarColor(avatarStr) }}
+                >
+                  {getInitials(user.team_number, user.email)}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute inset-0 rounded-2xl bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+              >
+                {uploadingLogo ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+              </button>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-display font-bold truncate">{user.team_number || "No Team"}</h1>
