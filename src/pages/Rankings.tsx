@@ -12,6 +12,7 @@ import {
   getTeamByNumber,
   getTeamSkillsScore,
   fetchRobotEvents,
+  searchTeamsPartial,
   calculateRecordFromRankings,
   calculateRoboRank,
   SEASONS,
