@@ -45,13 +45,22 @@ export default function JoinTeam() {
       if (metaTeam) {
         const num = String(metaTeam).trim().toUpperCase();
         if (num) {
-          const { error } = await supabase
+          const { data: newMembership, error } = await supabase
             .from("team_members")
-            .insert({ team_number: num, user_id: data.user.id });
-          if (!error || error.code === "23505") {
-            navigate("/dashboard");
-            return;
+            .insert({ team_number: num, user_id: data.user.id })
+            .select("role, status")
+            .single();
+          
+          if (!error && newMembership) {
+            if (newMembership.role === "owner" && newMembership.status === "approved") {
+              toast.success("Welcome! You're the team captain for " + num + ".", { duration: 6000 });
+            } else {
+              toast.success("Join request sent for " + num + ". Waiting for admin approval.", { duration: 6000 });
+            }
           }
+          // Navigate even on duplicate (23505)
+          navigate("/dashboard");
+          return;
         }
       }
     }
