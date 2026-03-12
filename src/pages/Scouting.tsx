@@ -204,7 +204,7 @@ export default function Scouting() {
           {/* Main Stats Table */}
           <div className="rounded-xl border border-border/50 overflow-hidden">
             <div className="px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              All Teams — Click column headers to sort
+              All Teams - Click column headers to sort
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] text-xs">
