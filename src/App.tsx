@@ -19,7 +19,7 @@ import Profile from "./pages/Profile";
 import TeamDetail from "./pages/TeamDetail";
 import EventDetail from "./pages/EventDetail";
 import Awards from "./pages/Awards";
-import Compare from "./pages/Compare";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -74,7 +74,7 @@ const App = () => (
             <Route path="/team/:teamNumber" element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />
             <Route path="/event/:eventId" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
             <Route path="/awards" element={<ProtectedRoute><Awards /></ProtectedRoute>} />
-            <Route path="/compare" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

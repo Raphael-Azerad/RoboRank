@@ -42,23 +42,32 @@ export default function Profile() {
     enabled: !!user.team_number,
   });
 
-  // Team members
+  // Team members with email info
   const { data: teamMembers } = useQuery({
     queryKey: ["teamMembers", user.team_number],
     queryFn: async () => {
       if (!user.team_number) return [];
-      const { data } = await supabase.from("team_members")
+      const { data: members } = await supabase.from("team_members")
         .select("*")
         .eq("team_number", user.team_number);
-      return data || [];
+      if (!members || members.length === 0) return [];
+      // Fetch profile emails for approved members
+      const approvedIds = members.filter(m => m.status === "approved").map(m => m.user_id);
+      const { data: profiles } = await supabase.from("profiles")
+        .select("id, email")
+        .in("id", approvedIds);
+      const emailMap = new Map((profiles || []).map(p => [p.id, p.email]));
+      return members.map(m => ({ ...m, email: emailMap.get(m.user_id) || null }));
     },
     enabled: !!user.team_number,
   });
 
   // Pending join requests for my team
+  const approvedMembers = teamMembers?.filter(m => m.status === "approved") || [];
   const pendingRequests = teamMembers?.filter(m => m.status === "pending") || [];
   const myMembership = teamMembers?.find(m => m.user_id === user.id);
   const isTeamOwner = myMembership?.role === "owner";
+  const [showMembers, setShowMembers] = useState(false);
 
   // My pending requests (if I requested to join a team)
   const { data: myPendingRequests } = useQuery({
@@ -243,23 +252,33 @@ export default function Profile() {
             transition={{ delay: 0.05 }}
             className="rounded-xl border border-border/50 card-gradient p-8 space-y-4"
           >
-            <div className="flex items-center gap-3">
-              <Users className="h-5 w-5 text-primary" />
-              <div>
-                <h3 className="font-display font-semibold">Team Members</h3>
-                <p className="text-xs text-muted-foreground">
-                  {teamMembers.filter(m => m.status === "approved").length} approved members
-                </p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Users className="h-5 w-5 text-primary" />
+                <div>
+                  <h3 className="font-display font-semibold">Team Members</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {approvedMembers.length} member{approvedMembers.length !== 1 ? "s" : ""}
+                  </p>
+                </div>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMembers(!showMembers)}
+                className="text-xs"
+              >
+                {showMembers ? "Hide" : "View All"}
+              </Button>
             </div>
 
-            {/* Pending requests */}
+            {/* Pending requests (owner only) */}
             {isTeamOwner && pendingRequests.length > 0 && (
               <div className="space-y-2">
                 <p className="text-xs font-medium text-[hsl(var(--chart-4))]">Pending Join Requests</p>
                 {pendingRequests.map((req) => (
                   <div key={req.id} className="flex items-center justify-between bg-[hsl(var(--chart-4))]/5 border border-[hsl(var(--chart-4))]/20 rounded-lg px-3 py-2">
-                    <span className="text-sm font-medium">{req.user_id.slice(0, 8)}...</span>
+                    <span className="text-sm font-medium">{(req as any).email || req.user_id.slice(0, 8) + "..."}</span>
                     <div className="flex gap-1">
                       <Button size="sm" variant="ghost" className="h-7 text-[hsl(var(--success))]"
                         onClick={() => handleApproveRequest(req.id, req.team_number, req.user_id)}>
@@ -275,22 +294,50 @@ export default function Profile() {
               </div>
             )}
 
-            {/* Approved members */}
-            <div className="space-y-1">
-              {teamMembers.filter(m => m.status === "approved").map((member) => (
-                <div key={member.id} className="flex items-center justify-between text-sm py-1.5">
-                  <span className={cn(member.user_id === user.id && "text-primary font-medium")}>
-                    {member.user_id === user.id ? "You" : `Member ${member.user_id.slice(0, 8)}...`}
-                  </span>
-                  <span className={cn(
-                    "text-[10px] px-2 py-0.5 rounded",
-                    member.role === "owner" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                  )}>
-                    {member.role}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {/* Expanded member list */}
+            {showMembers && (
+              <div className="space-y-2 border-t border-border/30 pt-3">
+                {approvedMembers.map((member) => (
+                  <div key={member.id} className="flex items-center justify-between text-sm py-2 px-2 rounded-lg hover:bg-muted/30 transition-colors">
+                    <div className="flex flex-col">
+                      <span className={cn(member.user_id === user.id && "text-primary font-medium")}>
+                        {member.user_id === user.id ? "You" : ((member as any).email || `Member ${member.user_id.slice(0, 8)}...`)}
+                      </span>
+                      {(member as any).email && member.user_id !== user.id && (
+                        <span className="text-[10px] text-muted-foreground">{(member as any).email}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "text-[10px] px-2 py-0.5 rounded",
+                        member.role === "owner" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                      )}>
+                        {member.role === "owner" ? "Leader" : "Member"}
+                      </span>
+                      {isTeamOwner && member.user_id !== user.id && member.role !== "owner" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 text-[10px] text-primary"
+                          onClick={async () => {
+                            const { error } = await supabase.from("team_members")
+                              .update({ role: "owner" })
+                              .eq("id", member.id);
+                            if (error) toast.error(error.message);
+                            else {
+                              toast.success("Promoted to leader!");
+                              queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
+                            }
+                          }}
+                        >
+                          Make Leader
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </motion.div>
         )}
 

@@ -280,7 +280,7 @@ export default function Scouting() {
                 </button>
                 {isExpanded && (
                   <div className="divide-y divide-border/10">
-                    {sorted.slice(0, 20).map((t, i) => (
+                    {sorted.map((t, i) => (
                       <div key={t.teamNumber} className="flex items-center justify-between px-4 py-2 text-xs hover:bg-accent/20 transition-colors">
                         <div className="flex items-center gap-3">
                           <span className="stat-number text-muted-foreground w-6">{i + 1}</span>
