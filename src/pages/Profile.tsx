@@ -22,6 +22,7 @@ const GRADE_OPTIONS: { value: GradeLevel; label: string; desc: string }[] = [
 
 export default function Profile() {
   const { season, setSeason, gradeLevel, setGradeLevel } = useSeason();
+  const { subscribed, loading: subLoading, subscriptionEnd, startCheckout, openPortal } = useSubscription();
   const queryClient = useQueryClient();
   const [user, setUser] = useState<{ id?: string; email?: string; team_number?: string | null }>({});
   const [joinTeamNumber, setJoinTeamNumber] = useState("");
