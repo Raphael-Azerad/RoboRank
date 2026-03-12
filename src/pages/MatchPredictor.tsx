@@ -440,7 +440,7 @@ export default function MatchPredictor() {
                         winProbA={winProbRed}
                       />
                       <p className="text-sm text-muted-foreground text-center">
-                        {winProbRed > 55 ? "Red Alliance is favored" : winProbRed < 45 ? "Blue Alliance is favored" : "Close matchup — could go either way"}
+                        {winProbRed > 55 ? "Red Alliance is favored" : winProbRed < 45 ? "Blue Alliance is favored" : "Close matchup - could go either way"}
                       </p>
                     </div>
 
