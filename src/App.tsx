@@ -23,6 +23,7 @@ import Awards from "./pages/Awards";
 import MatchPredictor from "./pages/MatchPredictor";
 import TeamNotes from "./pages/TeamNotes";
 import SeasonProgress from "./pages/SeasonProgress";
+import JoinTeam from "./pages/JoinTeam";
 import NotFound from "./pages/NotFound";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
@@ -62,6 +63,28 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return authenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
+function AuthRedirect({ children }: { children: React.ReactNode }) {
+  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setAuthenticated(!!data.session);
+      setLoading(false);
+    });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  return authenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <SeasonProvider>
@@ -71,9 +94,9 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
+              <Route path="/" element={<AuthRedirect><Landing /></AuthRedirect>} />
+              <Route path="/login" element={<AuthRedirect><Login /></AuthRedirect>} />
+              <Route path="/signup" element={<AuthRedirect><Signup /></AuthRedirect>} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/terms" element={<TermsOfService />} />
@@ -82,6 +105,7 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/cookies" element={<CookiePolicy />} />
+              <Route path="/join-team" element={<ProtectedRoute><JoinTeam /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
               <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />
