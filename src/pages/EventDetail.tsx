@@ -712,7 +712,7 @@ export default function EventDetail() {
             {teamStats && teamStats.length > 0 && (
               <div className="rounded-xl border border-border/50 card-gradient p-4">
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <TrendingUp className="h-3.5 w-3.5" /> Power Rankings — All {teamStats.length} Teams
+                  <TrendingUp className="h-3.5 w-3.5" /> Power Rankings - All {teamStats.length} Teams
                 </h3>
                 <p className="text-xs text-muted-foreground mb-4">Ranked by RoboRank. Bar length shows relative strength compared to the #1 seed.</p>
                 
