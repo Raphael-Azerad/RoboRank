@@ -74,7 +74,7 @@ const App = () => (
             <Route path="/team/:teamNumber" element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />
             <Route path="/event/:eventId" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
             <Route path="/awards" element={<ProtectedRoute><Awards /></ProtectedRoute>} />
-            <Route path="/compare" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

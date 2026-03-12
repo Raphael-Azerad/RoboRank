@@ -300,6 +300,16 @@ export default function EventDetail() {
                       navigate("/scouting");
                       return;
                     }
+                    // Check free tier limit (1 per month)
+                    const now = new Date();
+                    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                    const { data: monthReports } = await supabase.from("scouting_reports")
+                      .select("id").eq("user_id", user.id)
+                      .gte("created_at", monthStart.toISOString());
+                    if (monthReports && monthReports.length >= 1) {
+                      toast.error("Free tier limit reached (1 report/month). Upgrade for unlimited.");
+                      return;
+                    }
                     toast.info("Generating report... This may take a minute.");
                     const divId = divisions[selectedDivisionIdx]?.id || 1;
                     const report = await generateScoutingReport(
