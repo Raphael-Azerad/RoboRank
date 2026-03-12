@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
-import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check } from "lucide-react";
+import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check, Clock, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { MatchesPlayedModal, WinsModal, groupMatchesByEvent, filterWonMatches } 
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { useTeamStatus } from "@/hooks/useTeamStatus";
 
 // Season goals stored in localStorage
 function loadGoals(): { label: string; done: boolean }[] {
