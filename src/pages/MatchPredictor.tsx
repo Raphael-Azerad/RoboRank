@@ -34,8 +34,8 @@ function PredictionBar({ labelA, labelB, winProbA }: { labelA: string; labelB: s
   return (
     <div className="space-y-2">
       <div className="flex justify-between text-sm font-medium">
-        <span className="text-destructive">{labelA} — {winProbA}%</span>
-        <span className="text-[hsl(var(--chart-2))]">{winProbB}% — {labelB}</span>
+        <span className="text-destructive">{labelA} - {winProbA}%</span>
+        <span className="text-[hsl(var(--chart-2))]">{winProbB}% - {labelB}</span>
       </div>
       <div className="h-3 rounded-full overflow-hidden bg-muted flex">
         <motion.div
