@@ -320,7 +320,7 @@ export default function Profile() {
                 <div className="flex items-center gap-3 text-sm">
                   <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
                   <span className="text-muted-foreground">Email</span>
-                  <span className="font-medium ml-auto truncate max-w-[250px]">{user.email || "—"}</span>
+                  <span className="font-medium ml-auto truncate max-w-[250px]">{user.email || "-"}</span>
                 </div>
                 {user.team_number && (
                   <div className="flex items-center gap-3 text-sm">
