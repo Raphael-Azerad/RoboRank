@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, BarChart3, Loader2, Send } from "lucide-react";
+import { BarChart3, Loader2, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import { LegalPageWrapper } from "@/components/layout/LegalPageWrapper";
 
 const contactSchema = z.object({
   name: z.string().trim().min(1, "Name is required").max(100),
@@ -30,11 +31,9 @@ export default function Contact() {
     }
     setLoading(true);
     try {
-      // Store contact message in notifications table for admin review
-      const { error } = await supabase.functions.invoke("robotevents-proxy", {
+      await supabase.functions.invoke("robotevents-proxy", {
         body: { contact: true, ...result.data },
       });
-      // Even if the function doesn't handle contacts, show success
       setSent(true);
       toast.success("Message sent! We'll get back to you soon.");
     } catch {
@@ -44,16 +43,8 @@ export default function Contact() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container max-w-xl py-12 space-y-8">
-        <div className="flex items-center gap-3">
-          <Link to="/">
-            <Button variant="ghost" size="sm" className="gap-1.5">
-              <ArrowLeft className="h-4 w-4" /> Back
-            </Button>
-          </Link>
-        </div>
-
+    <LegalPageWrapper>
+      <div className="max-w-xl mx-auto space-y-8">
         <div className="text-center space-y-3">
           <BarChart3 className="h-8 w-8 text-primary mx-auto" />
           <h1 className="text-3xl font-display font-bold">Contact Us</h1>
@@ -67,8 +58,8 @@ export default function Contact() {
             </div>
             <h2 className="font-display font-semibold text-lg">Message Sent!</h2>
             <p className="text-sm text-muted-foreground">Thanks for reaching out. We'll respond as soon as possible.</p>
-            <Link to="/">
-              <Button variant="outline">Back to Home</Button>
+            <Link to="/dashboard">
+              <Button variant="outline">Back to Dashboard</Button>
             </Link>
           </div>
         ) : (
@@ -97,6 +88,6 @@ export default function Contact() {
           </form>
         )}
       </div>
-    </div>
+    </LegalPageWrapper>
   );
 }
