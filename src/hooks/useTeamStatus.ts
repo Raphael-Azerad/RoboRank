@@ -39,27 +39,6 @@ export function useTeamStatus() {
       setTeamNumber(membership.team_number);
       setRole(membership.role);
       setStatus(membership.status === "approved" ? "approved" : "pending");
-      return;
-
-      setTeamNumber(tn);
-
-      // Check team_members for approval status
-      const { data: membership } = await supabase
-        .from("team_members")
-        .select("status, role")
-        .eq("user_id", user.id)
-        .eq("team_number", tn)
-        .maybeSingle();
-
-      if (cancelled) return;
-
-      if (!membership) {
-        setStatus("no-team");
-        return;
-      }
-
-      setRole(membership.role);
-      setStatus(membership.status === "approved" ? "approved" : "pending");
     }
 
     check();
