@@ -3,10 +3,15 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { getTeamByNumber, SEASONS, SEASON_LIST } from "@/lib/robotevents";
 import { useSeason, type GradeLevel } from "@/contexts/SeasonContext";
-import { useQuery } from "@tanstack/react-query";
-import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { validateTeamNumber } from "@/lib/robotevents";
 
 const GRADE_OPTIONS: { value: GradeLevel; label: string; desc: string }[] = [
   { value: "Both", label: "All Teams", desc: "Show HS & MS combined" },
@@ -16,13 +21,17 @@ const GRADE_OPTIONS: { value: GradeLevel; label: string; desc: string }[] = [
 
 export default function Profile() {
   const { season, setSeason, gradeLevel, setGradeLevel } = useSeason();
-  const [user, setUser] = useState<{ email?: string; team_number?: string }>({});
+  const queryClient = useQueryClient();
+  const [user, setUser] = useState<{ id?: string; email?: string; team_number?: string | null }>({});
+  const [joinTeamNumber, setJoinTeamNumber] = useState("");
+  const [joiningTeam, setJoiningTeam] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser({
+        id: data.user?.id,
         email: data.user?.email,
-        team_number: data.user?.user_metadata?.team_number,
+        team_number: data.user?.user_metadata?.team_number || null,
       });
     });
   }, []);
@@ -32,6 +41,94 @@ export default function Profile() {
     queryFn: () => getTeamByNumber(user.team_number!),
     enabled: !!user.team_number,
   });
+
+  // Team members
+  const { data: teamMembers } = useQuery({
+    queryKey: ["teamMembers", user.team_number],
+    queryFn: async () => {
+      if (!user.team_number) return [];
+      const { data } = await supabase.from("team_members")
+        .select("*")
+        .eq("team_number", user.team_number);
+      return data || [];
+    },
+    enabled: !!user.team_number,
+  });
+
+  // Pending join requests for my team
+  const pendingRequests = teamMembers?.filter(m => m.status === "pending") || [];
+  const myMembership = teamMembers?.find(m => m.user_id === user.id);
+  const isTeamOwner = myMembership?.role === "owner";
+
+  // My pending requests (if I requested to join a team)
+  const { data: myPendingRequests } = useQuery({
+    queryKey: ["myPendingRequests", user.id],
+    queryFn: async () => {
+      if (!user.id) return [];
+      const { data } = await supabase.from("team_members")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("status", "pending");
+      return data || [];
+    },
+    enabled: !!user.id && !user.team_number,
+  });
+
+  const handleJoinRequest = async () => {
+    const num = joinTeamNumber.trim().toUpperCase();
+    if (!num) return;
+    setJoiningTeam(true);
+    try {
+      const result = await validateTeamNumber(num);
+      if (!result.valid) {
+        toast.error(`Team "${num}" not found on RobotEvents`);
+        setJoiningTeam(false);
+        return;
+      }
+      const { error } = await supabase.from("team_members").insert({
+        team_number: num,
+        user_id: user.id!,
+        role: "member",
+        status: "pending",
+      });
+      if (error) {
+        if (error.code === "23505") toast.error("You already requested to join this team");
+        else toast.error(error.message);
+      } else {
+        toast.success(`Join request sent for team ${num}`);
+        setJoinTeamNumber("");
+        queryClient.invalidateQueries({ queryKey: ["myPendingRequests"] });
+      }
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+    setJoiningTeam(false);
+  };
+
+  const handleApproveRequest = async (memberId: string, teamNum: string, userId: string) => {
+    const { error } = await supabase.from("team_members")
+      .update({ status: "approved" })
+      .eq("id", memberId);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      // Update the user's profile with the team number
+      await supabase.from("profiles").update({ team_number: teamNum }).eq("id", userId);
+      toast.success("Member approved!");
+      queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
+    }
+  };
+
+  const handleRejectRequest = async (memberId: string) => {
+    const { error } = await supabase.from("team_members")
+      .update({ status: "rejected" })
+      .eq("id", memberId);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Request rejected");
+      queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
+    }
+  };
 
   const seasonInfo = SEASONS[season];
 
@@ -50,19 +147,21 @@ export default function Profile() {
               <User className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-display font-bold">{user.team_number || "—"}</h2>
+              <h2 className="text-xl font-display font-bold">{user.team_number || "No Team"}</h2>
               <p className="text-sm text-muted-foreground">
-                {teamData?.team_name || "VEX Robotics Team"}
+                {teamData?.team_name || (user.team_number ? "VEX Robotics Team" : "Browse-only account")}
               </p>
             </div>
           </div>
 
           <div className="space-y-4">
-            <div className="flex items-center gap-3 text-sm">
-              <Hash className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Team Number:</span>
-              <span className="font-medium">{user.team_number || "—"}</span>
-            </div>
+            {user.team_number && (
+              <div className="flex items-center gap-3 text-sm">
+                <Hash className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Team Number:</span>
+                <span className="font-medium">{user.team_number}</span>
+              </div>
+            )}
             <div className="flex items-center gap-3 text-sm">
               <Mail className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">Email:</span>
@@ -92,6 +191,108 @@ export default function Profile() {
             )}
           </div>
         </motion.div>
+
+        {/* Join a Team (for users without a team) */}
+        {!user.team_number && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="rounded-xl border border-border/50 card-gradient p-8 space-y-4"
+          >
+            <div className="flex items-center gap-3">
+              <Users className="h-5 w-5 text-primary" />
+              <div>
+                <h3 className="font-display font-semibold">Join a Team</h3>
+                <p className="text-xs text-muted-foreground">
+                  Request to join an existing team to access scouting reports
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Team number (e.g. 17505B)"
+                value={joinTeamNumber}
+                onChange={(e) => setJoinTeamNumber(e.target.value)}
+                className="bg-card uppercase"
+              />
+              <Button onClick={handleJoinRequest} disabled={joiningTeam || !joinTeamNumber.trim()}>
+                {joiningTeam ? <Loader2 className="h-4 w-4 animate-spin" /> : "Request"}
+              </Button>
+            </div>
+            {myPendingRequests && myPendingRequests.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs text-muted-foreground font-medium">Pending Requests:</p>
+                {myPendingRequests.map((req) => (
+                  <div key={req.id} className="flex items-center gap-2 text-sm bg-muted/30 rounded-lg px-3 py-2">
+                    <Clock className="h-4 w-4 text-[hsl(var(--chart-4))]" />
+                    <span>{req.team_number}</span>
+                    <span className="text-xs text-muted-foreground">— Awaiting approval</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Team Members (for team owners) */}
+        {user.team_number && teamMembers && teamMembers.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+            className="rounded-xl border border-border/50 card-gradient p-8 space-y-4"
+          >
+            <div className="flex items-center gap-3">
+              <Users className="h-5 w-5 text-primary" />
+              <div>
+                <h3 className="font-display font-semibold">Team Members</h3>
+                <p className="text-xs text-muted-foreground">
+                  {teamMembers.filter(m => m.status === "approved").length} approved members
+                </p>
+              </div>
+            </div>
+
+            {/* Pending requests */}
+            {isTeamOwner && pendingRequests.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-[hsl(var(--chart-4))]">Pending Join Requests</p>
+                {pendingRequests.map((req) => (
+                  <div key={req.id} className="flex items-center justify-between bg-[hsl(var(--chart-4))]/5 border border-[hsl(var(--chart-4))]/20 rounded-lg px-3 py-2">
+                    <span className="text-sm font-medium">{req.user_id.slice(0, 8)}...</span>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="ghost" className="h-7 text-[hsl(var(--success))]"
+                        onClick={() => handleApproveRequest(req.id, req.team_number, req.user_id)}>
+                        <Check className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 text-destructive"
+                        onClick={() => handleRejectRequest(req.id)}>
+                        <XIcon className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Approved members */}
+            <div className="space-y-1">
+              {teamMembers.filter(m => m.status === "approved").map((member) => (
+                <div key={member.id} className="flex items-center justify-between text-sm py-1.5">
+                  <span className={cn(member.user_id === user.id && "text-primary font-medium")}>
+                    {member.user_id === user.id ? "You" : `Member ${member.user_id.slice(0, 8)}...`}
+                  </span>
+                  <span className={cn(
+                    "text-[10px] px-2 py-0.5 rounded",
+                    member.role === "owner" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                  )}>
+                    {member.role}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+        )}
 
         {/* Grade Level Selector */}
         <motion.div
