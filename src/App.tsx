@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SeasonProvider } from "@/contexts/SeasonContext";
+import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
