@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Search, FileText, Lock, Loader2, Download, ChevronDown, ChevronUp, Trophy, Target, Zap, Medal, BarChart3 } from "lucide-react";
+import { Search, FileText, Lock, Loader2, Download, ChevronDown, ChevronUp, Trophy, Target, Zap, Medal, BarChart3, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAllPages, getTeamByNumber, getTeamEvents, SEASONS } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { generateScoutingReport, downloadCSV, downloadExcel, type ScoutingReport } from "@/lib/scoutingReport";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { toast } from "sonner";
@@ -19,6 +20,7 @@ type SortField = "roboRank" | "matches" | "winPct" | "wins" | "totalAwards" | "c
 export default function Scouting() {
   const navigate = useNavigate();
   const { season } = useSeason();
+  const { subscribed, startCheckout } = useSubscription();
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -70,13 +72,14 @@ export default function Scouting() {
   });
 
   // Check free tier limit (1 per team per month)
-  const canGenerateFree = useMemo(() => {
+  const canGenerate = useMemo(() => {
+    if (subscribed) return true; // Premium: unlimited
     if (!existingReports || !teamNumber) return false;
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const thisMonthReports = existingReports.filter(r => new Date(r.created_at) >= monthStart);
     return thisMonthReports.length < 1;
-  }, [existingReports, teamNumber]);
+  }, [existingReports, teamNumber, subscribed]);
 
   // Check if team has events this season
   const hasSeasonEvents = myEvents && myEvents.length > 0;
@@ -125,15 +128,15 @@ export default function Scouting() {
   });
 
   const handleGenerate = (event: any) => {
-    if (!teamNumber) {
+    if (!teamNumber && !subscribed) {
       toast.error("You need a team to generate free scouting reports");
       return;
     }
-    if (!hasSeasonEvents) {
+    if (!subscribed && !hasSeasonEvents) {
       toast.error("Your team has no events this season. Upgrade to generate reports.");
       return;
     }
-    if (!canGenerateFree) {
+    if (!canGenerate) {
       toast.error("Free tier limit reached (1 report/month). Upgrade for unlimited.");
       return;
     }
@@ -321,9 +324,12 @@ export default function Scouting() {
           </div>
         )}
 
-        {teamNumber && hasSeasonEvents && !canGenerateFree && (
-          <div className="rounded-lg border border-[hsl(var(--chart-4))]/30 bg-[hsl(var(--chart-4))]/5 px-4 py-3 text-sm text-muted-foreground">
-            You've used your free report this month. Upgrade to premium ($10/mo) for unlimited reports.
+        {teamNumber && hasSeasonEvents && !canGenerate && !subscribed && (
+          <div className="rounded-lg border border-[hsl(var(--chart-4))]/30 bg-[hsl(var(--chart-4))]/5 px-4 py-3 text-sm flex items-center justify-between">
+            <span className="text-muted-foreground">You've used your free report this month.</span>
+            <Button variant="hero" size="sm" onClick={startCheckout} className="gap-1.5">
+              <Crown className="h-3.5 w-3.5" /> Upgrade — $10/mo
+            </Button>
           </div>
         )}
 
@@ -383,7 +389,7 @@ export default function Scouting() {
                           variant="hero"
                           size="sm"
                           onClick={() => handleGenerate(event)}
-                          disabled={generateMutation.isPending || !canGenerateFree}
+                          disabled={generateMutation.isPending || !canGenerate}
                           className="gap-1.5"
                         >
                           {generateMutation.isPending ? (

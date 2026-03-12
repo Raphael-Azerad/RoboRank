@@ -3,8 +3,9 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { getTeamByNumber, SEASONS, SEASON_LIST } from "@/lib/robotevents";
 import { useSeason, type GradeLevel } from "@/contexts/SeasonContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock } from "lucide-react";
+import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +22,7 @@ const GRADE_OPTIONS: { value: GradeLevel; label: string; desc: string }[] = [
 
 export default function Profile() {
   const { season, setSeason, gradeLevel, setGradeLevel } = useSeason();
+  const { subscribed, loading: subLoading, subscriptionEnd, startCheckout, openPortal } = useSubscription();
   const queryClient = useQueryClient();
   const [user, setUser] = useState<{ id?: string; email?: string; team_number?: string | null }>({});
   const [joinTeamNumber, setJoinTeamNumber] = useState("");
@@ -201,7 +203,41 @@ export default function Profile() {
           </div>
         </motion.div>
 
-        {/* Join a Team (for users without a team) */}
+        {/* Subscription */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.03 }}
+          className={cn(
+            "rounded-xl border p-8 space-y-4",
+            subscribed ? "border-primary/30 bg-primary/5" : "border-border/50 card-gradient"
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Crown className={cn("h-5 w-5", subscribed ? "text-primary" : "text-muted-foreground")} />
+              <div>
+                <h3 className="font-display font-semibold">
+                  {subscribed ? "Premium Plan" : "Free Plan"}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {subscribed
+                    ? `Unlimited reports · Renews ${subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString() : "—"}`
+                    : "1 scouting report per month"}
+                </p>
+              </div>
+            </div>
+            {subscribed ? (
+              <Button variant="outline" size="sm" onClick={openPortal}>Manage</Button>
+            ) : (
+              <Button variant="hero" size="sm" onClick={startCheckout} className="gap-1.5">
+                <Crown className="h-3.5 w-3.5" /> Upgrade — $10/mo
+              </Button>
+            )}
+          </div>
+        </motion.div>
+
+
         {!user.team_number && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
