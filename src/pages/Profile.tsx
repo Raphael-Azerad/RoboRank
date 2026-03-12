@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { getTeamByNumber, SEASONS, SEASON_LIST } from "@/lib/robotevents";
 import { useSeason, type GradeLevel } from "@/contexts/SeasonContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock, Crown, ChevronDown, ChevronUp, Trash2, Shield, Key, LogOut } from "lucide-react";
+import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock, Crown, ChevronDown, ChevronUp, Trash2, Shield, Key, LogOut, Camera, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,15 +52,52 @@ export default function Profile() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
+  // Logo upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
+      const u = data.user;
       setUser({
-        id: data.user?.id,
-        email: data.user?.email,
-        team_number: data.user?.user_metadata?.team_number || null,
+        id: u?.id,
+        email: u?.email,
+        team_number: u?.user_metadata?.team_number || null,
       });
+      // Load logo
+      if (u?.id) {
+        const { data: files } = supabase.storage.from("team-logos").getPublicUrl(`${u.id}/logo`);
+        // Check if file exists by trying to fetch it
+        fetch(files.publicUrl, { method: "HEAD" }).then(res => {
+          if (res.ok) setLogoUrl(files.publicUrl + "?t=" + Date.now());
+        }).catch(() => {});
+      }
     });
   }, []);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user.id) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be under 2MB");
+      return;
+    }
+    setUploadingLogo(true);
+    const { error } = await supabase.storage.from("team-logos").upload(`${user.id}/logo`, file, { upsert: true });
+    if (error) {
+      toast.error("Upload failed: " + error.message);
+    } else {
+      const { data } = supabase.storage.from("team-logos").getPublicUrl(`${user.id}/logo`);
+      setLogoUrl(data.publicUrl + "?t=" + Date.now());
+      toast.success("Logo updated!");
+    }
+    setUploadingLogo(false);
+  };
 
   const { data: teamData, isLoading } = useQuery({
     queryKey: ["teamProfile", user.team_number],
@@ -208,11 +245,29 @@ export default function Profile() {
           className="rounded-xl border border-border/50 card-gradient p-6"
         >
           <div className="flex items-center gap-5">
-            <div
-              className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-display font-bold text-primary-foreground shrink-0"
-              style={{ background: getAvatarColor(avatarStr) }}
-            >
-              {getInitials(user.team_number, user.email)}
+            <div className="relative group">
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt="Team logo"
+                  className="w-16 h-16 rounded-2xl object-cover shrink-0"
+                />
+              ) : (
+                <div
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center text-xl font-display font-bold text-primary-foreground shrink-0"
+                  style={{ background: getAvatarColor(avatarStr) }}
+                >
+                  {getInitials(user.team_number, user.email)}
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute inset-0 rounded-2xl bg-background/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+              >
+                {uploadingLogo ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+              </button>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
             </div>
             <div className="flex-1 min-w-0">
               <h1 className="text-2xl font-display font-bold truncate">{user.team_number || "No Team"}</h1>
