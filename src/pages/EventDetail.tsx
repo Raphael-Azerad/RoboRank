@@ -426,7 +426,7 @@ export default function EventDetail() {
                       <div className="col-span-1 text-center text-xs text-muted-foreground">{r.sp}</div>
                       <div className="col-span-1 text-center text-xs stat-number">{r.high_score}</div>
                       <div className="col-span-2 flex justify-center">
-                        {teamRR ? <RoboRankScore score={teamRR.roboRank} size="sm" /> : <span className="text-xs text-muted-foreground">—</span>}
+                        {teamRR ? <RoboRankScore score={teamRR.roboRank} size="sm" /> : <span className="text-xs text-muted-foreground">-</span>}
                       </div>
                     </div>
                   );
