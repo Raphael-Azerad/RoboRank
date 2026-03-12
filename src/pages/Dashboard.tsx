@@ -123,30 +123,19 @@ export default function Dashboard() {
       .slice(0, 3);
   }, [upcomingEvents]);
 
-  // Auto-update goals with live data
-  useEffect(() => {
-    if (!matchRecord) return;
-    const updated = goals.map(g => {
-      const lower = g.label.toLowerCase();
-      if (lower.includes("win rate") || lower.includes("win %")) return { ...g, current: matchRecord.winRate };
-      if (lower.includes("wins")) return { ...g, current: matchRecord.wins };
-      if (lower.includes("match")) return { ...g, current: totalMatchCount };
-      if (lower.includes("award")) return { ...g, current: awards?.length || 0 };
-      if (lower.includes("skills") || lower.includes("skill")) return { ...g, current: totalSkills };
-      return g;
-    });
-    setGoals(updated);
-    saveGoals(updated);
-  }, [matchRecord, totalMatchCount, awards, totalSkills]);
-
   const handleAddGoal = () => {
-    if (!goalLabel.trim() || !goalTarget.trim()) return;
-    const newGoals = [...goals, { label: goalLabel.trim(), target: parseInt(goalTarget) || 0, current: 0 }];
+    if (!goalLabel.trim()) return;
+    const newGoals = [...goals, { label: goalLabel.trim(), done: false }];
     setGoals(newGoals);
     saveGoals(newGoals);
     setGoalLabel("");
-    setGoalTarget("");
     setAddingGoal(false);
+  };
+
+  const handleToggleGoal = (i: number) => {
+    const newGoals = goals.map((g, idx) => idx === i ? { ...g, done: !g.done } : g);
+    setGoals(newGoals);
+    saveGoals(newGoals);
   };
 
   const handleRemoveGoal = (i: number) => {
