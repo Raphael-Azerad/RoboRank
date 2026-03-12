@@ -45,7 +45,7 @@ export default function Awards() {
           </Link>
           <div>
             <h1 className="text-3xl font-display font-bold">
-              Awards · <span className="text-gradient">{teamNumber || "—"}</span>
+              Awards · <span className="text-gradient">{teamNumber || "-"}</span>
             </h1>
             <p className="text-muted-foreground mt-1">
               {seasonInfo.name} {seasonInfo.year}

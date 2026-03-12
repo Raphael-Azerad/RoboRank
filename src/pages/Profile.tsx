@@ -320,7 +320,7 @@ export default function Profile() {
                 <div className="flex items-center gap-3 text-sm">
                   <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
                   <span className="text-muted-foreground">Email</span>
-                  <span className="font-medium ml-auto truncate max-w-[250px]">{user.email || "—"}</span>
+                  <span className="font-medium ml-auto truncate max-w-[250px]">{user.email || "-"}</span>
                 </div>
                 {user.team_number && (
                   <div className="flex items-center gap-3 text-sm">
@@ -366,7 +366,7 @@ export default function Profile() {
                   <h3 className="font-display font-semibold">{subscribed ? "Premium Plan" : "Free Plan"}</h3>
                   <p className="text-xs text-muted-foreground">
                     {subscribed
-                      ? `Unlimited scouting reports · Renews ${subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString() : "—"}`
+                      ? `Unlimited scouting reports · Renews ${subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString() : "-"}`
                       : "1 scouting report per month · Upgrade for unlimited"}
                   </p>
                 </div>
@@ -553,7 +553,7 @@ export default function Profile() {
                       <div key={req.id} className="flex items-center gap-2 text-sm bg-muted/30 rounded-lg px-3 py-2">
                         <Clock className="h-4 w-4 text-[hsl(var(--chart-4))]" />
                         <span>{req.team_number}</span>
-                        <span className="text-xs text-muted-foreground">— Awaiting approval</span>
+                        <span className="text-xs text-muted-foreground">- Awaiting approval</span>
                       </div>
                     ))}
                   </div>

@@ -209,8 +209,8 @@ export default function EventDetail() {
     const blueScore = blue?.score ?? 0;
     const redWon = redScore > blueScore;
     const blueWon = blueScore > redScore;
-    const redTeams = red?.teams?.map((t: any) => t.team?.name).filter(Boolean).join(" & ") || "—";
-    const blueTeams = blue?.teams?.map((t: any) => t.team?.name).filter(Boolean).join(" & ") || "—";
+    const redTeams = red?.teams?.map((t: any) => t.team?.name).filter(Boolean).join(" & ") || "-";
+    const blueTeams = blue?.teams?.map((t: any) => t.team?.name).filter(Boolean).join(" & ") || "-";
 
     return (
       <div key={match.id} className="grid grid-cols-12 gap-1 px-4 py-2.5 items-center border-t border-border/20 text-sm hover:bg-accent/30 transition-colors">
@@ -302,7 +302,7 @@ export default function EventDetail() {
                       navigate("/scouting");
                       return;
                     }
-                    // Check free tier limit (1 per month) — skip for subscribers
+                    // Check free tier limit (1 per month) - skip for subscribers
                     if (!subscribed) {
                       const now = new Date();
                       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -361,7 +361,7 @@ export default function EventDetail() {
           ))}
         </div>
 
-        {/* Division Selector — below tabs */}
+        {/* Division Selector - below tabs */}
         {hasDivisions && (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Division:</span>
@@ -413,7 +413,7 @@ export default function EventDetail() {
                     >
                       <div className="col-span-1 stat-number text-xs text-muted-foreground">{r.rank}</div>
                       <div className="col-span-3">
-                        <div className="font-display font-semibold text-sm">{r.team?.name || "—"}</div>
+                        <div className="font-display font-semibold text-sm">{r.team?.name || "-"}</div>
                       </div>
                       <div className="col-span-2 text-center text-xs">
                         <span className="text-[hsl(var(--success))]">{r.wins}W</span>
@@ -426,7 +426,7 @@ export default function EventDetail() {
                       <div className="col-span-1 text-center text-xs text-muted-foreground">{r.sp}</div>
                       <div className="col-span-1 text-center text-xs stat-number">{r.high_score}</div>
                       <div className="col-span-2 flex justify-center">
-                        {teamRR ? <RoboRankScore score={teamRR.roboRank} size="sm" /> : <span className="text-xs text-muted-foreground">—</span>}
+                        {teamRR ? <RoboRankScore score={teamRR.roboRank} size="sm" /> : <span className="text-xs text-muted-foreground">-</span>}
                       </div>
                     </div>
                   );
@@ -468,10 +468,10 @@ export default function EventDetail() {
                           <span className="text-muted-foreground mx-0.5">-</span>
                           <span className="text-destructive">{team.record.losses}L</span>
                         </>
-                      ) : "—"}
+                      ) : "-"}
                     </div>
                     <div className="col-span-2 text-center stat-number text-sm">
-                      {team.record ? `${team.record.winRate}%` : "—"}
+                      {team.record ? `${team.record.winRate}%` : "-"}
                     </div>
                     <div className="col-span-2 text-center text-xs text-muted-foreground hidden sm:block truncate">
                       {team.location?.city}, {team.location?.region}
@@ -581,7 +581,7 @@ export default function EventDetail() {
                 >
                   <div className="col-span-1 stat-number text-xs text-muted-foreground">{i + 1}</div>
                   <div className="col-span-3">
-                    <div className="font-display font-semibold text-sm">{entry.team?.name || entry.team?.team || "—"}</div>
+                    <div className="font-display font-semibold text-sm">{entry.team?.name || entry.team?.team || "-"}</div>
                   </div>
                   <div className="col-span-2 text-center stat-number text-sm">{entry.driver}</div>
                   <div className="col-span-2 text-center stat-number text-sm">{entry.programming}</div>
@@ -655,10 +655,10 @@ export default function EventDetail() {
                 <TrendingUp className="h-4 w-4 text-primary" /> What is this?
               </h3>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                <strong className="text-foreground">Power Rankings</strong> predict team performance using <strong className="text-foreground">RoboRank</strong> — a composite score based on win rate, strength of schedule (AP/SP), consistency, skills scores, and event count. Higher RoboRank = stronger predicted performance.
+                <strong className="text-foreground">Power Rankings</strong> predict team performance using <strong className="text-foreground">RoboRank</strong> - a composite score based on win rate, strength of schedule (AP/SP), consistency, skills scores, and event count. Higher RoboRank = stronger predicted performance.
               </p>
               <div className="flex flex-wrap gap-3 text-[10px] text-muted-foreground pt-1">
-                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary" /> RoboRank score (0–100)</span>
+                <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary" /> RoboRank score (0-100)</span>
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[hsl(var(--success))]" /> Win rate %</span>
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[hsl(var(--chart-4))]" /> Skills combined</span>
               </div>
@@ -680,7 +680,7 @@ export default function EventDetail() {
                     {teams.map((t: any) => {
                       const teamNumber = t.number || t.name || "";
                       return (
-                        <option key={t.id} value={teamNumber}>{teamNumber} — {t.team_name || t.teamName || ""}</option>
+                        <option key={t.id} value={teamNumber}>{teamNumber} - {t.team_name || t.teamName || ""}</option>
                       );
                     })}
                   </select>
@@ -694,7 +694,7 @@ export default function EventDetail() {
                     {teams.map((t: any) => {
                       const teamNumber = t.number || t.name || "";
                       return (
-                        <option key={t.id} value={teamNumber}>{teamNumber} — {t.team_name || t.teamName || ""}</option>
+                        <option key={t.id} value={teamNumber}>{teamNumber} - {t.team_name || t.teamName || ""}</option>
                       );
                     })}
                   </select>
@@ -712,7 +712,7 @@ export default function EventDetail() {
             {teamStats && teamStats.length > 0 && (
               <div className="rounded-xl border border-border/50 card-gradient p-4">
                 <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                  <TrendingUp className="h-3.5 w-3.5" /> Power Rankings — All {teamStats.length} Teams
+                  <TrendingUp className="h-3.5 w-3.5" /> Power Rankings - All {teamStats.length} Teams
                 </h3>
                 <p className="text-xs text-muted-foreground mb-4">Ranked by RoboRank. Bar length shows relative strength compared to the #1 seed.</p>
                 
@@ -757,7 +757,7 @@ export default function EventDetail() {
                               <span className="text-muted-foreground">-</span>
                               <span className="text-destructive">{team.record.losses}L</span>
                             </>
-                          ) : "—"}
+                          ) : "-"}
                         </span>
                         <div className="col-span-2 flex justify-center">
                           <RoboRankScore score={team.roboRank} size="sm" />

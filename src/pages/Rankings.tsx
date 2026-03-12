@@ -378,7 +378,7 @@ export default function Rankings() {
                       {roboRankMap.has(team.id) ? (
                         <RoboRankScore score={roboRankMap.get(team.id)!} size="sm" />
                       ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
+                        <span className="text-xs text-muted-foreground">-</span>
                       )}
                     </div>
                   </motion.div>

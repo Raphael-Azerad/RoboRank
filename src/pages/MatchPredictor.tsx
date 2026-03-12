@@ -34,8 +34,8 @@ function PredictionBar({ labelA, labelB, winProbA }: { labelA: string; labelB: s
   return (
     <div className="space-y-2">
       <div className="flex justify-between text-sm font-medium">
-        <span className="text-destructive">{labelA} — {winProbA}%</span>
-        <span className="text-[hsl(var(--chart-2))]">{winProbB}% — {labelB}</span>
+        <span className="text-destructive">{labelA} - {winProbA}%</span>
+        <span className="text-[hsl(var(--chart-2))]">{winProbB}% - {labelB}</span>
       </div>
       <div className="h-3 rounded-full overflow-hidden bg-muted flex">
         <motion.div
@@ -440,7 +440,7 @@ export default function MatchPredictor() {
                         winProbA={winProbRed}
                       />
                       <p className="text-sm text-muted-foreground text-center">
-                        {winProbRed > 55 ? "Red Alliance is favored" : winProbRed < 45 ? "Blue Alliance is favored" : "Close matchup — could go either way"}
+                        {winProbRed > 55 ? "Red Alliance is favored" : winProbRed < 45 ? "Blue Alliance is favored" : "Close matchup - could go either way"}
                       </p>
                     </div>
 
@@ -521,12 +521,12 @@ export default function MatchPredictor() {
                             <div className="text-2xl font-display font-bold text-destructive">{h2hData.wins}</div>
                             <div className="text-xs text-muted-foreground">{h2hTeamAStats.number} Wins</div>
                           </div>
-                          <div className="text-lg text-muted-foreground">—</div>
+                          <div className="text-lg text-muted-foreground">-</div>
                           <div>
                             <div className="text-2xl font-display font-bold text-muted-foreground">{h2hData.ties}</div>
                             <div className="text-xs text-muted-foreground">Ties</div>
                           </div>
-                          <div className="text-lg text-muted-foreground">—</div>
+                          <div className="text-lg text-muted-foreground">-</div>
                           <div>
                             <div className="text-2xl font-display font-bold text-[hsl(var(--chart-2))]">{h2hData.losses}</div>
                             <div className="text-xs text-muted-foreground">{h2hTeamBStats.number} Wins</div>

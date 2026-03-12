@@ -204,7 +204,7 @@ export default function Scouting() {
           {/* Main Stats Table */}
           <div className="rounded-xl border border-border/50 overflow-hidden">
             <div className="px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              All Teams — Click column headers to sort
+              All Teams - Click column headers to sort
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] text-xs">
@@ -341,7 +341,7 @@ export default function Scouting() {
           <div className="rounded-lg border border-[hsl(var(--chart-4))]/30 bg-[hsl(var(--chart-4))]/5 px-4 py-3 text-sm flex items-center justify-between">
             <span className="text-muted-foreground">You've used your free report this month.</span>
             <Button variant="hero" size="sm" onClick={startCheckout} className="gap-1.5">
-              <Crown className="h-3.5 w-3.5" /> Upgrade — $10/mo
+              <Crown className="h-3.5 w-3.5" /> Upgrade - $10/mo
             </Button>
           </div>
         )}
