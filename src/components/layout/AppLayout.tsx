@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, Calendar, Home, Search, Trophy, User, LogOut, Menu, X } from "lucide-react";
+import { BarChart3, Calendar, Home, Search, Trophy, User, LogOut, Menu, X, Swords, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -11,7 +11,8 @@ const navItems = [
   { href: "/events", label: "Events", icon: Calendar },
   { href: "/rankings", label: "Rankings", icon: Trophy },
   { href: "/scouting", label: "Scouting", icon: Search },
-  
+  { href: "/predictor", label: "Predictor", icon: Swords },
+  { href: "/notes", label: "Notes", icon: StickyNote },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -27,7 +28,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Top Nav */}
       <header className="sticky top-0 z-50 glass border-b border-border/50">
         <div className="container flex h-16 items-center justify-between">
           <Link to="/dashboard" className="flex items-center gap-2">
@@ -35,7 +35,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="text-xl font-display font-bold text-gradient">RoboRank</span>
           </Link>
 
-          {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => (
               <Link key={item.href} to={item.href}>
@@ -64,7 +63,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </Button>
           </div>
 
-          {/* Mobile menu button */}
           <Button
             variant="ghost"
             size="icon"
@@ -75,7 +73,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </Button>
         </div>
 
-        {/* Mobile Nav */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-border/50 bg-card/95 backdrop-blur-xl">
             <nav className="container py-4 flex flex-col gap-1">
@@ -93,6 +90,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   </Button>
                 </Link>
               ))}
+              <Link to="/profile" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start gap-3">
+                  <User className="h-4 w-4" />
+                  Profile
+                </Button>
+              </Link>
               <Button variant="ghost" className="w-full justify-start gap-3" onClick={handleLogout}>
                 <LogOut className="h-4 w-4" />
                 Logout

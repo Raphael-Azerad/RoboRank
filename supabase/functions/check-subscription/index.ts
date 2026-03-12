@@ -32,34 +32,84 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+
+    // 1. Check if the user themselves has an active subscription
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-
-    if (customers.data.length === 0) {
-      return new Response(JSON.stringify({ subscribed: false }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+    if (customers.data.length > 0) {
+      const customerId = customers.data[0].id;
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        status: "active",
+        limit: 1,
       });
+      if (subscriptions.data.length > 0) {
+        const subscription = subscriptions.data[0];
+        return new Response(JSON.stringify({
+          subscribed: true,
+          subscription_end: new Date(subscription.current_period_end * 1000).toISOString(),
+          source: "personal",
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
     }
 
-    const customerId = customers.data[0].id;
-    const subscriptions = await stripe.subscriptions.list({
-      customer: customerId,
-      status: "active",
-      limit: 1,
-    });
+    // 2. Check if any teammate has an active subscription (team-wide premium)
+    // Find user's team
+    const { data: membership } = await supabaseClient
+      .from("team_members")
+      .select("team_number")
+      .eq("user_id", user.id)
+      .eq("status", "approved")
+      .limit(1)
+      .single();
 
-    const hasActiveSub = subscriptions.data.length > 0;
-    let subscriptionEnd = null;
+    if (membership?.team_number) {
+      // Get all approved teammates
+      const { data: teammates } = await supabaseClient
+        .from("team_members")
+        .select("user_id")
+        .eq("team_number", membership.team_number)
+        .eq("status", "approved")
+        .neq("user_id", user.id);
 
-    if (hasActiveSub) {
-      const subscription = subscriptions.data[0];
-      subscriptionEnd = new Date(subscription.current_period_end * 1000).toISOString();
+      if (teammates && teammates.length > 0) {
+        // Get teammate emails from profiles
+        const teammateIds = teammates.map(t => t.user_id);
+        const { data: profiles } = await supabaseClient
+          .from("profiles")
+          .select("email")
+          .in("id", teammateIds);
+
+        if (profiles) {
+          for (const profile of profiles) {
+            if (!profile.email) continue;
+            const tmCustomers = await stripe.customers.list({ email: profile.email, limit: 1 });
+            if (tmCustomers.data.length > 0) {
+              const tmSubs = await stripe.subscriptions.list({
+                customer: tmCustomers.data[0].id,
+                status: "active",
+                limit: 1,
+              });
+              if (tmSubs.data.length > 0) {
+                const sub = tmSubs.data[0];
+                return new Response(JSON.stringify({
+                  subscribed: true,
+                  subscription_end: new Date(sub.current_period_end * 1000).toISOString(),
+                  source: "team",
+                }), {
+                  headers: { ...corsHeaders, "Content-Type": "application/json" },
+                  status: 200,
+                });
+              }
+            }
+          }
+        }
+      }
     }
 
-    return new Response(JSON.stringify({
-      subscribed: hasActiveSub,
-      subscription_end: subscriptionEnd,
-    }), {
+    return new Response(JSON.stringify({ subscribed: false }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });

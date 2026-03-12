@@ -5,13 +5,14 @@ import { getTeamByNumber, SEASONS, SEASON_LIST } from "@/lib/robotevents";
 import { useSeason, type GradeLevel } from "@/contexts/SeasonContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock, Crown, ChevronDown, ChevronUp } from "lucide-react";
+import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock, Crown, ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { validateTeamNumber } from "@/lib/robotevents";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 const GRADE_OPTIONS: { value: GradeLevel; label: string }[] = [
   { value: "Both", label: "All Teams" },
@@ -27,6 +28,7 @@ export default function Profile() {
   const [joinTeamNumber, setJoinTeamNumber] = useState("");
   const [joiningTeam, setJoiningTeam] = useState(false);
   const [showMembers, setShowMembers] = useState(false);
+  const [removeMember, setRemoveMember] = useState<{ id: string; email: string | null } | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -135,6 +137,16 @@ export default function Profile() {
     }
   };
 
+  const handleRemoveMember = async (memberId: string) => {
+    const { error } = await supabase.from("team_members").delete().eq("id", memberId);
+    if (error) toast.error(error.message);
+    else {
+      toast.success("Member removed from team");
+      setRemoveMember(null);
+      queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
+    }
+  };
+
   const seasonInfo = SEASONS[season];
 
   return (
@@ -167,10 +179,7 @@ export default function Profile() {
           )}
         >
           <div className="flex items-center gap-3">
-            <div className={cn(
-              "rounded-full p-2.5",
-              subscribed ? "bg-primary/15" : "bg-muted"
-            )}>
+            <div className={cn("rounded-full p-2.5", subscribed ? "bg-primary/15" : "bg-muted")}>
               <Crown className={cn("h-5 w-5", subscribed ? "text-primary" : "text-muted-foreground")} />
             </div>
             <div className="flex-1">
@@ -209,7 +218,6 @@ export default function Profile() {
               </p>
             </div>
           </div>
-
           <div className="grid gap-3">
             <div className="flex items-center gap-3 text-sm">
               <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -279,7 +287,6 @@ export default function Profile() {
               )}
             </button>
 
-            {/* Pending requests (owner only) */}
             {isTeamOwner && pendingRequests.length > 0 && (
               <div className="space-y-2">
                 <p className="text-xs font-medium text-[hsl(var(--chart-4))]">
@@ -303,7 +310,6 @@ export default function Profile() {
               </div>
             )}
 
-            {/* Member list */}
             {showMembers && (
               <div className="space-y-1.5 border-t border-border/30 pt-3">
                 {approvedMembers.map((member) => (
@@ -323,24 +329,36 @@ export default function Profile() {
                       )}>
                         {member.role === "owner" ? "Leader" : "Member"}
                       </span>
-                      {isTeamOwner && member.user_id !== user.id && member.role !== "owner" && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 text-[10px] text-primary px-2"
-                          onClick={async () => {
-                            const { error } = await supabase.from("team_members")
-                              .update({ role: "owner" })
-                              .eq("id", member.id);
-                            if (error) toast.error(error.message);
-                            else {
-                              toast.success("Promoted to leader!");
-                              queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
-                            }
-                          }}
-                        >
-                          Make Leader
-                        </Button>
+                      {isTeamOwner && member.user_id !== user.id && (
+                        <div className="flex gap-1">
+                          {member.role !== "owner" && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 text-[10px] text-primary px-2"
+                              onClick={async () => {
+                                const { error } = await supabase.from("team_members")
+                                  .update({ role: "owner" })
+                                  .eq("id", member.id);
+                                if (error) toast.error(error.message);
+                                else {
+                                  toast.success("Promoted to leader!");
+                                  queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
+                                }
+                              }}
+                            >
+                              Make Leader
+                            </Button>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-6 p-0 text-destructive"
+                            onClick={() => setRemoveMember({ id: member.id, email: (member as any).email })}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -403,8 +421,6 @@ export default function Profile() {
           className="rounded-xl border border-border/50 card-gradient p-6 space-y-5"
         >
           <h3 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider">Preferences</h3>
-
-          {/* Grade Level */}
           <div className="space-y-2.5">
             <div className="flex items-center gap-2">
               <GraduationCap className="h-4 w-4 text-primary" />
@@ -427,10 +443,7 @@ export default function Profile() {
               ))}
             </div>
           </div>
-
           <div className="border-t border-border/30" />
-
-          {/* Season */}
           <div className="space-y-2.5">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-primary" />
@@ -455,6 +468,24 @@ export default function Profile() {
           </div>
         </motion.div>
       </div>
+
+      {/* Remove Member Confirmation Dialog */}
+      <Dialog open={!!removeMember} onOpenChange={() => setRemoveMember(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Team Member</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove {removeMember?.email || "this member"} from the team? They will need to request to join again.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRemoveMember(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => removeMember && handleRemoveMember(removeMember.id)}>
+              Remove Member
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
