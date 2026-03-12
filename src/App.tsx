@@ -19,7 +19,7 @@ import Profile from "./pages/Profile";
 import TeamDetail from "./pages/TeamDetail";
 import EventDetail from "./pages/EventDetail";
 import Awards from "./pages/Awards";
-import Compare from "./pages/Compare";
+
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
