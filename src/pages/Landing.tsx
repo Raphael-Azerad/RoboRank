@@ -291,15 +291,46 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-8">
-        <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            <span className="font-display font-bold text-gradient">RoboRank</span>
+      <footer className="border-t border-border/50 py-10">
+        <div className="container space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                <span className="font-display font-bold text-gradient">RoboRank</span>
+              </div>
+              <p className="text-xs text-muted-foreground">The #1 VEX V5 Robotics analytics platform.</p>
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground">Product</h4>
+              <div className="space-y-1.5">
+                <Link to="/about" className="block text-sm text-muted-foreground hover:text-primary transition-colors">About</Link>
+                <a href="#features" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Features</a>
+                <Link to="/contact" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Contact</Link>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground">Legal</h4>
+              <div className="space-y-1.5">
+                <Link to="/terms" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Terms of Service</Link>
+                <Link to="/privacy" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Privacy Policy</Link>
+                <Link to="/refund" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Refund Policy</Link>
+                <Link to="/cookies" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Cookie Policy</Link>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground">Get Started</h4>
+              <div className="space-y-1.5">
+                <Link to="/signup" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Sign Up Free</Link>
+                <Link to="/login" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Log In</Link>
+              </div>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} RoboRank — Built for VEX Robotics teams
-          </p>
+          <div className="border-t border-border/50 pt-6">
+            <p className="text-xs text-muted-foreground text-center">
+              © {new Date().getFullYear()} RoboRank. Built for VEX Robotics teams. Not affiliated with the REC Foundation or VEX Robotics.
+            </p>
+          </div>
         </div>
       </footer>
     </div>
