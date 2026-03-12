@@ -318,7 +318,7 @@ export default function Scouting() {
             <Clock className="h-4 w-4 text-[hsl(var(--chart-4))] shrink-0" />
             Your team membership is pending approval. You can view existing reports but can't generate new ones until approved.
           </div>
-        )
+        )}
 
         {!teamNumber && (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-muted-foreground">
