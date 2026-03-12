@@ -104,12 +104,12 @@ serve(async (req) => {
       .limit(1)
       .single();
 
-    if (membership?.team_number) {
+    if (teamMembership?.team_number) {
       // Get all approved teammates
       const { data: teammates } = await supabaseClient
         .from("team_members")
         .select("user_id")
-        .eq("team_number", membership.team_number)
+        .eq("team_number", teamMembership.team_number)
         .eq("status", "approved")
         .neq("user_id", user.id);
 
