@@ -67,11 +67,21 @@ export default function Signup() {
       toast.error(error.message);
     } else {
       if (!noTeam && signUpData.user) {
+        // Check if team already has approved members
+        const { data: existingMembers } = await supabase
+          .from("team_members")
+          .select("id")
+          .eq("team_number", teamNumber.toUpperCase())
+          .eq("status", "approved")
+          .limit(1);
+
+        const isFirstMember = !existingMembers || existingMembers.length === 0;
+
         await supabase.from("team_members").insert({
           team_number: teamNumber.toUpperCase(),
           user_id: signUpData.user.id,
-          role: "owner",
-          status: "approved",
+          role: isFirstMember ? "owner" : "member",
+          status: isFirstMember ? "approved" : "pending",
         });
       }
       toast.success("Account created! Check your email to verify.");
