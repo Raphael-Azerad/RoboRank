@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getTeamByNumber, getTeamEvents, getTeamRankings, getTeamSkillsScore, calculateRoboRank, calculateRecordFromRankings, SEASONS, SEASON_LIST } from "@/lib/robotevents";
-import { useSeason, type SeasonKey } from "@/contexts/SeasonContext";
+import { useSeason } from "@/contexts/SeasonContext";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } from "recharts";
 import { TrendingUp, Calendar, Trophy, Target, Loader2 } from "lucide-react";
