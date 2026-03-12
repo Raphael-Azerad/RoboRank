@@ -39,10 +39,12 @@ function isElimRound(round: number): boolean {
 export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
+  const { season } = useSeason();
   const [tab, setTab] = useState<DetailTab>("teams");
   const [h2hTeams, setH2hTeams] = useState<[string, string] | null>(null);
   const [h2hOpen, setH2hOpen] = useState(false);
   const [selectedDivisionIdx, setSelectedDivisionIdx] = useState(0);
+  const [expandedScheduleTeam, setExpandedScheduleTeam] = useState<string | null>(null);
 
   // Reset division when navigating to a new event
   const prevEventId = useRef(eventId);
