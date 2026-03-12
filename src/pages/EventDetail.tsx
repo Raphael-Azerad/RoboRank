@@ -471,7 +471,7 @@ export default function EventDetail() {
                       ) : "-"}
                     </div>
                     <div className="col-span-2 text-center stat-number text-sm">
-                      {team.record ? `${team.record.winRate}%` : "—"}
+                      {team.record ? `${team.record.winRate}%` : "-"}
                     </div>
                     <div className="col-span-2 text-center text-xs text-muted-foreground hidden sm:block truncate">
                       {team.location?.city}, {team.location?.region}
