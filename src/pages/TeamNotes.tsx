@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { StickyNote, Plus, Trash2, Edit3, Save, Clock, User, Tag, Pin, PinOff } from "lucide-react";
+import { StickyNote, Plus, Trash2, Edit3, Save, Clock, User, Tag, Pin, PinOff, X, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,12 +12,31 @@ import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 
-const CATEGORIES = [
+const DEFAULT_CATEGORIES = [
   { value: "strategy", label: "Strategy", color: "bg-[hsl(var(--chart-2))]/15 text-[hsl(var(--chart-2))] border-[hsl(var(--chart-2))]/30" },
   { value: "strengths", label: "Strengths", color: "bg-[hsl(var(--success))]/15 text-[hsl(var(--success))] border-[hsl(var(--success))]/30" },
   { value: "weaknesses", label: "Weaknesses", color: "bg-destructive/15 text-destructive border-destructive/30" },
   { value: "general", label: "General", color: "bg-muted text-muted-foreground border-border" },
 ];
+
+const CUSTOM_CAT_COLORS = [
+  "bg-[hsl(var(--chart-1))]/15 text-[hsl(var(--chart-1))] border-[hsl(var(--chart-1))]/30",
+  "bg-[hsl(var(--chart-3))]/15 text-[hsl(var(--chart-3))] border-[hsl(var(--chart-3))]/30",
+  "bg-[hsl(var(--chart-4))]/15 text-[hsl(var(--chart-4))] border-[hsl(var(--chart-4))]/30",
+  "bg-[hsl(var(--chart-5))]/15 text-[hsl(var(--chart-5))] border-[hsl(var(--chart-5))]/30",
+  "bg-primary/15 text-primary border-primary/30",
+];
+
+function loadCustomCategories(): { value: string; label: string; color: string }[] {
+  try {
+    const stored = localStorage.getItem("roborank-note-categories");
+    return stored ? JSON.parse(stored) : [];
+  } catch { return []; }
+}
+
+function saveCustomCategories(cats: { value: string; label: string; color: string }[]) {
+  localStorage.setItem("roborank-note-categories", JSON.stringify(cats));
+}
 
 interface Note {
   id: string;
@@ -45,6 +64,11 @@ export default function TeamNotes() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [filterTeam, setFilterTeam] = useState("");
   const [filterCategory, setFilterCategory] = useState("");
+  const [customCategories, setCustomCategories] = useState(loadCustomCategories);
+  const [showCatManager, setShowCatManager] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+
+  const allCategories = [...DEFAULT_CATEGORIES, ...customCategories];
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -67,19 +91,11 @@ export default function TeamNotes() {
         .order("updated_at", { ascending: false });
       if (error) throw error;
       if (!notesData || notesData.length === 0) return [];
-
       const userIds = [...new Set(notesData.map(n => n.user_id))];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, email")
-        .in("id", userIds);
+      const { data: profiles } = await supabase.from("profiles").select("id, email").in("id", userIds);
       const emailMap = new Map((profiles || []).map(p => [p.id, p.email]));
-
       return notesData.map(n => ({
         ...n,
-        tagged_team: (n as any).tagged_team || null,
-        pinned: (n as any).pinned || false,
-        category: (n as any).category || null,
         authorEmail: emailMap.get(n.user_id) || null,
       })) as Note[];
     },
@@ -167,7 +183,30 @@ export default function TeamNotes() {
   };
 
   const getCategoryStyle = (cat: string | null) => {
-    return CATEGORIES.find(c => c.value === cat)?.color || CATEGORIES[3].color;
+    return allCategories.find(c => c.value === cat)?.color || DEFAULT_CATEGORIES[3].color;
+  };
+
+  const handleAddCategory = () => {
+    const name = newCatName.trim();
+    if (!name) return;
+    const value = name.toLowerCase().replace(/\s+/g, "-");
+    if (allCategories.some(c => c.value === value)) {
+      toast.error("Category already exists");
+      return;
+    }
+    const colorIdx = customCategories.length % CUSTOM_CAT_COLORS.length;
+    const newCat = { value, label: name, color: CUSTOM_CAT_COLORS[colorIdx] };
+    const updated = [...customCategories, newCat];
+    setCustomCategories(updated);
+    saveCustomCategories(updated);
+    setNewCatName("");
+    toast.success(`Added "${name}" category`);
+  };
+
+  const handleRemoveCategory = (value: string) => {
+    const updated = customCategories.filter(c => c.value !== value);
+    setCustomCategories(updated);
+    saveCustomCategories(updated);
   };
 
   if (!user.team_number) {
@@ -194,17 +233,21 @@ export default function TeamNotes() {
               Share strategy and notes with your team · {user.team_number}
             </p>
           </div>
-          {!creating && !editingId && (
-            <Button onClick={() => { resetForm(); setCreating(true); }} className="gap-1.5">
-              <Plus className="h-4 w-4" /> New Note
+          <div className="flex gap-2">
+            <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setShowCatManager(true)}>
+              <Settings2 className="h-4 w-4" />
             </Button>
-          )}
+            {!creating && !editingId && (
+              <Button onClick={() => { resetForm(); setCreating(true); }} className="gap-1.5">
+                <Plus className="h-4 w-4" /> New Note
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Category filters */}
-          {CATEGORIES.map(cat => (
+          {allCategories.map(cat => (
             <Button
               key={cat.value}
               variant={filterCategory === cat.value ? "default" : "outline"}
@@ -220,7 +263,6 @@ export default function TeamNotes() {
               Clear
             </Button>
           )}
-          {/* Team tag filters */}
           {uniqueTags.length > 0 && (
             <>
               <div className="w-px h-5 bg-border mx-1" />
@@ -248,25 +290,15 @@ export default function TeamNotes() {
               exit={{ opacity: 0, y: -10 }}
               className="rounded-xl border border-primary/30 bg-primary/5 p-5 space-y-3"
             >
-              <Input
-                placeholder="Note title..."
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                className="bg-card font-medium"
-              />
+              <Input placeholder="Note title..." value={title} onChange={(e) => setTitle(e.target.value)} className="bg-card font-medium" />
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <Tag className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    placeholder="Tag with team # (e.g. 17505B)"
-                    value={taggedTeam}
-                    onChange={(e) => setTaggedTeam(e.target.value)}
-                    className="bg-card pl-9 uppercase text-sm"
-                  />
+                  <Input placeholder="Tag with team # (e.g. 17505B)" value={taggedTeam} onChange={(e) => setTaggedTeam(e.target.value)} className="bg-card pl-9 uppercase text-sm" />
                 </div>
               </div>
-              <div className="flex gap-1.5">
-                {CATEGORIES.map(cat => (
+              <div className="flex gap-1.5 flex-wrap">
+                {allCategories.map(cat => (
                   <button
                     key={cat.value}
                     type="button"
@@ -281,12 +313,7 @@ export default function TeamNotes() {
                   </button>
                 ))}
               </div>
-              <Textarea
-                placeholder="Write your strategy, observations, or notes here..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="bg-card min-h-[120px] resize-y"
-              />
+              <Textarea placeholder="Write your strategy, observations, or notes here..." value={content} onChange={(e) => setContent(e.target.value)} className="bg-card min-h-[120px] resize-y" />
               <div className="flex gap-2">
                 {editingId ? (
                   <Button onClick={() => handleUpdate(editingId)} className="gap-1.5">
@@ -328,7 +355,7 @@ export default function TeamNotes() {
                       <h3 className="font-display font-semibold truncate">{note.title || "Untitled"}</h3>
                       {note.category && (
                         <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-medium border", getCategoryStyle(note.category))}>
-                          {CATEGORIES.find(c => c.value === note.category)?.label}
+                          {allCategories.find(c => c.value === note.category)?.label || note.category}
                         </span>
                       )}
                       {note.tagged_team && (
@@ -377,6 +404,7 @@ export default function TeamNotes() {
           </div>
         )}
 
+        {/* Delete Confirm */}
         <Dialog open={!!deleteConfirm} onOpenChange={() => setDeleteConfirm(null)}>
           <DialogContent>
             <DialogHeader>
@@ -387,6 +415,58 @@ export default function TeamNotes() {
               <Button variant="ghost" onClick={() => setDeleteConfirm(null)}>Cancel</Button>
               <Button variant="destructive" onClick={() => deleteConfirm && handleDelete(deleteConfirm)}>Delete</Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Category Manager Dialog */}
+        <Dialog open={showCatManager} onOpenChange={setShowCatManager}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Manage Categories</DialogTitle>
+              <DialogDescription>Add or remove custom note categories. Default categories cannot be removed.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              {/* Default categories */}
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">Default</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {DEFAULT_CATEGORIES.map(cat => (
+                    <span key={cat.value} className={cn("px-3 py-1 rounded-full text-xs font-medium border", cat.color)}>
+                      {cat.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              {/* Custom categories */}
+              {customCategories.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-muted-foreground">Custom</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {customCategories.map(cat => (
+                      <span key={cat.value} className={cn("px-3 py-1 rounded-full text-xs font-medium border flex items-center gap-1.5", cat.color)}>
+                        {cat.label}
+                        <button onClick={() => handleRemoveCategory(cat.value)} className="hover:opacity-70">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Add new */}
+              <div className="flex gap-2">
+                <Input
+                  placeholder="New category name..."
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  className="flex-1"
+                  onKeyDown={(e) => e.key === "Enter" && handleAddCategory()}
+                />
+                <Button onClick={handleAddCategory} size="sm" className="gap-1">
+                  <Plus className="h-3.5 w-3.5" /> Add
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
