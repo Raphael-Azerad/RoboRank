@@ -42,15 +42,22 @@ export default function Profile() {
     enabled: !!user.team_number,
   });
 
-  // Team members
+  // Team members with email info
   const { data: teamMembers } = useQuery({
     queryKey: ["teamMembers", user.team_number],
     queryFn: async () => {
       if (!user.team_number) return [];
-      const { data } = await supabase.from("team_members")
+      const { data: members } = await supabase.from("team_members")
         .select("*")
         .eq("team_number", user.team_number);
-      return data || [];
+      if (!members || members.length === 0) return [];
+      // Fetch profile emails for approved members
+      const approvedIds = members.filter(m => m.status === "approved").map(m => m.user_id);
+      const { data: profiles } = await supabase.from("profiles")
+        .select("id, email")
+        .in("id", approvedIds);
+      const emailMap = new Map((profiles || []).map(p => [p.id, p.email]));
+      return members.map(m => ({ ...m, email: emailMap.get(m.user_id) || null }));
     },
     enabled: !!user.team_number,
   });
