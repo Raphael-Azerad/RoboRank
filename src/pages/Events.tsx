@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAllPages, getTeamByNumber, getTeamEvents, getEventTeams, getEventSkills, getEventRankings, SEASONS, US_STATES, type SeasonKey } from "@/lib/robotevents";
+import { fetchAllPages, getTeamByNumber, getTeamEvents, getEventTeams, getEventSkills, getEventRankings, getTeamRankings, getTeamSkillsScore, calculateRoboRank, SEASONS, US_STATES, type SeasonKey } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
