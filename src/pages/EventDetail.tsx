@@ -209,8 +209,8 @@ export default function EventDetail() {
     const blueScore = blue?.score ?? 0;
     const redWon = redScore > blueScore;
     const blueWon = blueScore > redScore;
-    const redTeams = red?.teams?.map((t: any) => t.team?.name).filter(Boolean).join(" & ") || "—";
-    const blueTeams = blue?.teams?.map((t: any) => t.team?.name).filter(Boolean).join(" & ") || "—";
+    const redTeams = red?.teams?.map((t: any) => t.team?.name).filter(Boolean).join(" & ") || "-";
+    const blueTeams = blue?.teams?.map((t: any) => t.team?.name).filter(Boolean).join(" & ") || "-";
 
     return (
       <div key={match.id} className="grid grid-cols-12 gap-1 px-4 py-2.5 items-center border-t border-border/20 text-sm hover:bg-accent/30 transition-colors">
