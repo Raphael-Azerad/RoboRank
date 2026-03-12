@@ -186,13 +186,8 @@ export default function Rankings() {
   const { data: liveSearchResults, isLoading: liveSearchLoading } = useQuery({
     queryKey: ["liveTeamSearch", debouncedSearch, season, tab],
     queryFn: async () => {
-      // Search the API for teams matching the query
-      const result = await fetchRobotEvents("/teams", {
-        "number[]": debouncedSearch,
-        "program[]": "1",
-        per_page: "10",
-      });
-      const teams = result?.data || [];
+      // Search the API for teams matching the query (partial number + name)
+      const teams = await searchTeamsPartial(debouncedSearch);
       if (teams.length === 0) return [];
 
       // For RoboRank tab, calculate scores for found teams
