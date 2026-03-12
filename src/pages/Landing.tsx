@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { BarChart3, Shield, Zap, Trophy, ArrowRight, Users, Crown, Target, Swords, StickyNote, Check, TrendingUp, Bell, Play } from "lucide-react";
+import { BarChart3, Shield, Zap, Trophy, ArrowRight, Users, Crown, Target, Swords, StickyNote, Check, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
