@@ -40,7 +40,7 @@ serve(async (req) => {
       .eq("id", user.id)
       .single();
 
-    const PERMANENT_PREMIUM_TEAMS: string[] = [];
+    const PERMANENT_PREMIUM_TEAMS = ["17505B"];
     if (profile?.team_number && PERMANENT_PREMIUM_TEAMS.includes(profile.team_number.toUpperCase())) {
       return new Response(JSON.stringify({
         subscribed: true,
