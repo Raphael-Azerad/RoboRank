@@ -183,19 +183,19 @@ export default function TeamDetail() {
 
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
           <button type="button" onClick={() => setWinsModalOpen(true)} className="text-left">
-            <StatCard title="Win Rate" value={matchRecord ? `${matchRecord.winRate}%` : "—"} icon={Trophy}
+            <StatCard title="Win Rate" value={matchRecord ? `${matchRecord.winRate}%` : "-"} icon={Trophy}
               subtitle={matchRecord ? `${matchRecord.wins}W-${matchRecord.losses}L-${matchRecord.ties}T (all matches)` : "No data"} className="cursor-pointer" />
           </button>
           <button type="button" onClick={() => setMatchesModalOpen(true)} className="text-left">
             <StatCard title="Matches Played" value={String(totalMatchCount)} icon={Target}
               subtitle={`Quals + Elims · Tap to view all`} className="cursor-pointer" />
           </button>
-          <StatCard title="High Score" value={matchRecord ? String(matchRecord.highScore) : "—"} icon={Award}
+          <StatCard title="High Score" value={matchRecord ? String(matchRecord.highScore) : "-"} icon={Award}
             subtitle={matchRecord ? `Avg ${matchRecord.avgPoints} pts/match` : ""} />
-          <StatCard title="Total WP" value={qualRecord ? String(qualRecord.totalWP) : "—"} icon={TrendingUp}
+          <StatCard title="Total WP" value={qualRecord ? String(qualRecord.totalWP) : "-"} icon={TrendingUp}
             subtitle={qualRecord ? `AP: ${qualRecord.totalAP} · SP: ${qualRecord.totalSP}` : ""} />
           <button type="button" onClick={() => setAwardsModalOpen(true)} className="text-left">
-            <StatCard title="Awards" value={awards ? String(awards.length) : "—"} icon={Medal}
+            <StatCard title="Awards" value={awards ? String(awards.length) : "-"} icon={Medal}
               subtitle={awards && awards.length > 0 ? "Tap to view" : "No awards yet"} className="cursor-pointer" />
           </button>
         </div>

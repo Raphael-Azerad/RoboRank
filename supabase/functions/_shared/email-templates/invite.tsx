@@ -33,7 +33,7 @@ export const InviteEmail = ({
         <Text style={logo}>📊 RoboRank</Text>
         <Heading style={h1}>You've been invited</Heading>
         <Text style={text}>
-          You've been invited to join RoboRank — the VEX V5 analytics platform.
+          You've been invited to join RoboRank - the VEX V5 analytics platform.
           Click below to accept and create your account.
         </Text>
         <Button style={button} href={confirmationUrl}>

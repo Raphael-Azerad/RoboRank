@@ -39,7 +39,7 @@ export const SignupEmail = ({
           <Link href={siteUrl} style={link}>
             <strong>RoboRank</strong>
           </Link>
-          — your VEX V5 analytics platform.
+          - your VEX V5 analytics platform.
         </Text>
         <Text style={text}>
           Confirm your email (

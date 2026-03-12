@@ -113,7 +113,7 @@ export default function Landing() {
               <span className="text-gradient block mt-1">Data-Driven Scouting</span>
             </h1>
             <p className="mb-10 text-lg text-muted-foreground md:text-xl max-w-2xl mx-auto leading-relaxed">
-              RoboRank automatically analyzes every VEX team's performance — giving you scouting reports, 
+              RoboRank automatically analyzes every VEX team's performance - giving you scouting reports, 
               match predictions, and deep analytics to dominate your competition.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

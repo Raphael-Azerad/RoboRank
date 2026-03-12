@@ -553,7 +553,7 @@ export default function Profile() {
                       <div key={req.id} className="flex items-center gap-2 text-sm bg-muted/30 rounded-lg px-3 py-2">
                         <Clock className="h-4 w-4 text-[hsl(var(--chart-4))]" />
                         <span>{req.team_number}</span>
-                        <span className="text-xs text-muted-foreground">— Awaiting approval</span>
+                        <span className="text-xs text-muted-foreground">- Awaiting approval</span>
                       </div>
                     ))}
                   </div>

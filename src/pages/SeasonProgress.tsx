@@ -319,7 +319,7 @@ export default function SeasonProgress() {
                                     <td className="p-3 text-center stat-number">{s.wins}W-{s.losses}L</td>
                                     <td className="p-3 text-center stat-number">{s.winRate}%</td>
                                     <td className="p-3 text-center stat-number">{s.skillsCombined}</td>
-                                    <td className="p-3 text-center stat-number">{s.globalSkillsRank ? `#${s.globalSkillsRank}` : "—"}</td>
+                                    <td className="p-3 text-center stat-number">{s.globalSkillsRank ? `#${s.globalSkillsRank}` : "-"}</td>
                                     <td className="p-3 text-center stat-number">{s.awardsCount}</td>
                                     <td className="p-3 text-center stat-number">{s.eventsAttended}</td>
                                   </tr>

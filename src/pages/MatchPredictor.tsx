@@ -521,12 +521,12 @@ export default function MatchPredictor() {
                             <div className="text-2xl font-display font-bold text-destructive">{h2hData.wins}</div>
                             <div className="text-xs text-muted-foreground">{h2hTeamAStats.number} Wins</div>
                           </div>
-                          <div className="text-lg text-muted-foreground">—</div>
+                          <div className="text-lg text-muted-foreground">-</div>
                           <div>
                             <div className="text-2xl font-display font-bold text-muted-foreground">{h2hData.ties}</div>
                             <div className="text-xs text-muted-foreground">Ties</div>
                           </div>
-                          <div className="text-lg text-muted-foreground">—</div>
+                          <div className="text-lg text-muted-foreground">-</div>
                           <div>
                             <div className="text-2xl font-display font-bold text-[hsl(var(--chart-2))]">{h2hData.losses}</div>
                             <div className="text-xs text-muted-foreground">{h2hTeamBStats.number} Wins</div>

@@ -229,10 +229,10 @@ export default function Dashboard() {
         {/* ============ STAT CARDS ============ */}
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
           {[
-            { title: "Win Rate", value: matchRecord ? `${matchRecord.winRate}%` : "—", icon: Trophy, sub: matchRecord ? `${matchRecord.wins}W-${matchRecord.losses}L-${matchRecord.ties}T` : "", color: "text-[hsl(var(--success))]", onClick: () => setWinsModalOpen(true) },
-            { title: "Matches", value: totalMatchCount ? String(totalMatchCount) : "—", icon: Swords, sub: qualRecord ? `${qualRecord.eventsAttended} events` : "", color: "text-[hsl(var(--chart-2))]", onClick: () => setMatchesModalOpen(true) },
-            { title: "High Score", value: matchRecord ? String(matchRecord.highScore) : "—", icon: Zap, sub: matchRecord ? `Avg ${matchRecord.avgPoints} pts` : "", color: "text-[hsl(var(--chart-4))]" },
-            { title: "Awards", value: awards ? String(awards.length) : "—", icon: Medal, sub: awards?.length ? "Tap to view" : "", color: "text-primary", onClick: () => navigate("/awards") },
+            { title: "Win Rate", value: matchRecord ? `${matchRecord.winRate}%` : "-", icon: Trophy, sub: matchRecord ? `${matchRecord.wins}W-${matchRecord.losses}L-${matchRecord.ties}T` : "", color: "text-[hsl(var(--success))]", onClick: () => setWinsModalOpen(true) },
+            { title: "Matches", value: totalMatchCount ? String(totalMatchCount) : "-", icon: Swords, sub: qualRecord ? `${qualRecord.eventsAttended} events` : "", color: "text-[hsl(var(--chart-2))]", onClick: () => setMatchesModalOpen(true) },
+            { title: "High Score", value: matchRecord ? String(matchRecord.highScore) : "-", icon: Zap, sub: matchRecord ? `Avg ${matchRecord.avgPoints} pts` : "", color: "text-[hsl(var(--chart-4))]" },
+            { title: "Awards", value: awards ? String(awards.length) : "-", icon: Medal, sub: awards?.length ? "Tap to view" : "", color: "text-primary", onClick: () => navigate("/awards") },
           ].map((stat, i) => (
             <motion.button
               key={stat.title}

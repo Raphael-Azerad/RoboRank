@@ -757,7 +757,7 @@ export default function EventDetail() {
                               <span className="text-muted-foreground">-</span>
                               <span className="text-destructive">{team.record.losses}L</span>
                             </>
-                          ) : "—"}
+                          ) : "-"}
                         </span>
                         <div className="col-span-2 flex justify-center">
                           <RoboRankScore score={team.roboRank} size="sm" />
