@@ -20,29 +20,26 @@ export function useTeamStatus() {
       }
 
       setUserId(user.id);
-      const tn = user.user_metadata?.team_number;
 
-      if (!tn) {
-        // Check team_members table directly (for Google OAuth users who joined later)
-        const { data: membership } = await supabase
-          .from("team_members")
-          .select("team_number, status, role")
-          .eq("user_id", user.id)
-          .limit(1)
-          .maybeSingle();
+      // Always check team_members table (single source of truth)
+      const { data: membership } = await supabase
+        .from("team_members")
+        .select("team_number, status, role")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle();
 
-        if (cancelled) return;
+      if (cancelled) return;
 
-        if (!membership) {
-          setStatus("no-team");
-          return;
-        }
-
-        setTeamNumber(membership.team_number);
-        setRole(membership.role);
-        setStatus(membership.status === "approved" ? "approved" : "pending");
+      if (!membership) {
+        setStatus("no-team");
         return;
       }
+
+      setTeamNumber(membership.team_number);
+      setRole(membership.role);
+      setStatus(membership.status === "approved" ? "approved" : "pending");
+      return;
 
       setTeamNumber(tn);
 

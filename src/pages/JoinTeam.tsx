@@ -18,19 +18,27 @@ export default function JoinTeam() {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    async function checkUser() {
+      const { data } = await supabase.auth.getUser();
       if (!data.user) {
         navigate("/login");
         return;
       }
       setUserId(data.user.id);
 
-      // If user already has a team, redirect to dashboard
-      const tn = data.user.user_metadata?.team_number;
-      if (tn) {
+      // Check team_members table for existing membership (not stale user_metadata)
+      const { data: membership } = await supabase
+        .from("team_members")
+        .select("team_number, status")
+        .eq("user_id", data.user.id)
+        .limit(1)
+        .maybeSingle();
+
+      if (membership) {
         navigate("/dashboard");
       }
-    });
+    }
+    checkUser();
   }, [navigate]);
 
   const handleTeamBlur = async () => {
