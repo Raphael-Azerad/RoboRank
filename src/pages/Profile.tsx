@@ -289,8 +289,14 @@ export default function Profile() {
                 </Button>
               )}
               {subscribed && (
-                <Button variant="ghost" size="sm" onClick={openPortal} className="gap-1 text-xs h-7">
-                  Manage Plan
+                <Button variant="ghost" size="sm" onClick={async () => {
+                  try {
+                    await openPortal();
+                  } catch (err: any) {
+                    toast.error("Could not open plan management. Please try again.");
+                  }
+                }} className="gap-1 text-xs h-7">
+                  <CreditCard className="h-3 w-3" /> Manage Plan
                 </Button>
               )}
             </div>
