@@ -234,6 +234,64 @@ export default function Events() {
     return allEvents.filter((e: any) => compareIds.includes(e.id));
   }, [allEventsData, myEvents, compareIds]);
 
+  // Fetch detailed comparison data for selected events
+  const { data: compareDetails, isLoading: compareDetailsLoading } = useQuery({
+    queryKey: ["compareEventDetails", compareIds],
+    queryFn: async () => {
+      const details = await Promise.all(compareIds.map(async (id) => {
+        try {
+          const [teamsData, skillsData] = await Promise.all([
+            getEventTeams(id),
+            getEventSkills(id).catch(() => []),
+          ]);
+          
+          // Get event rankings for first division
+          const evt = compareEvents.find((e: any) => e.id === id);
+          const divId = evt?.divisions?.[0]?.id || 1;
+          const rankingsData = await getEventRankings(id, divId).catch(() => null);
+          const rankings = rankingsData?.data || rankingsData || [];
+          
+          // Calculate stats
+          const teamCount = teamsData?.length || 0;
+          
+          // Skills stats
+          const teamSkillsMap = new Map<number, { driver: number; prog: number }>();
+          (skillsData || []).forEach((s: any) => {
+            const tid = s.team?.id;
+            if (!tid) return;
+            if (!teamSkillsMap.has(tid)) teamSkillsMap.set(tid, { driver: 0, prog: 0 });
+            const e = teamSkillsMap.get(tid)!;
+            if (s.type === "driver" && s.score > e.driver) e.driver = s.score;
+            if (s.type === "programming" && s.score > e.prog) e.prog = s.score;
+          });
+          
+          const skillsTeams = Array.from(teamSkillsMap.values());
+          const avgSkills = skillsTeams.length > 0
+            ? Math.round(skillsTeams.reduce((s, t) => s + t.driver + t.prog, 0) / skillsTeams.length)
+            : 0;
+          const topSkills = skillsTeams.length > 0
+            ? Math.max(...skillsTeams.map(t => t.driver + t.prog))
+            : 0;
+          
+          // Rankings stats
+          let avgWP = 0, highScore = 0, totalMatches = 0;
+          if (Array.isArray(rankings) && rankings.length > 0) {
+            avgWP = Math.round(rankings.reduce((s: number, r: any) => s + (r.wp || 0), 0) / rankings.length * 10) / 10;
+            highScore = Math.max(...rankings.map((r: any) => r.high_score || 0));
+            totalMatches = rankings.reduce((s: number, r: any) => s + (r.wins || 0) + (r.losses || 0) + (r.ties || 0), 0);
+          }
+          
+          return { eventId: id, teamCount, avgSkills, topSkills, avgWP, highScore, totalMatches, skillsTeams: skillsTeams.length };
+        } catch {
+          return { eventId: id, teamCount: 0, avgSkills: 0, topSkills: 0, avgWP: 0, highScore: 0, totalMatches: 0, skillsTeams: 0 };
+        }
+      }));
+      return details;
+    },
+    enabled: compareIds.length >= 2,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const eventsByDate = useMemo(() => {
     const map = new Map<string, any[]>();
     events.forEach((e: any) => {
