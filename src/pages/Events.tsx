@@ -786,12 +786,10 @@ export default function Events() {
                   ))}
                   {compareDetails && [
                     { label: "Teams", key: "teamCount", highlight: true },
-                    { label: "Total Matches", key: "totalMatches", highlight: true },
+                    { label: "Avg RoboRank", key: "avgRoboRank", highlight: true },
                     { label: "Avg WP", key: "avgWP", highlight: true },
                     { label: "High Score", key: "highScore", highlight: true },
-                    { label: "Avg Skills", key: "avgSkills", highlight: true },
                     { label: "Top Skills", key: "topSkills", highlight: true },
-                    { label: "Skills Entries", key: "skillsTeams", highlight: false },
                   ].map(({ label, key, highlight }) => {
                     const values = compareDetails.map((d: any) => d[key] || 0);
                     const best = Math.max(...values);
