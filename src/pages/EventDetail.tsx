@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   fetchRobotEvents, getEventTeams, getEventRankings, getEventMatches,
   getEventSkills, getTeamRankings, calculateRecordFromRankings,
@@ -10,12 +10,15 @@ import {
   calculateEventScheduleDifficulty,
 } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
-import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { EliminationBracket } from "@/components/events/EliminationBracket";
+import { supabase } from "@/integrations/supabase/client";
+import { generateScoutingReport, downloadCSV, downloadExcel } from "@/lib/scoutingReport";
+import { toast } from "sonner";
 
 type DetailTab = "teams" | "quals" | "elims" | "skills" | "awards" | "predictions" | "schedule";
 
@@ -277,6 +280,46 @@ export default function EventDetail() {
                   <ExternalLink className="h-3 w-3" /> RobotEvents
                 </a>
               )}
+            </div>
+            <div className="mt-3">
+              <Button
+                variant="hero"
+                size="sm"
+                className="gap-1.5"
+                onClick={async () => {
+                  try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) { toast.error("Please log in"); return; }
+                    const teamNum = user.user_metadata?.team_number;
+                    if (!teamNum) { toast.error("Connect a team to generate reports"); return; }
+                    // Check if already exists
+                    const { data: existing } = await supabase.from("scouting_reports")
+                      .select("id").eq("event_id", Number(eventId)).eq("user_id", user.id).limit(1);
+                    if (existing && existing.length > 0) {
+                      toast.info("You already have a report for this event. View it in Scouting.");
+                      navigate("/scouting");
+                      return;
+                    }
+                    toast.info("Generating report... This may take a minute.");
+                    const divId = divisions[selectedDivisionIdx]?.id || 1;
+                    const report = await generateScoutingReport(
+                      Number(eventId), divId, event.name,
+                      new Date(event.start).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+                      season
+                    );
+                    await supabase.from("scouting_reports").insert({
+                      event_id: Number(eventId), event_name: event.name,
+                      user_id: user.id, report_data: report as any,
+                    });
+                    toast.success("Report generated! View it in Scouting.");
+                    navigate("/scouting");
+                  } catch (err: any) {
+                    toast.error(`Failed: ${err.message}`);
+                  }
+                }}
+              >
+                <FileText className="h-3.5 w-3.5" /> Generate Scouting Report
+              </Button>
             </div>
           </motion.div>
         )}

@@ -45,7 +45,7 @@ export type Database = {
           id: string
           robotevents_team_id: number | null
           team_name: string | null
-          team_number: string
+          team_number: string | null
           updated_at: string
         }
         Insert: {
@@ -54,7 +54,7 @@ export type Database = {
           id: string
           robotevents_team_id?: number | null
           team_name?: string | null
-          team_number: string
+          team_number?: string | null
           updated_at?: string
         }
         Update: {
@@ -63,7 +63,7 @@ export type Database = {
           id?: string
           robotevents_team_id?: number | null
           team_name?: string | null
-          team_number?: string
+          team_number?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -91,6 +91,36 @@ export type Database = {
           event_name?: string
           id?: string
           report_data?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      team_members: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          status: string
+          team_number: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: string
+          status?: string
+          team_number: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          status?: string
+          team_number?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []

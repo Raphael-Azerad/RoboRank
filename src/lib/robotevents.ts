@@ -406,9 +406,12 @@ export async function calculateEventScheduleDifficulty(
         : 50;
 
       // Difficulty = how strong opponents are relative to your alliance
-      // Higher opponent RR and lower alliance RR = harder schedule
-      const rawDiff = (opponentAvgRR - allianceAvgRR + 100) / 2; // normalize to 0-100
-      const difficulty = Math.max(0, Math.min(100, Math.round(rawDiff)));
+      // Use a wider spread: amplify the difference with a power curve
+      const diff = opponentAvgRR - allianceAvgRR; // range roughly -100 to +100
+      // Apply sigmoid-like scaling for wider spread
+      const normalized = diff / 50; // scale to roughly -2 to +2
+      const sigmoid = 1 / (1 + Math.exp(-normalized * 2.5)); // steeper sigmoid
+      const difficulty = Math.max(0, Math.min(100, Math.round(sigmoid * 100)));
 
       const matchLowConf = [...partners, ...opponents].some(p => !p.hasData);
       if (matchLowConf) hasLowConfidence = true;

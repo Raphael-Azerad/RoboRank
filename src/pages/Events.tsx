@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAllPages, getTeamByNumber, getTeamEvents, getEventTeams, getEventSkills, getEventRankings, SEASONS, US_STATES, type SeasonKey } from "@/lib/robotevents";
+import { fetchAllPages, getTeamByNumber, getTeamEvents, getEventTeams, getEventSkills, getEventRankings, getTeamRankings, getTeamSkillsScore, calculateRoboRank, SEASONS, US_STATES, type SeasonKey } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
@@ -254,7 +254,7 @@ export default function Events() {
           // Calculate stats
           const teamCount = teamsData?.length || 0;
           
-          // Skills stats
+          // Skills stats - highest per team
           const teamSkillsMap = new Map<number, { driver: number; prog: number }>();
           (skillsData || []).forEach((s: any) => {
             const tid = s.team?.id;
@@ -266,24 +266,43 @@ export default function Events() {
           });
           
           const skillsTeams = Array.from(teamSkillsMap.values());
-          const avgSkills = skillsTeams.length > 0
-            ? Math.round(skillsTeams.reduce((s, t) => s + t.driver + t.prog, 0) / skillsTeams.length)
-            : 0;
           const topSkills = skillsTeams.length > 0
             ? Math.max(...skillsTeams.map(t => t.driver + t.prog))
             : 0;
+
+          // Avg RoboRank - sample up to 20 teams
+          let avgRoboRank = 0;
+          if (teamsData && teamsData.length > 0) {
+            const sample = teamsData.slice(0, 20);
+            const ranks: number[] = [];
+            for (let i = 0; i < sample.length; i += 10) {
+              const batch = sample.slice(i, i + 10);
+              await Promise.all(batch.map(async (team: any) => {
+                try {
+                  const [r, s] = await Promise.all([
+                    getTeamRankings(team.id),
+                    getTeamSkillsScore(team.id),
+                  ]);
+                  const rr = calculateRoboRank(r, s);
+                  if (rr > 0) ranks.push(rr);
+                } catch { /* skip */ }
+              }));
+            }
+            avgRoboRank = ranks.length > 0
+              ? Math.round(ranks.reduce((a, b) => a + b, 0) / ranks.length)
+              : 0;
+          }
           
           // Rankings stats
-          let avgWP = 0, highScore = 0, totalMatches = 0;
+          let avgWP = 0, highScore = 0;
           if (Array.isArray(rankings) && rankings.length > 0) {
             avgWP = Math.round(rankings.reduce((s: number, r: any) => s + (r.wp || 0), 0) / rankings.length * 10) / 10;
             highScore = Math.max(...rankings.map((r: any) => r.high_score || 0));
-            totalMatches = rankings.reduce((s: number, r: any) => s + (r.wins || 0) + (r.losses || 0) + (r.ties || 0), 0);
           }
           
-          return { eventId: id, teamCount, avgSkills, topSkills, avgWP, highScore, totalMatches, skillsTeams: skillsTeams.length };
+          return { eventId: id, teamCount, topSkills, avgWP, highScore, avgRoboRank, skillsTeams: skillsTeams.length };
         } catch {
-          return { eventId: id, teamCount: 0, avgSkills: 0, topSkills: 0, avgWP: 0, highScore: 0, totalMatches: 0, skillsTeams: 0 };
+          return { eventId: id, teamCount: 0, topSkills: 0, avgWP: 0, highScore: 0, avgRoboRank: 0, skillsTeams: 0 };
         }
       }));
       return details;
@@ -767,12 +786,10 @@ export default function Events() {
                   ))}
                   {compareDetails && [
                     { label: "Teams", key: "teamCount", highlight: true },
-                    { label: "Total Matches", key: "totalMatches", highlight: true },
+                    { label: "Avg RoboRank", key: "avgRoboRank", highlight: true },
                     { label: "Avg WP", key: "avgWP", highlight: true },
                     { label: "High Score", key: "highScore", highlight: true },
-                    { label: "Avg Skills", key: "avgSkills", highlight: true },
                     { label: "Top Skills", key: "topSkills", highlight: true },
-                    { label: "Skills Entries", key: "skillsTeams", highlight: false },
                   ].map(({ label, key, highlight }) => {
                     const values = compareDetails.map((d: any) => d[key] || 0);
                     const best = Math.max(...values);
