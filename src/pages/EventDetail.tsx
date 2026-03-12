@@ -680,7 +680,7 @@ export default function EventDetail() {
                     {teams.map((t: any) => {
                       const teamNumber = t.number || t.name || "";
                       return (
-                        <option key={t.id} value={teamNumber}>{teamNumber} — {t.team_name || t.teamName || ""}</option>
+                        <option key={t.id} value={teamNumber}>{teamNumber} - {t.team_name || t.teamName || ""}</option>
                       );
                     })}
                   </select>
