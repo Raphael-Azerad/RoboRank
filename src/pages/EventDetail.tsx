@@ -302,7 +302,7 @@ export default function EventDetail() {
                       navigate("/scouting");
                       return;
                     }
-                    // Check free tier limit (1 per month) — skip for subscribers
+                    // Check free tier limit (1 per month) - skip for subscribers
                     if (!subscribed) {
                       const now = new Date();
                       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
