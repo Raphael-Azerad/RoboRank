@@ -297,30 +297,28 @@ export default function Dashboard() {
               <h3 className="font-display font-semibold text-sm mb-3 flex items-center gap-2">
                 <Flag className="h-4 w-4 text-primary" /> Season Goals
               </h3>
-              <div className="space-y-3">
-                {goals.map((g, i) => {
-                  const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
-                  const done = pct >= 100;
-                  return (
-                    <div key={i} className="group">
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className={cn("font-medium", done && "text-[hsl(var(--success))]")}>{g.label}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">{g.current}/{g.target}</span>
-                          <button onClick={() => handleRemoveGoal(i)} className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity text-[10px]">✕</button>
-                        </div>
-                      </div>
-                      <Progress value={pct} className="h-2" />
-                    </div>
-                  );
-                })}
+              <div className="space-y-2">
+                {goals.map((g, i) => (
+                  <div key={i} className="group flex items-center gap-2.5 py-1">
+                    <button
+                      onClick={() => handleToggleGoal(i)}
+                      className={cn(
+                        "shrink-0 h-4 w-4 rounded border transition-all flex items-center justify-center",
+                        g.done ? "bg-[hsl(var(--success))] border-[hsl(var(--success))]" : "border-muted-foreground/40 hover:border-primary"
+                      )}
+                    >
+                      {g.done && <Check className="h-3 w-3 text-background" />}
+                    </button>
+                    <span className={cn("text-xs font-medium flex-1", g.done && "line-through text-muted-foreground")}>{g.label}</span>
+                    <button onClick={() => handleRemoveGoal(i)} className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity text-[10px]">✕</button>
+                  </div>
+                ))}
                 {goals.length === 0 && !addingGoal && (
-                  <p className="text-xs text-muted-foreground text-center py-2">Set goals like "Win 70% of matches"</p>
+                  <p className="text-xs text-muted-foreground text-center py-2">Add goals like "Win a tournament" or "Hit 200 skills"</p>
                 )}
                 {addingGoal ? (
                   <div className="space-y-2 pt-1">
-                    <Input placeholder='Goal name (e.g. "Win Rate")' value={goalLabel} onChange={(e) => setGoalLabel(e.target.value)} className="h-8 text-xs bg-card" />
-                    <Input placeholder="Target number" type="number" value={goalTarget} onChange={(e) => setGoalTarget(e.target.value)} className="h-8 text-xs bg-card" />
+                    <Input placeholder='e.g. "Win a tournament"' value={goalLabel} onChange={(e) => setGoalLabel(e.target.value)} className="h-8 text-xs bg-card" onKeyDown={(e) => e.key === "Enter" && handleAddGoal()} />
                     <div className="flex gap-1.5">
                       <Button size="sm" className="h-7 text-xs flex-1" onClick={handleAddGoal}>Add</Button>
                       <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setAddingGoal(false)}>Cancel</Button>
