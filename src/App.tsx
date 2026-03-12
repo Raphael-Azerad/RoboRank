@@ -57,29 +57,30 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <SeasonProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
-            <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />
-            <Route path="/scouting" element={<ProtectedRoute><Scouting /></ProtectedRoute>} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/team/:teamNumber" element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />
-            <Route path="/event/:eventId" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
-            <Route path="/awards" element={<ProtectedRoute><Awards /></ProtectedRoute>} />
-            
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <SubscriptionProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
+              <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />
+              <Route path="/scouting" element={<ProtectedRoute><Scouting /></ProtectedRoute>} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/team/:teamNumber" element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />
+              <Route path="/event/:eventId" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
+              <Route path="/awards" element={<ProtectedRoute><Awards /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </SubscriptionProvider>
     </SeasonProvider>
   </QueryClientProvider>
 );
