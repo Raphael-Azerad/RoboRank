@@ -7,8 +7,10 @@ import {
   fetchRobotEvents, getEventTeams, getEventRankings, getEventMatches,
   getEventSkills, getTeamRankings, calculateRecordFromRankings,
   calculateRoboRank, getTeamSkillsScore, fetchAllPages, getTeamMatches,
+  calculateEventScheduleDifficulty,
 } from "@/lib/robotevents";
-import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare } from "lucide-react";
+import { useSeason } from "@/contexts/SeasonContext";
+import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
