@@ -201,6 +201,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="container py-6">{children}</main>
+
+      <footer className="border-t border-border/30 bg-card/30 mt-auto">
+        <div className="container py-6 flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
+          <span>© {new Date().getFullYear()} RoboRank</span>
+          <nav className="flex flex-wrap gap-4">
+            <Link to="/about" className="hover:text-primary transition-colors">About</Link>
+            <Link to="/contact" className="hover:text-primary transition-colors">Contact</Link>
+            <Link to="/terms" className="hover:text-primary transition-colors">Terms</Link>
+            <Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
+            <Link to="/refund" className="hover:text-primary transition-colors">Refund Policy</Link>
+            <Link to="/cookies" className="hover:text-primary transition-colors">Cookies</Link>
+          </nav>
+        </div>
+      </footer>
     </div>
   );
 }
