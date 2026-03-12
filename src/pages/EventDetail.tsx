@@ -141,6 +141,14 @@ export default function EventDetail() {
     enabled: !!teams && teams.length > 0 && (tab === "teams" || tab === "predictions"),
   });
 
+  // Schedule Difficulty
+  const { data: scheduleDifficulty, isLoading: scheduleLoading } = useQuery({
+    queryKey: ["eventScheduleDifficulty", eventId, divisionId, season],
+    queryFn: () => calculateEventScheduleDifficulty(Number(eventId), divisionId, season),
+    enabled: !!eventId && tab === "schedule",
+    staleTime: 10 * 60 * 1000,
+  });
+
   // Split matches
   const qualMatches = useMemo(() => {
     if (!allMatches) return [];
