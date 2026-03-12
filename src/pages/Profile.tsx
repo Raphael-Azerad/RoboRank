@@ -498,15 +498,16 @@ export default function Profile() {
                                 <Button
                                   size="sm" variant="ghost" className="h-6 text-[10px] text-primary px-2"
                                   onClick={async () => {
-                                    const { error } = await supabase.from("team_members").update({ role: "owner" }).eq("id", member.id);
-                                    if (error) toast.error(error.message);
-                                    else {
-                                      toast.success("Promoted to leader!");
-                                      queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
-                                    }
+                                    // Transfer leadership: demote self, promote target
+                                    const { error: demoteErr } = await supabase.from("team_members").update({ role: "member" }).eq("user_id", user.id!).eq("team_number", user.team_number!);
+                                    if (demoteErr) { toast.error(demoteErr.message); return; }
+                                    const { error: promoteErr } = await supabase.from("team_members").update({ role: "owner" }).eq("id", member.id);
+                                    if (promoteErr) { toast.error(promoteErr.message); return; }
+                                    toast.success("Leadership transferred!");
+                                    queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
                                   }}
                                 >
-                                  Make Leader
+                                  Transfer Leader
                                 </Button>
                               )}
                               <Button
