@@ -194,41 +194,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="container py-24">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
-            Trusted by <span className="text-gradient">Winning Teams</span>
-          </h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            See what teams are saying about how RoboRank changed their competition strategy.
-          </p>
-        </motion.div>
-
-        <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
-          {testimonials.map((t, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="rounded-xl border border-border/50 card-gradient p-6 space-y-4"
-            >
-              <p className="text-sm text-muted-foreground leading-relaxed italic">"{t.quote}"</p>
-              <div>
-                <p className="font-display font-semibold text-sm">{t.team}</p>
-                <p className="text-xs text-muted-foreground">{t.role}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
 
       {/* Pricing */}
       <section className="container py-24">
