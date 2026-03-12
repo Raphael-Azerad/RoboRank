@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
-import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight } from "lucide-react";
+import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,14 +15,14 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 
 // Season goals stored in localStorage
-function loadGoals(): { label: string; target: number; current: number }[] {
+function loadGoals(): { label: string; done: boolean }[] {
   try {
-    const stored = localStorage.getItem("roborank-season-goals");
+    const stored = localStorage.getItem("roborank-season-goals-v2");
     return stored ? JSON.parse(stored) : [];
   } catch { return []; }
 }
-function saveGoals(goals: { label: string; target: number; current: number }[]) {
-  localStorage.setItem("roborank-season-goals", JSON.stringify(goals));
+function saveGoals(goals: { label: string; done: boolean }[]) {
+  localStorage.setItem("roborank-season-goals-v2", JSON.stringify(goals));
 }
 
 export default function Dashboard() {
@@ -34,7 +34,6 @@ export default function Dashboard() {
   const [goals, setGoals] = useState(loadGoals);
   const [addingGoal, setAddingGoal] = useState(false);
   const [goalLabel, setGoalLabel] = useState("");
-  const [goalTarget, setGoalTarget] = useState("");
   const seasonInfo = SEASONS[season];
 
   useEffect(() => {
@@ -124,30 +123,19 @@ export default function Dashboard() {
       .slice(0, 3);
   }, [upcomingEvents]);
 
-  // Auto-update goals with live data
-  useEffect(() => {
-    if (!matchRecord) return;
-    const updated = goals.map(g => {
-      const lower = g.label.toLowerCase();
-      if (lower.includes("win rate") || lower.includes("win %")) return { ...g, current: matchRecord.winRate };
-      if (lower.includes("wins")) return { ...g, current: matchRecord.wins };
-      if (lower.includes("match")) return { ...g, current: totalMatchCount };
-      if (lower.includes("award")) return { ...g, current: awards?.length || 0 };
-      if (lower.includes("skills") || lower.includes("skill")) return { ...g, current: totalSkills };
-      return g;
-    });
-    setGoals(updated);
-    saveGoals(updated);
-  }, [matchRecord, totalMatchCount, awards, totalSkills]);
-
   const handleAddGoal = () => {
-    if (!goalLabel.trim() || !goalTarget.trim()) return;
-    const newGoals = [...goals, { label: goalLabel.trim(), target: parseInt(goalTarget) || 0, current: 0 }];
+    if (!goalLabel.trim()) return;
+    const newGoals = [...goals, { label: goalLabel.trim(), done: false }];
     setGoals(newGoals);
     saveGoals(newGoals);
     setGoalLabel("");
-    setGoalTarget("");
     setAddingGoal(false);
+  };
+
+  const handleToggleGoal = (i: number) => {
+    const newGoals = goals.map((g, idx) => idx === i ? { ...g, done: !g.done } : g);
+    setGoals(newGoals);
+    saveGoals(newGoals);
   };
 
   const handleRemoveGoal = (i: number) => {
@@ -309,30 +297,28 @@ export default function Dashboard() {
               <h3 className="font-display font-semibold text-sm mb-3 flex items-center gap-2">
                 <Flag className="h-4 w-4 text-primary" /> Season Goals
               </h3>
-              <div className="space-y-3">
-                {goals.map((g, i) => {
-                  const pct = g.target > 0 ? Math.min(100, Math.round((g.current / g.target) * 100)) : 0;
-                  const done = pct >= 100;
-                  return (
-                    <div key={i} className="group">
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className={cn("font-medium", done && "text-[hsl(var(--success))]")}>{g.label}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground">{g.current}/{g.target}</span>
-                          <button onClick={() => handleRemoveGoal(i)} className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity text-[10px]">✕</button>
-                        </div>
-                      </div>
-                      <Progress value={pct} className="h-2" />
-                    </div>
-                  );
-                })}
+              <div className="space-y-2">
+                {goals.map((g, i) => (
+                  <div key={i} className="group flex items-center gap-2.5 py-1">
+                    <button
+                      onClick={() => handleToggleGoal(i)}
+                      className={cn(
+                        "shrink-0 h-4 w-4 rounded border transition-all flex items-center justify-center",
+                        g.done ? "bg-[hsl(var(--success))] border-[hsl(var(--success))]" : "border-muted-foreground/40 hover:border-primary"
+                      )}
+                    >
+                      {g.done && <Check className="h-3 w-3 text-background" />}
+                    </button>
+                    <span className={cn("text-xs font-medium flex-1", g.done && "line-through text-muted-foreground")}>{g.label}</span>
+                    <button onClick={() => handleRemoveGoal(i)} className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity text-[10px]">✕</button>
+                  </div>
+                ))}
                 {goals.length === 0 && !addingGoal && (
-                  <p className="text-xs text-muted-foreground text-center py-2">Set goals like "Win 70% of matches"</p>
+                  <p className="text-xs text-muted-foreground text-center py-2">Add goals like "Win a tournament" or "Hit 200 skills"</p>
                 )}
                 {addingGoal ? (
                   <div className="space-y-2 pt-1">
-                    <Input placeholder='Goal name (e.g. "Win Rate")' value={goalLabel} onChange={(e) => setGoalLabel(e.target.value)} className="h-8 text-xs bg-card" />
-                    <Input placeholder="Target number" type="number" value={goalTarget} onChange={(e) => setGoalTarget(e.target.value)} className="h-8 text-xs bg-card" />
+                    <Input placeholder='e.g. "Win a tournament"' value={goalLabel} onChange={(e) => setGoalLabel(e.target.value)} className="h-8 text-xs bg-card" onKeyDown={(e) => e.key === "Enter" && handleAddGoal()} />
                     <div className="flex gap-1.5">
                       <Button size="sm" className="h-7 text-xs flex-1" onClick={handleAddGoal}>Add</Button>
                       <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setAddingGoal(false)}>Cancel</Button>

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { BarChart3, Shield, Zap, Trophy, ArrowRight, Users, Crown, Target, Swords, StickyNote, Check, TrendingUp, Bell, Play } from "lucide-react";
+import { BarChart3, Shield, Zap, Trophy, ArrowRight, Users, Crown, Target, Swords, StickyNote, Check, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 
@@ -68,11 +68,6 @@ const stats = [
   { value: "100", label: "RoboRank Scale" },
 ];
 
-const testimonials = [
-  { quote: "RoboRank completely changed how we prepare for tournaments. The scouting reports are incredibly accurate.", team: "Team 17505B", role: "Team Captain" },
-  { quote: "The 2v2 predictor helped us choose alliance partners wisely. We won our first tournament using it.", team: "Team 2011A", role: "Strategy Lead" },
-  { quote: "Having the whole team share premium is a game changer. Best $10/month investment for our program.", team: "Team 8838B", role: "Coach" },
-];
 
 export default function Landing() {
   return (
@@ -129,7 +124,7 @@ export default function Landing() {
               </Link>
               <a href="#features">
                 <Button variant="outline" size="lg" className="text-base px-8 gap-2">
-                  <Play className="h-4 w-4" /> See How It Works
+                  See Features ↓
                 </Button>
               </a>
             </div>
@@ -157,36 +152,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Video / Demo Section */}
-      <section className="container py-24">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mx-auto max-w-4xl"
-        >
-          <div className="text-center mb-10">
-            <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
-              See RoboRank in <span className="text-gradient">Action</span>
-            </h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              Watch how teams use RoboRank to prepare for tournaments and make smarter alliance picks.
-            </p>
-          </div>
-          <div className="relative rounded-2xl border border-border/50 card-gradient overflow-hidden aspect-video flex items-center justify-center">
-            <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
-            <div className="text-center space-y-4 relative z-10">
-              <div className="mx-auto w-20 h-20 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
-                <Play className="h-8 w-8 text-primary ml-1" />
-              </div>
-              <div>
-                <p className="font-display font-semibold">Platform Walkthrough</p>
-                <p className="text-sm text-muted-foreground">Coming soon — see scouting, predictions, and analytics in action</p>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </section>
 
       {/* Features */}
       <section id="features" className="container py-24">
@@ -224,41 +189,6 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="container py-24">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-16"
-        >
-          <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
-            Trusted by <span className="text-gradient">Winning Teams</span>
-          </h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            See what teams are saying about how RoboRank changed their competition strategy.
-          </p>
-        </motion.div>
-
-        <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
-          {testimonials.map((t, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.1 }}
-              className="rounded-xl border border-border/50 card-gradient p-6 space-y-4"
-            >
-              <p className="text-sm text-muted-foreground leading-relaxed italic">"{t.quote}"</p>
-              <div>
-                <p className="font-display font-semibold text-sm">{t.team}</p>
-                <p className="text-xs text-muted-foreground">{t.role}</p>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </section>
 
       {/* Pricing */}
       <section className="container py-24">
@@ -361,15 +291,46 @@ export default function Landing() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border/50 py-8">
-        <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-primary" />
-            <span className="font-display font-bold text-gradient">RoboRank</span>
+      <footer className="border-t border-border/50 py-10">
+        <div className="container space-y-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                <span className="font-display font-bold text-gradient">RoboRank</span>
+              </div>
+              <p className="text-xs text-muted-foreground">The #1 VEX V5 Robotics analytics platform.</p>
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground">Product</h4>
+              <div className="space-y-1.5">
+                <Link to="/about" className="block text-sm text-muted-foreground hover:text-primary transition-colors">About</Link>
+                <a href="#features" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Features</a>
+                <Link to="/contact" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Contact</Link>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground">Legal</h4>
+              <div className="space-y-1.5">
+                <Link to="/terms" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Terms of Service</Link>
+                <Link to="/privacy" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Privacy Policy</Link>
+                <Link to="/refund" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Refund Policy</Link>
+                <Link to="/cookies" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Cookie Policy</Link>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h4 className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground">Get Started</h4>
+              <div className="space-y-1.5">
+                <Link to="/signup" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Sign Up Free</Link>
+                <Link to="/login" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Log In</Link>
+              </div>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} RoboRank — Built for VEX Robotics teams
-          </p>
+          <div className="border-t border-border/50 pt-6">
+            <p className="text-xs text-muted-foreground text-center">
+              © {new Date().getFullYear()} RoboRank. Built for VEX Robotics teams. Not affiliated with the REC Foundation or VEX Robotics.
+            </p>
+          </div>
         </div>
       </footer>
     </div>
