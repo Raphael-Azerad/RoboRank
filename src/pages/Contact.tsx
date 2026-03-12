@@ -31,9 +31,10 @@ export default function Contact() {
     }
     setLoading(true);
     try {
-      await supabase.functions.invoke("robotevents-proxy", {
-        body: { contact: true, ...result.data },
+      const { error } = await supabase.functions.invoke("contact", {
+        body: result.data,
       });
+      if (error) throw error;
       setSent(true);
       toast.success("Message sent! We'll get back to you soon.");
     } catch {
