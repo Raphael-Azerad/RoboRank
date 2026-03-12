@@ -9,6 +9,10 @@ import { lovable } from "@/integrations/lovable/index";
 import { validateTeamNumber } from "@/lib/robotevents";
 import { toast } from "sonner";
 
+const isCustomDomain = () =>
+  !window.location.hostname.includes("lovable.app") &&
+  !window.location.hostname.includes("lovableproject.com");
+
 export default function Signup() {
   const navigate = useNavigate();
   const [teamNumber, setTeamNumber] = useState("");
