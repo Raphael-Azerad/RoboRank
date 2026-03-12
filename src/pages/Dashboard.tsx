@@ -34,7 +34,6 @@ export default function Dashboard() {
   const [goals, setGoals] = useState(loadGoals);
   const [addingGoal, setAddingGoal] = useState(false);
   const [goalLabel, setGoalLabel] = useState("");
-  const [goalTarget, setGoalTarget] = useState("");
   const seasonInfo = SEASONS[season];
 
   useEffect(() => {
