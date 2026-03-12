@@ -130,6 +130,10 @@ export default function Scouting() {
   });
 
   const handleGenerate = (event: any) => {
+    if (teamStatus === "pending") {
+      toast.error("Your team membership is pending approval. You can't generate reports yet.");
+      return;
+    }
     if (!teamNumber && !subscribed) {
       toast.error("You need a team to generate free scouting reports");
       return;
