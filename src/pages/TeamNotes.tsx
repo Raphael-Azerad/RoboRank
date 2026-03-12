@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { StickyNote, Plus, Trash2, Edit3, Save, X, Clock, User } from "lucide-react";
+import { StickyNote, Plus, Trash2, Edit3, Save, X, Clock, User, Tag, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 
 interface Note {
   id: string;
@@ -17,6 +18,7 @@ interface Note {
   user_id: string;
   title: string;
   content: string;
+  tagged_team: string | null;
   created_at: string;
   updated_at: string;
   authorEmail?: string;
@@ -29,7 +31,9 @@ export default function TeamNotes() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [taggedTeam, setTaggedTeam] = useState("");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+  const [filterTeam, setFilterTeam] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -53,7 +57,6 @@ export default function TeamNotes() {
       if (error) throw error;
       if (!notesData || notesData.length === 0) return [];
 
-      // Get author emails
       const userIds = [...new Set(notesData.map(n => n.user_id))];
       const { data: profiles } = await supabase
         .from("profiles")
@@ -63,11 +66,19 @@ export default function TeamNotes() {
 
       return notesData.map(n => ({
         ...n,
+        tagged_team: (n as any).tagged_team || null,
         authorEmail: emailMap.get(n.user_id) || null,
       })) as Note[];
     },
     enabled: !!user.team_number,
   });
+
+  const filteredNotes = notes?.filter(n => {
+    if (!filterTeam) return true;
+    return n.tagged_team?.toLowerCase().includes(filterTeam.toLowerCase());
+  }) || [];
+
+  const uniqueTags = [...new Set((notes || []).map(n => n.tagged_team).filter(Boolean))] as string[];
 
   const handleCreate = async () => {
     if (!title.trim()) { toast.error("Title is required"); return; }
@@ -76,24 +87,26 @@ export default function TeamNotes() {
       user_id: user.id!,
       title: title.trim(),
       content: content.trim(),
-    });
+      tagged_team: taggedTeam.trim().toUpperCase() || null,
+    } as any);
     if (error) { toast.error(error.message); return; }
     toast.success("Note created");
-    setTitle("");
-    setContent("");
-    setCreating(false);
+    resetForm();
     queryClient.invalidateQueries({ queryKey: ["teamNotes"] });
   };
 
   const handleUpdate = async (noteId: string) => {
     const { error } = await supabase.from("team_notes")
-      .update({ title: title.trim(), content: content.trim(), updated_at: new Date().toISOString() })
+      .update({
+        title: title.trim(),
+        content: content.trim(),
+        tagged_team: taggedTeam.trim().toUpperCase() || null,
+        updated_at: new Date().toISOString(),
+      } as any)
       .eq("id", noteId);
     if (error) { toast.error(error.message); return; }
     toast.success("Note updated");
-    setEditingId(null);
-    setTitle("");
-    setContent("");
+    resetForm();
     queryClient.invalidateQueries({ queryKey: ["teamNotes"] });
   };
 
@@ -109,14 +122,16 @@ export default function TeamNotes() {
     setEditingId(note.id);
     setTitle(note.title);
     setContent(note.content);
+    setTaggedTeam(note.tagged_team || "");
     setCreating(false);
   };
 
-  const cancelEdit = () => {
+  const resetForm = () => {
     setEditingId(null);
     setCreating(false);
     setTitle("");
     setContent("");
+    setTaggedTeam("");
   };
 
   if (!user.team_number) {
@@ -144,11 +159,38 @@ export default function TeamNotes() {
             </p>
           </div>
           {!creating && !editingId && (
-            <Button onClick={() => { setCreating(true); setTitle(""); setContent(""); }} className="gap-1.5">
+            <Button onClick={() => { setCreating(true); resetForm(); setCreating(true); }} className="gap-1.5">
               <Plus className="h-4 w-4" /> New Note
             </Button>
           )}
         </div>
+
+        {/* Filter by tagged team */}
+        {uniqueTags.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                variant={filterTeam === "" ? "default" : "outline"}
+                size="sm"
+                className="h-7 text-xs"
+                onClick={() => setFilterTeam("")}
+              >
+                All
+              </Button>
+              {uniqueTags.map(tag => (
+                <Button
+                  key={tag}
+                  variant={filterTeam === tag ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 text-xs gap-1"
+                  onClick={() => setFilterTeam(filterTeam === tag ? "" : tag)}
+                >
+                  <Tag className="h-3 w-3" /> {tag}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Create/Edit Form */}
         <AnimatePresence>
@@ -165,6 +207,17 @@ export default function TeamNotes() {
                 onChange={(e) => setTitle(e.target.value)}
                 className="bg-card font-medium"
               />
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Tag className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Tag with team # (e.g. 17505B)"
+                    value={taggedTeam}
+                    onChange={(e) => setTaggedTeam(e.target.value)}
+                    className="bg-card pl-9 uppercase text-sm"
+                  />
+                </div>
+              </div>
               <Textarea
                 placeholder="Write your strategy, observations, or notes here..."
                 value={content}
@@ -181,7 +234,7 @@ export default function TeamNotes() {
                     <Plus className="h-3.5 w-3.5" /> Create Note
                   </Button>
                 )}
-                <Button variant="ghost" onClick={cancelEdit}>Cancel</Button>
+                <Button variant="ghost" onClick={resetForm}>Cancel</Button>
               </div>
             </motion.div>
           )}
@@ -192,9 +245,9 @@ export default function TeamNotes() {
           <div className="flex items-center justify-center py-12">
             <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           </div>
-        ) : notes && notes.length > 0 ? (
+        ) : filteredNotes.length > 0 ? (
           <div className="space-y-3">
-            {notes.map((note, i) => (
+            {filteredNotes.map((note, i) => (
               <motion.div
                 key={note.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -204,7 +257,14 @@ export default function TeamNotes() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-display font-semibold truncate">{note.title || "Untitled"}</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-display font-semibold truncate">{note.title || "Untitled"}</h3>
+                      {note.tagged_team && (
+                        <Badge variant="secondary" className="gap-1 text-[10px] shrink-0">
+                          <Tag className="h-2.5 w-2.5" /> {note.tagged_team}
+                        </Badge>
+                      )}
+                    </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <User className="h-3 w-3" />
@@ -236,7 +296,9 @@ export default function TeamNotes() {
         ) : (
           <div className="rounded-xl border border-border/50 card-gradient p-8 text-center space-y-3">
             <StickyNote className="h-10 w-10 text-muted-foreground mx-auto" />
-            <p className="text-muted-foreground">No notes yet. Create one to share strategy with your team!</p>
+            <p className="text-muted-foreground">
+              {filterTeam ? `No notes tagged with "${filterTeam}"` : "No notes yet. Create one to share strategy with your team!"}
+            </p>
           </div>
         )}
 
