@@ -366,7 +366,7 @@ export default function Profile() {
                   <h3 className="font-display font-semibold">{subscribed ? "Premium Plan" : "Free Plan"}</h3>
                   <p className="text-xs text-muted-foreground">
                     {subscribed
-                      ? `Unlimited scouting reports · Renews ${subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString() : "—"}`
+                      ? `Unlimited scouting reports · Renews ${subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString() : "-"}`
                       : "1 scouting report per month · Upgrade for unlimited"}
                   </p>
                 </div>
