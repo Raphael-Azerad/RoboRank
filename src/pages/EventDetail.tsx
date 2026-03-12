@@ -10,6 +10,7 @@ import {
   calculateEventScheduleDifficulty,
 } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
