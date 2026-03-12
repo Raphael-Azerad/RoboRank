@@ -30,9 +30,9 @@ export const US_STATES = [
   "Wisconsin", "Wyoming"
 ];
 
-export async function fetchRobotEvents(endpoint: string, params?: Record<string, string>) {
+export async function fetchRobotEvents(endpoint: string, params?: Record<string, string>, arrayParams?: Record<string, string[]>) {
   const { data, error } = await supabase.functions.invoke("robotevents-proxy", {
-    body: { endpoint, params },
+    body: { endpoint, params, arrayParams },
   });
   if (error) throw new Error(error.message);
   if (data?.error) throw new Error(data.error);

@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { endpoint, params } = await req.json();
+    const { endpoint, params, arrayParams } = await req.json();
 
     if (!endpoint || typeof endpoint !== 'string') {
       return new Response(JSON.stringify({ error: 'Missing endpoint parameter' }), {
@@ -66,7 +66,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    const queryParams = new URLSearchParams(params || {});
+    // Build query params - support both single params and array params
+    const queryParams = new URLSearchParams();
+    
+    // Add single-value params
+    if (params) {
+      for (const [key, value] of Object.entries(params)) {
+        queryParams.append(key, String(value));
+      }
+    }
+    
+    // Add array params (repeated keys like number[]=A&number[]=B)
+    if (arrayParams) {
+      for (const [key, values] of Object.entries(arrayParams)) {
+        if (Array.isArray(values)) {
+          for (const v of values) {
+            queryParams.append(key, String(v));
+          }
+        }
+      }
+    }
+
     if (!queryParams.has('per_page')) {
       queryParams.set('per_page', '250');
     }
