@@ -4,20 +4,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { getTeamByNumber, SEASONS, SEASON_LIST } from "@/lib/robotevents";
 import { useSeason, type GradeLevel } from "@/contexts/SeasonContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock, Crown } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock, Crown, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { validateTeamNumber } from "@/lib/robotevents";
 
-const GRADE_OPTIONS: { value: GradeLevel; label: string; desc: string }[] = [
-  { value: "Both", label: "All Teams", desc: "Show HS & MS combined" },
-  { value: "High School", label: "High School", desc: "Only HS teams" },
-  { value: "Middle School", label: "Middle School", desc: "Only MS teams" },
+const GRADE_OPTIONS: { value: GradeLevel; label: string }[] = [
+  { value: "Both", label: "All Teams" },
+  { value: "High School", label: "High School" },
+  { value: "Middle School", label: "Middle School" },
 ];
 
 export default function Profile() {
@@ -27,6 +26,7 @@ export default function Profile() {
   const [user, setUser] = useState<{ id?: string; email?: string; team_number?: string | null }>({});
   const [joinTeamNumber, setJoinTeamNumber] = useState("");
   const [joiningTeam, setJoiningTeam] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
@@ -44,7 +44,6 @@ export default function Profile() {
     enabled: !!user.team_number,
   });
 
-  // Team members with email info
   const { data: teamMembers } = useQuery({
     queryKey: ["teamMembers", user.team_number],
     queryFn: async () => {
@@ -53,7 +52,6 @@ export default function Profile() {
         .select("*")
         .eq("team_number", user.team_number);
       if (!members || members.length === 0) return [];
-      // Fetch profile emails for approved members
       const approvedIds = members.filter(m => m.status === "approved").map(m => m.user_id);
       const { data: profiles } = await supabase.from("profiles")
         .select("id, email")
@@ -64,14 +62,6 @@ export default function Profile() {
     enabled: !!user.team_number,
   });
 
-  // Pending join requests for my team
-  const approvedMembers = teamMembers?.filter(m => m.status === "approved") || [];
-  const pendingRequests = teamMembers?.filter(m => m.status === "pending") || [];
-  const myMembership = teamMembers?.find(m => m.user_id === user.id);
-  const isTeamOwner = myMembership?.role === "owner";
-  const [showMembers, setShowMembers] = useState(false);
-
-  // My pending requests (if I requested to join a team)
   const { data: myPendingRequests } = useQuery({
     queryKey: ["myPendingRequests", user.id],
     queryFn: async () => {
@@ -84,6 +74,11 @@ export default function Profile() {
     },
     enabled: !!user.id && !user.team_number,
   });
+
+  const approvedMembers = teamMembers?.filter(m => m.status === "approved") || [];
+  const pendingRequests = teamMembers?.filter(m => m.status === "pending") || [];
+  const myMembership = teamMembers?.find(m => m.user_id === user.id);
+  const isTeamOwner = myMembership?.role === "owner";
 
   const handleJoinRequest = async () => {
     const num = joinTeamNumber.trim().toUpperCase();
@@ -123,7 +118,6 @@ export default function Profile() {
     if (error) {
       toast.error(error.message);
     } else {
-      // Update the user's profile with the team number
       await supabase.from("profiles").update({ team_number: teamNum }).eq("id", userId);
       toast.success("Member approved!");
       queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
@@ -145,108 +139,229 @@ export default function Profile() {
 
   return (
     <AppLayout>
-      <div className="max-w-lg space-y-6">
-        <h1 className="text-3xl font-display font-bold">Profile</h1>
+      <div className="max-w-2xl space-y-6">
+        {/* Header with upgrade CTA */}
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-display font-bold">Profile</h1>
+          {!subscribed && !subLoading && (
+            <Button onClick={startCheckout} className="gap-1.5 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+              <Crown className="h-4 w-4" /> Upgrade to Premium
+            </Button>
+          )}
+          {subscribed && (
+            <Button variant="outline" size="sm" onClick={openPortal} className="gap-1.5">
+              <Crown className="h-4 w-4 text-primary" /> Manage Plan
+            </Button>
+          )}
+        </div>
 
+        {/* Subscription Banner */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl border border-border/50 card-gradient p-8 space-y-6"
+          className={cn(
+            "rounded-xl border p-5",
+            subscribed
+              ? "border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10"
+              : "border-border/50 card-gradient"
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "rounded-full p-2.5",
+              subscribed ? "bg-primary/15" : "bg-muted"
+            )}>
+              <Crown className={cn("h-5 w-5", subscribed ? "text-primary" : "text-muted-foreground")} />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-display font-semibold">
+                {subscribed ? "Premium Plan" : "Free Plan"}
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                {subscribed
+                  ? `Unlimited scouting reports · Renews ${subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString() : "—"}`
+                  : "1 scouting report per month · Upgrade for unlimited"}
+              </p>
+            </div>
+            {!subscribed && (
+              <Button variant="outline" size="sm" onClick={startCheckout} className="gap-1.5 shrink-0">
+                $10/mo
+              </Button>
+            )}
+          </div>
+        </motion.div>
+
+        {/* Profile Card */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="rounded-xl border border-border/50 card-gradient p-6 space-y-5"
         >
           <div className="flex items-center gap-4">
-            <div className="rounded-full bg-primary/10 p-4">
-              <User className="h-8 w-8 text-primary" />
+            <div className="rounded-full bg-primary/10 p-3.5">
+              <User className="h-7 w-7 text-primary" />
             </div>
-            <div>
-              <h2 className="text-xl font-display font-bold">{user.team_number || "No Team"}</h2>
-              <p className="text-sm text-muted-foreground">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-xl font-display font-bold truncate">{user.team_number || "No Team"}</h2>
+              <p className="text-sm text-muted-foreground truncate">
                 {teamData?.team_name || (user.team_number ? "VEX Robotics Team" : "Browse-only account")}
               </p>
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid gap-3">
+            <div className="flex items-center gap-3 text-sm">
+              <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span className="text-muted-foreground">Email</span>
+              <span className="font-medium ml-auto truncate max-w-[200px]">{user.email || "—"}</span>
+            </div>
             {user.team_number && (
               <div className="flex items-center gap-3 text-sm">
-                <Hash className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">Team Number:</span>
-                <span className="font-medium">{user.team_number}</span>
+                <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground">Team</span>
+                <span className="font-medium ml-auto">{user.team_number}</span>
               </div>
             )}
-            <div className="flex items-center gap-3 text-sm">
-              <Mail className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">Email:</span>
-              <span className="font-medium">{user.email || "—"}</span>
-            </div>
             {isLoading && (
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Loading team details...
               </div>
             )}
-            {teamData && (
-              <>
-                <div className="flex items-center gap-3 text-sm">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Location:</span>
-                  <span className="font-medium">
-                    {teamData.location?.city}, {teamData.location?.region}, {teamData.location?.country}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <Building className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">Organization:</span>
-                  <span className="font-medium">{teamData.organization || "—"}</span>
-                </div>
-              </>
-            )}
-          </div>
-        </motion.div>
-
-        {/* Subscription */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.03 }}
-          className={cn(
-            "rounded-xl border p-8 space-y-4",
-            subscribed ? "border-primary/30 bg-primary/5" : "border-border/50 card-gradient"
-          )}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Crown className={cn("h-5 w-5", subscribed ? "text-primary" : "text-muted-foreground")} />
-              <div>
-                <h3 className="font-display font-semibold">
-                  {subscribed ? "Premium Plan" : "Free Plan"}
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  {subscribed
-                    ? `Unlimited reports · Renews ${subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString() : "—"}`
-                    : "1 scouting report per month"}
-                </p>
+            {teamData?.location && (
+              <div className="flex items-center gap-3 text-sm">
+                <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground">Location</span>
+                <span className="font-medium ml-auto truncate max-w-[200px]">
+                  {teamData.location.city}, {teamData.location.region}
+                </span>
               </div>
-            </div>
-            {subscribed ? (
-              <Button variant="outline" size="sm" onClick={openPortal}>Manage</Button>
-            ) : (
-              <Button variant="hero" size="sm" onClick={startCheckout} className="gap-1.5">
-                <Crown className="h-3.5 w-3.5" /> Upgrade — $10/mo
-              </Button>
+            )}
+            {teamData?.organization && (
+              <div className="flex items-center gap-3 text-sm">
+                <Building className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-muted-foreground">Organization</span>
+                <span className="font-medium ml-auto truncate max-w-[200px]">{teamData.organization}</span>
+              </div>
             )}
           </div>
         </motion.div>
 
+        {/* Team Members */}
+        {user.team_number && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="rounded-xl border border-border/50 card-gradient p-6 space-y-4"
+          >
+            <button
+              type="button"
+              onClick={() => setShowMembers(!showMembers)}
+              className="flex items-center justify-between w-full text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <Users className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-display font-semibold">Team Members</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {approvedMembers.length} member{approvedMembers.length !== 1 ? "s" : ""} on this team
+                  </p>
+                </div>
+              </div>
+              {showMembers ? (
+                <ChevronUp className="h-4 w-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              )}
+            </button>
 
+            {/* Pending requests (owner only) */}
+            {isTeamOwner && pendingRequests.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-[hsl(var(--chart-4))]">
+                  {pendingRequests.length} Pending Request{pendingRequests.length !== 1 ? "s" : ""}
+                </p>
+                {pendingRequests.map((req) => (
+                  <div key={req.id} className="flex items-center justify-between bg-[hsl(var(--chart-4))]/5 border border-[hsl(var(--chart-4))]/20 rounded-lg px-4 py-2.5">
+                    <span className="text-sm font-medium">{(req as any).email || req.user_id.slice(0, 8) + "..."}</span>
+                    <div className="flex gap-1.5">
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-[hsl(var(--success))]"
+                        onClick={() => handleApproveRequest(req.id, req.team_number, req.user_id)}>
+                        <Check className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-7 px-2 text-destructive"
+                        onClick={() => handleRejectRequest(req.id)}>
+                        <XIcon className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Member list */}
+            {showMembers && (
+              <div className="space-y-1.5 border-t border-border/30 pt-3">
+                {approvedMembers.map((member) => (
+                  <div key={member.id} className="flex items-center justify-between text-sm py-2.5 px-3 rounded-lg hover:bg-muted/30 transition-colors">
+                    <div className="flex flex-col min-w-0">
+                      <span className={cn("truncate", member.user_id === user.id && "text-primary font-medium")}>
+                        {member.user_id === user.id ? "You" : ((member as any).email || `Member ${member.user_id.slice(0, 8)}...`)}
+                      </span>
+                      {(member as any).email && member.user_id !== user.id && (
+                        <span className="text-[11px] text-muted-foreground truncate">{(member as any).email}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={cn(
+                        "text-[10px] px-2 py-0.5 rounded-full font-medium",
+                        member.role === "owner" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
+                      )}>
+                        {member.role === "owner" ? "Leader" : "Member"}
+                      </span>
+                      {isTeamOwner && member.user_id !== user.id && member.role !== "owner" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 text-[10px] text-primary px-2"
+                          onClick={async () => {
+                            const { error } = await supabase.from("team_members")
+                              .update({ role: "owner" })
+                              .eq("id", member.id);
+                            if (error) toast.error(error.message);
+                            else {
+                              toast.success("Promoted to leader!");
+                              queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
+                            }
+                          }}
+                        >
+                          Make Leader
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Join Team (no team) */}
         {!user.team_number && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="rounded-xl border border-border/50 card-gradient p-8 space-y-4"
+            transition={{ delay: 0.1 }}
+            className="rounded-xl border border-border/50 card-gradient p-6 space-y-4"
           >
             <div className="flex items-center gap-3">
-              <Users className="h-5 w-5 text-primary" />
+              <div className="rounded-full bg-primary/10 p-2">
+                <Users className="h-4 w-4 text-primary" />
+              </div>
               <div>
                 <h3 className="font-display font-semibold">Join a Team</h3>
                 <p className="text-xs text-muted-foreground">
@@ -280,169 +395,64 @@ export default function Profile() {
           </motion.div>
         )}
 
-        {/* Team Members (for team owners) */}
-        {user.team_number && teamMembers && teamMembers.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
-            className="rounded-xl border border-border/50 card-gradient p-8 space-y-4"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Users className="h-5 w-5 text-primary" />
-                <div>
-                  <h3 className="font-display font-semibold">Team Members</h3>
-                  <p className="text-xs text-muted-foreground">
-                    {approvedMembers.length} member{approvedMembers.length !== 1 ? "s" : ""}
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowMembers(!showMembers)}
-                className="text-xs"
-              >
-                {showMembers ? "Hide" : "View All"}
-              </Button>
-            </div>
-
-            {/* Pending requests (owner only) */}
-            {isTeamOwner && pendingRequests.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-[hsl(var(--chart-4))]">Pending Join Requests</p>
-                {pendingRequests.map((req) => (
-                  <div key={req.id} className="flex items-center justify-between bg-[hsl(var(--chart-4))]/5 border border-[hsl(var(--chart-4))]/20 rounded-lg px-3 py-2">
-                    <span className="text-sm font-medium">{(req as any).email || req.user_id.slice(0, 8) + "..."}</span>
-                    <div className="flex gap-1">
-                      <Button size="sm" variant="ghost" className="h-7 text-[hsl(var(--success))]"
-                        onClick={() => handleApproveRequest(req.id, req.team_number, req.user_id)}>
-                        <Check className="h-3.5 w-3.5" />
-                      </Button>
-                      <Button size="sm" variant="ghost" className="h-7 text-destructive"
-                        onClick={() => handleRejectRequest(req.id)}>
-                        <XIcon className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Expanded member list */}
-            {showMembers && (
-              <div className="space-y-2 border-t border-border/30 pt-3">
-                {approvedMembers.map((member) => (
-                  <div key={member.id} className="flex items-center justify-between text-sm py-2 px-2 rounded-lg hover:bg-muted/30 transition-colors">
-                    <div className="flex flex-col">
-                      <span className={cn(member.user_id === user.id && "text-primary font-medium")}>
-                        {member.user_id === user.id ? "You" : ((member as any).email || `Member ${member.user_id.slice(0, 8)}...`)}
-                      </span>
-                      {(member as any).email && member.user_id !== user.id && (
-                        <span className="text-[10px] text-muted-foreground">{(member as any).email}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={cn(
-                        "text-[10px] px-2 py-0.5 rounded",
-                        member.role === "owner" ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"
-                      )}>
-                        {member.role === "owner" ? "Leader" : "Member"}
-                      </span>
-                      {isTeamOwner && member.user_id !== user.id && member.role !== "owner" && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 text-[10px] text-primary"
-                          onClick={async () => {
-                            const { error } = await supabase.from("team_members")
-                              .update({ role: "owner" })
-                              .eq("id", member.id);
-                            if (error) toast.error(error.message);
-                            else {
-                              toast.success("Promoted to leader!");
-                              queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
-                            }
-                          }}
-                        >
-                          Make Leader
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* Grade Level Selector */}
+        {/* Settings: Grade + Season */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="rounded-xl border border-border/50 card-gradient p-8 space-y-4"
+          transition={{ delay: 0.15 }}
+          className="rounded-xl border border-border/50 card-gradient p-6 space-y-5"
         >
-          <div className="flex items-center gap-3">
-            <GraduationCap className="h-5 w-5 text-primary" />
-            <div>
-              <h3 className="font-display font-semibold">Grade Level</h3>
-              <p className="text-xs text-muted-foreground">
-                Filter rankings & leaderboards by division
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {GRADE_OPTIONS.map((opt) => (
-              <Button
-                key={opt.value}
-                variant={gradeLevel === opt.value ? "default" : "outline"}
-                size="sm"
-                onClick={() => setGradeLevel(opt.value)}
-                className="text-xs"
-              >
-                {opt.label}
-              </Button>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Currently showing: <span className="text-foreground font-medium">{gradeLevel === "Both" ? "All Teams" : gradeLevel}</span>
-          </p>
-        </motion.div>
+          <h3 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider">Preferences</h3>
 
-        {/* Season Selector */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="rounded-xl border border-border/50 card-gradient p-8 space-y-4"
-        >
-          <div className="flex items-center gap-3">
-            <Calendar className="h-5 w-5 text-primary" />
-            <div>
-              <h3 className="font-display font-semibold">Active Season</h3>
-              <p className="text-xs text-muted-foreground">
-                Changes data across the entire platform
-              </p>
+          {/* Grade Level */}
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-2">
+              <GraduationCap className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Grade Level</span>
+              <span className="text-xs text-muted-foreground ml-auto">
+                {gradeLevel === "Both" ? "All Teams" : gradeLevel}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              {GRADE_OPTIONS.map((opt) => (
+                <Button
+                  key={opt.value}
+                  variant={gradeLevel === opt.value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setGradeLevel(opt.value)}
+                  className="text-xs flex-1"
+                >
+                  {opt.label}
+                </Button>
+              ))}
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {SEASON_LIST.map((s) => (
-              <Button
-                key={s.key}
-                variant={season === s.key ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSeason(s.key)}
-                className="text-xs"
-              >
-                {s.name} ({s.year})
-              </Button>
-            ))}
+
+          <div className="border-t border-border/30" />
+
+          {/* Season */}
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Active Season</span>
+              <span className="text-xs text-muted-foreground ml-auto">
+                {seasonInfo.name} ({seasonInfo.year})
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {SEASON_LIST.map((s) => (
+                <Button
+                  key={s.key}
+                  variant={season === s.key ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSeason(s.key)}
+                  className="text-xs"
+                >
+                  {s.name} ({s.year})
+                </Button>
+              ))}
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Currently viewing: <span className="text-foreground font-medium">{seasonInfo.name} ({seasonInfo.year})</span>
-          </p>
         </motion.div>
       </div>
     </AppLayout>

@@ -1,14 +1,14 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Calendar as CalendarIcon, MapPin, Search, Loader2, Filter, ArrowUpDown, List, Star, CalendarDays, ChevronLeft, ChevronRight, Map as MapIcon, Users, Navigation, GitCompare, X } from "lucide-react";
+import { Calendar as CalendarIcon, MapPin, Search, Loader2, Filter, ArrowUpDown, List, Star, CalendarDays, ChevronLeft, ChevronRight, Map as MapIcon, Users, Navigation } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useQuery } from "@tanstack/react-query";
-import { fetchAllPages, getTeamByNumber, getTeamEvents, getEventTeams, getEventSkills, getEventRankings, getTeamRankings, getTeamSkillsScore, calculateRoboRank, SEASONS, US_STATES, type SeasonKey } from "@/lib/robotevents";
+import { fetchAllPages, getTeamByNumber, getTeamEvents, SEASONS, US_STATES } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
@@ -82,12 +82,9 @@ export default function Events() {
   const { watchlist, toggle: toggleWatchlist, isWatched } = useWatchlist();
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [sortByNearby, setSortByNearby] = useState(false);
-  const [compareIds, setCompareIds] = useState<number[]>([]);
-  const [showCompare, setShowCompare] = useState(false);
 
   const seasonInfo = SEASONS[season];
 
-  // Live search debounce
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
     return () => clearTimeout(timer);
@@ -130,7 +127,6 @@ export default function Events() {
   let events = tab === "all" || tab === "watchlist" ? (allEventsData || []) : (myEvents || []);
   const isLoading = tab === "all" || tab === "watchlist" ? allLoading : myLoading;
 
-  // Client-side search filter (live)
   if (debouncedSearch) {
     const q = debouncedSearch.toLowerCase();
     events = events.filter((e: any) => {
@@ -153,7 +149,6 @@ export default function Events() {
     events = events.filter((e: any) => new Date(e.end || e.start) < now);
   }
 
-  // Date range filter
   if (dateFrom) {
     events = events.filter((e: any) => new Date(e.start) >= dateFrom);
   }
@@ -176,9 +171,8 @@ export default function Events() {
     });
   }
 
-  // Distance calculation for nearby sorting
   const getDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 3959; // miles
+    const R = 3959;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a = Math.sin(dLat / 2) ** 2 + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
@@ -197,18 +191,7 @@ export default function Events() {
     }
   }, []);
 
-  const toggleCompare = useCallback((eventId: number) => {
-    setCompareIds((prev) =>
-      prev.includes(eventId)
-        ? prev.filter((id) => id !== eventId)
-        : prev.length < 4
-          ? [...prev, eventId]
-          : prev
-    );
-  }, []);
-
   events = [...events].sort((a: any, b: any) => {
-    // Nearby sorting
     if (sortByNearby && userLocation) {
       const aCoords = a.location?.coordinates;
       const bCoords = b.location?.coordinates;
@@ -218,7 +201,6 @@ export default function Events() {
         return aDist - bDist;
       }
     }
-    // Default: upcoming first, then by date
     const aDate = new Date(a.start);
     const bDate = new Date(b.start);
     const aUp = aDate > now;
@@ -229,94 +211,11 @@ export default function Events() {
     return bDate.getTime() - aDate.getTime();
   });
 
-  const compareEvents = useMemo(() => {
-    const allEvents = allEventsData || myEvents || [];
-    return allEvents.filter((e: any) => compareIds.includes(e.id));
-  }, [allEventsData, myEvents, compareIds]);
-
-  // Fetch detailed comparison data for selected events
-  const { data: compareDetails, isLoading: compareDetailsLoading } = useQuery({
-    queryKey: ["compareEventDetails", compareIds],
-    queryFn: async () => {
-      const details = await Promise.all(compareIds.map(async (id) => {
-        try {
-          const [teamsData, skillsData] = await Promise.all([
-            getEventTeams(id),
-            getEventSkills(id).catch(() => []),
-          ]);
-          
-          // Get event rankings for first division
-          const evt = compareEvents.find((e: any) => e.id === id);
-          const divId = evt?.divisions?.[0]?.id || 1;
-          const rankingsData = await getEventRankings(id, divId).catch(() => null);
-          const rankings = rankingsData?.data || rankingsData || [];
-          
-          // Calculate stats
-          const teamCount = teamsData?.length || 0;
-          
-          // Skills stats - highest per team
-          const teamSkillsMap = new Map<number, { driver: number; prog: number }>();
-          (skillsData || []).forEach((s: any) => {
-            const tid = s.team?.id;
-            if (!tid) return;
-            if (!teamSkillsMap.has(tid)) teamSkillsMap.set(tid, { driver: 0, prog: 0 });
-            const e = teamSkillsMap.get(tid)!;
-            if (s.type === "driver" && s.score > e.driver) e.driver = s.score;
-            if (s.type === "programming" && s.score > e.prog) e.prog = s.score;
-          });
-          
-          const skillsTeams = Array.from(teamSkillsMap.values());
-          const topSkills = skillsTeams.length > 0
-            ? Math.max(...skillsTeams.map(t => t.driver + t.prog))
-            : 0;
-
-          // Avg RoboRank - sample up to 20 teams
-          let avgRoboRank = 0;
-          if (teamsData && teamsData.length > 0) {
-            const sample = teamsData.slice(0, 20);
-            const ranks: number[] = [];
-            for (let i = 0; i < sample.length; i += 10) {
-              const batch = sample.slice(i, i + 10);
-              await Promise.all(batch.map(async (team: any) => {
-                try {
-                  const [r, s] = await Promise.all([
-                    getTeamRankings(team.id),
-                    getTeamSkillsScore(team.id),
-                  ]);
-                  const rr = calculateRoboRank(r, s);
-                  if (rr > 0) ranks.push(rr);
-                } catch { /* skip */ }
-              }));
-            }
-            avgRoboRank = ranks.length > 0
-              ? Math.round(ranks.reduce((a, b) => a + b, 0) / ranks.length)
-              : 0;
-          }
-          
-          // Rankings stats
-          let avgWP = 0, highScore = 0;
-          if (Array.isArray(rankings) && rankings.length > 0) {
-            avgWP = Math.round(rankings.reduce((s: number, r: any) => s + (r.wp || 0), 0) / rankings.length * 10) / 10;
-            highScore = Math.max(...rankings.map((r: any) => r.high_score || 0));
-          }
-          
-          return { eventId: id, teamCount, topSkills, avgWP, highScore, avgRoboRank, skillsTeams: skillsTeams.length };
-        } catch {
-          return { eventId: id, teamCount: 0, topSkills: 0, avgWP: 0, highScore: 0, avgRoboRank: 0, skillsTeams: 0 };
-        }
-      }));
-      return details;
-    },
-    enabled: compareIds.length >= 2,
-    staleTime: 5 * 60 * 1000,
-  });
-
   const eventsByDate = useMemo(() => {
     const map = new Map<string, any[]>();
     events.forEach((e: any) => {
       const start = new Date(e.start);
       const end = e.end ? new Date(e.end) : start;
-      // Normalize to local dates to avoid timezone shifts
       const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate());
       const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
       const cursor = new Date(startDay);
@@ -336,15 +235,12 @@ export default function Events() {
     return new Set(Array.from(eventsByDate.keys()));
   }, [eventsByDate]);
 
-  // Stats
   const upcomingCount = events.filter((e: any) => new Date(e.start) > now).length;
   const completedCount = events.filter((e: any) => new Date(e.end || e.start) < now).length;
 
-  // Pagination
   const totalPages = Math.ceil(events.length / PAGE_SIZE);
   const paginatedEvents = events.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // Reset page when filters change
   useEffect(() => { setPage(1); }, [tab, debouncedSearch, stateFilter, statusFilter, levelFilter, dateFrom, dateTo]);
 
   const handleEventClick = useCallback((eventId: number) => {
@@ -374,7 +270,6 @@ export default function Events() {
         )}
       >
         <div className="flex items-start gap-3">
-          {/* Date block */}
           <div className={cn(
             "shrink-0 w-12 h-12 rounded-lg flex flex-col items-center justify-center text-center",
             isUpcoming ? "bg-primary/10" : "bg-muted"
@@ -387,7 +282,6 @@ export default function Events() {
             </span>
           </div>
 
-          {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <h3 className="font-display font-semibold text-sm leading-tight line-clamp-1">{event.name}</h3>
@@ -423,20 +317,7 @@ export default function Events() {
             </div>
           </div>
 
-          {/* Actions */}
           <div className="flex items-center gap-1 shrink-0">
-            {showCompare && (
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); toggleCompare(event.id); }}
-                className={cn(
-                  "p-1.5 rounded-lg transition-colors",
-                  compareIds.includes(event.id) ? "bg-primary/20 text-primary" : "hover:bg-accent text-muted-foreground/40"
-                )}
-              >
-                <GitCompare className="h-4 w-4" />
-              </button>
-            )}
             <button
               type="button"
               onClick={(e) => { e.stopPropagation(); toggleWatchlist(event.id); }}
@@ -451,7 +332,6 @@ export default function Events() {
           </div>
         </div>
 
-        {/* Nearby distance */}
         {sortByNearby && userLocation && event.location?.coordinates?.lat && (
           <div className="mt-2 text-[10px] text-muted-foreground flex items-center gap-1 ml-[60px]">
             <Navigation className="h-3 w-3" />
@@ -472,7 +352,6 @@ export default function Events() {
           </p>
         </div>
 
-        {/* Quick stats */}
         {!isLoading && tab === "all" && (
           <div className="flex gap-3 flex-wrap">
             <div className="rounded-lg border border-border/50 card-gradient px-3 py-2 text-center">
@@ -490,7 +369,6 @@ export default function Events() {
           </div>
         )}
 
-        {/* Tabs + View Toggle */}
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex gap-2 flex-wrap">
             <Button variant={tab === "all" ? "default" : "outline"} size="sm" onClick={() => setTab("all")}>
@@ -519,17 +397,6 @@ export default function Events() {
             >
               <Navigation className="h-3.5 w-3.5" /> Nearby
             </Button>
-            <Button
-              variant={showCompare ? "default" : "outline"}
-              size="sm"
-              onClick={() => setShowCompare(!showCompare)}
-              className="gap-1.5"
-            >
-              <GitCompare className="h-3.5 w-3.5" /> Compare
-              {compareIds.length > 0 && (
-                <span className="text-[10px] font-bold bg-primary-foreground/20 px-1.5 py-0.5 rounded-full">{compareIds.length}</span>
-              )}
-            </Button>
           </div>
 
           <div className="flex gap-1 border border-border rounded-lg p-0.5">
@@ -549,7 +416,6 @@ export default function Events() {
           </div>
         </div>
 
-        {/* Filters */}
         <div className="flex flex-wrap gap-3">
           <div className="flex-1 min-w-[200px]">
             <div className="relative">
@@ -602,7 +468,6 @@ export default function Events() {
             </SelectContent>
           </Select>
 
-          {/* Date range */}
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className={cn("gap-1.5 bg-card", (dateFrom || dateTo) && "border-primary text-primary")}>
@@ -631,12 +496,6 @@ export default function Events() {
           </Popover>
         </div>
 
-        {showCompare && compareIds.length === 0 && viewMode !== "map" && (
-          <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-muted-foreground">
-            Compare mode is on — click the compare icon on event cards to add up to 4 events.
-          </div>
-        )}
-
         {isLoading && (
           <div className="flex flex-col items-center gap-2 py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -645,7 +504,6 @@ export default function Events() {
           </div>
         )}
 
-        {/* Map View */}
         {!isLoading && viewMode === "map" && (
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
@@ -655,7 +513,6 @@ export default function Events() {
           </div>
         )}
 
-        {/* Calendar View */}
         {!isLoading && viewMode === "calendar" && (
           <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
             <div className="rounded-xl border border-border/50 card-gradient p-3 self-start">
@@ -694,7 +551,6 @@ export default function Events() {
           </div>
         )}
 
-        {/* List View */}
         {!isLoading && viewMode === "list" && (
           events.length === 0 ? (
             <div className="text-sm text-muted-foreground rounded-lg border border-border/50 card-gradient p-8 text-center">
@@ -737,95 +593,6 @@ export default function Events() {
               )}
             </>
           )
-        )}
-        {/* Compare Panel */}
-        {showCompare && compareEvents.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 rounded-xl border border-border bg-card shadow-xl p-4 w-[95vw] max-w-4xl max-h-[50vh] overflow-hidden flex flex-col"
-          >
-            <div className="flex items-center justify-between mb-3 shrink-0">
-              <h3 className="text-sm font-display font-semibold">Comparing {compareEvents.length} Events</h3>
-              <Button variant="ghost" size="sm" onClick={() => { setCompareIds([]); setShowCompare(false); }}>
-                <X className="h-3.5 w-3.5 mr-1" /> Clear
-              </Button>
-            </div>
-            {compareDetailsLoading && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground py-4 justify-center">
-                <Loader2 className="h-4 w-4 animate-spin" /> Loading comparison data...
-              </div>
-            )}
-            <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
-              <table className="w-full min-w-[500px] text-xs">
-                <thead>
-                  <tr className="border-b border-border/30">
-                    <th className="text-left py-2 px-3 text-muted-foreground uppercase tracking-wider font-medium w-28">Metric</th>
-                    {compareEvents.map((event: any) => (
-                      <th key={event.id} className="text-center py-2 px-3 min-w-[140px]">
-                        <div className="font-display font-semibold text-sm line-clamp-2">{event.name}</div>
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    { label: "Date", getValue: (e: any) => formatDateRange(e.start, e.end) },
-                    { label: "Location", getValue: (e: any) => [e.location?.city, e.location?.region].filter(Boolean).join(", ") || "—" },
-                    { label: "Level", getValue: (e: any) => {
-                      const badge = getLevelBadge(e.name || "");
-                      return badge ? badge.label : "Standard";
-                    }},
-                  ].map(({ label, getValue }) => (
-                    <tr key={label} className="border-b border-border/20">
-                      <td className="py-2 px-3 text-muted-foreground font-medium">{label}</td>
-                      {compareEvents.map((event: any) => (
-                        <td key={event.id} className="py-2 px-3 text-center">{getValue(event)}</td>
-                      ))}
-                    </tr>
-                  ))}
-                  {compareDetails && [
-                    { label: "Teams", key: "teamCount", highlight: true },
-                    { label: "Avg RoboRank", key: "avgRoboRank", highlight: true },
-                    { label: "Avg WP", key: "avgWP", highlight: true },
-                    { label: "High Score", key: "highScore", highlight: true },
-                    { label: "Top Skills", key: "topSkills", highlight: true },
-                  ].map(({ label, key, highlight }) => {
-                    const values = compareDetails.map((d: any) => d[key] || 0);
-                    const best = Math.max(...values);
-                    const allSame = values.every((v: number) => v === values[0]);
-                    return (
-                      <tr key={label} className="border-b border-border/20">
-                        <td className="py-2 px-3 text-muted-foreground font-medium">{label}</td>
-                        {compareEvents.map((event: any) => {
-                          const detail = compareDetails.find((d: any) => d.eventId === event.id);
-                          const val = detail?.[key] || 0;
-                          return (
-                            <td key={event.id} className={cn(
-                              "py-2 px-3 text-center stat-number",
-                              highlight && !allSame && val === best ? "text-[hsl(var(--success))]" : ""
-                            )}>
-                              {val}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
-                  <tr>
-                    <td className="py-2 px-3" />
-                    {compareEvents.map((event: any) => (
-                      <td key={event.id} className="py-2 px-3 text-center">
-                        <Button variant="outline" size="sm" className="text-xs" onClick={() => navigate(`/event/${event.id}`)}>
-                          View Details
-                        </Button>
-                      </td>
-                    ))}
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </motion.div>
         )}
       </div>
     </AppLayout>
