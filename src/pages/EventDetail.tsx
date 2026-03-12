@@ -281,6 +281,46 @@ export default function EventDetail() {
                 </a>
               )}
             </div>
+            <div className="mt-3">
+              <Button
+                variant="hero"
+                size="sm"
+                className="gap-1.5"
+                onClick={async () => {
+                  try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) { toast.error("Please log in"); return; }
+                    const teamNum = user.user_metadata?.team_number;
+                    if (!teamNum) { toast.error("Connect a team to generate reports"); return; }
+                    // Check if already exists
+                    const { data: existing } = await supabase.from("scouting_reports")
+                      .select("id").eq("event_id", Number(eventId)).eq("user_id", user.id).limit(1);
+                    if (existing && existing.length > 0) {
+                      toast.info("You already have a report for this event. View it in Scouting.");
+                      navigate("/scouting");
+                      return;
+                    }
+                    toast.info("Generating report... This may take a minute.");
+                    const divId = divisions[selectedDivisionIdx]?.id || 1;
+                    const report = await generateScoutingReport(
+                      Number(eventId), divId, event.name,
+                      new Date(event.start).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+                      season
+                    );
+                    await supabase.from("scouting_reports").insert({
+                      event_id: Number(eventId), event_name: event.name,
+                      user_id: user.id, report_data: report as any,
+                    });
+                    toast.success("Report generated! View it in Scouting.");
+                    navigate("/scouting");
+                  } catch (err: any) {
+                    toast.error(`Failed: ${err.message}`);
+                  }
+                }}
+              >
+                <FileText className="h-3.5 w-3.5" /> Generate Scouting Report
+              </Button>
+            </div>
           </motion.div>
         )}
 
