@@ -324,9 +324,13 @@ export default function Scouting() {
           </div>
         )}
 
-        {teamNumber && hasSeasonEvents && !canGenerateFree && (
-          <div className="rounded-lg border border-[hsl(var(--chart-4))]/30 bg-[hsl(var(--chart-4))]/5 px-4 py-3 text-sm text-muted-foreground">
-            You've used your free report this month. Upgrade to premium ($10/mo) for unlimited reports.
+        {teamNumber && hasSeasonEvents && !canGenerate && !subscribed && (
+          <div className="rounded-lg border border-[hsl(var(--chart-4))]/30 bg-[hsl(var(--chart-4))]/5 px-4 py-3 text-sm flex items-center justify-between">
+            <span className="text-muted-foreground">You've used your free report this month.</span>
+            <Button variant="hero" size="sm" onClick={startCheckout} className="gap-1.5">
+              <Crown className="h-3.5 w-3.5" /> Upgrade — $10/mo
+            </Button>
+          </div>
           </div>
         )}
 
