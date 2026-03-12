@@ -72,13 +72,14 @@ export default function Scouting() {
   });
 
   // Check free tier limit (1 per team per month)
-  const canGenerateFree = useMemo(() => {
+  const canGenerate = useMemo(() => {
+    if (subscribed) return true; // Premium: unlimited
     if (!existingReports || !teamNumber) return false;
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
     const thisMonthReports = existingReports.filter(r => new Date(r.created_at) >= monthStart);
     return thisMonthReports.length < 1;
-  }, [existingReports, teamNumber]);
+  }, [existingReports, teamNumber, subscribed]);
 
   // Check if team has events this season
   const hasSeasonEvents = myEvents && myEvents.length > 0;
