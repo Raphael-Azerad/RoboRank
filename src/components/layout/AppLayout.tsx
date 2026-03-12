@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, Calendar, Home, Search, Trophy, User, LogOut, Menu, X, ArrowLeftRight } from "lucide-react";
+import { BarChart3, Calendar, Home, Search, Trophy, User, LogOut, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
