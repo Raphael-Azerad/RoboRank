@@ -254,6 +254,35 @@ export function calculateRoboRank(rankings: any[], skillsCombined: number = 0) {
     const variance = percentiles.reduce((sum, p) => sum + (p - mean) ** 2, 0) / percentiles.length;
     const stdDev = Math.sqrt(variance);
     consistencyScore = Math.max(0, 100 - stdDev * 2.5);
+  }
+  const consistencyComponent = consistencyScore * 0.15;
+
+  // 5. Event Volume (10%) - caps at 6
+  const eventsAttended = rankings.length;
+  const volumeComponent = Math.min(eventsAttended / 6, 1) * 100 * 0.10;
+
+  // 6. High Score (10%) - normalized to ~100
+  const highScoreComponent = Math.min(highScore / 100, 1) * 100 * 0.10;
+
+  const raw = winComponent + rankComponent + skillsComponent +
+    consistencyComponent + volumeComponent + highScoreComponent;
+
+  return Math.round(Math.min(100, raw));
+}
+
+export async function getTeamSkillsScore(teamId: number, season: SeasonKey = "current"): Promise<number> {
+  try {
+    const skills = await fetchAllPages(`/teams/${teamId}/skills`, { "season[]": SEASONS[season].id });
+    if (!skills || skills.length === 0) return 0;
+    let maxDriver = 0, maxProg = 0;
+    skills.forEach((s: any) => {
+      if (s.type === "driver" && s.score > maxDriver) maxDriver = s.score;
+      if (s.type === "programming" && s.score > maxProg) maxProg = s.score;
+    });
+    return maxDriver + maxProg;
+  } catch {
+    return 0;
+  }
 }
 
 export interface MatchDifficulty {
