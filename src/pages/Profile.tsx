@@ -63,9 +63,11 @@ export default function Profile() {
   });
 
   // Pending join requests for my team
+  const approvedMembers = teamMembers?.filter(m => m.status === "approved") || [];
   const pendingRequests = teamMembers?.filter(m => m.status === "pending") || [];
   const myMembership = teamMembers?.find(m => m.user_id === user.id);
   const isTeamOwner = myMembership?.role === "owner";
+  const [showMembers, setShowMembers] = useState(false);
 
   // My pending requests (if I requested to join a team)
   const { data: myPendingRequests } = useQuery({
