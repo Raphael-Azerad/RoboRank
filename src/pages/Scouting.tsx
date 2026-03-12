@@ -23,6 +23,7 @@ export default function Scouting() {
   const { season } = useSeason();
   const { subscribed, startCheckout } = useSubscription();
   const queryClient = useQueryClient();
+  const { status: teamStatus } = useTeamStatus();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [teamNumber, setTeamNumber] = useState<string | null>(null);
