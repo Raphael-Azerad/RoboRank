@@ -20,6 +20,8 @@ import Profile from "./pages/Profile";
 import TeamDetail from "./pages/TeamDetail";
 import EventDetail from "./pages/EventDetail";
 import Awards from "./pages/Awards";
+import MatchPredictor from "./pages/MatchPredictor";
+import TeamNotes from "./pages/TeamNotes";
 
 import NotFound from "./pages/NotFound";
 
@@ -73,6 +75,8 @@ const App = () => (
               <Route path="/rankings" element={<ProtectedRoute><Rankings /></ProtectedRoute>} />
               <Route path="/scouting" element={<ProtectedRoute><Scouting /></ProtectedRoute>} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/predictor" element={<ProtectedRoute><MatchPredictor /></ProtectedRoute>} />
+              <Route path="/notes" element={<ProtectedRoute><TeamNotes /></ProtectedRoute>} />
               <Route path="/team/:teamNumber" element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />
               <Route path="/event/:eventId" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
               <Route path="/awards" element={<ProtectedRoute><Awards /></ProtectedRoute>} />
