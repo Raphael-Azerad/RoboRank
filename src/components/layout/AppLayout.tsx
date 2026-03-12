@@ -200,7 +200,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
-      <main className="container py-6">{children}</main>
+      <main className="container py-6 flex-1 w-full">{children}</main>
 
       <footer className="border-t border-border/30 bg-card/30 mt-auto">
         <div className="container py-6 flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
