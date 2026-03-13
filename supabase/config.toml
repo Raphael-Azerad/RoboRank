@@ -7,3 +7,11 @@ project_id = "pdizasxzcxurlfevzxtg"
     verify_jwt = false
   [functions.robotevents-proxy]
     verify_jwt = false
+  [functions.create-checkout]
+    verify_jwt = false
+  [functions.check-subscription]
+    verify_jwt = false
+  [functions.customer-portal]
+    verify_jwt = false
+  [functions.contact]
+    verify_jwt = false
