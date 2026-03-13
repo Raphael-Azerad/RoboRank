@@ -450,11 +450,11 @@ export default function Dashboard() {
               className="grid gap-2.5 grid-cols-2"
             >
               {[
-                { to: "/predictor", icon: Swords, label: "Match Predictor", desc: "Simulate 2v2 matches", color: "text-primary" },
-                { to: "/rankings", icon: Trophy, label: "Rankings", desc: "Look up any team", color: "text-[hsl(var(--chart-4))]" },
-                { to: "/notes", icon: Flag, label: "Team Notes", desc: "Strategy & observations", color: "text-[hsl(var(--chart-2))]" },
-                { to: `/team/${teamNumber}`, icon: TrendingUp, label: "Full Stats", desc: "Detailed team profile", color: "text-[hsl(var(--success))]" },
-              ].map((action) => (
+                { to: "/predictor", icon: Swords, label: "Match Predictor", desc: "Simulate 2v2 matches", color: "text-primary", showForFollower: true },
+                { to: "/rankings", icon: Trophy, label: "Rankings", desc: "Look up any team", color: "text-[hsl(var(--chart-4))]", showForFollower: true },
+                { to: "/notes", icon: Flag, label: "Team Notes", desc: "Strategy & observations", color: "text-[hsl(var(--chart-2))]", showForFollower: false },
+                { to: `/team/${teamNumber}`, icon: TrendingUp, label: "Full Stats", desc: "Detailed team profile", color: "text-[hsl(var(--success))]", showForFollower: true },
+              ].filter(action => !isFollower || action.showForFollower).map((action) => (
                 <Link key={action.to} to={action.to}>
                   <div className="rounded-xl border border-border/50 card-gradient p-4 hover:border-primary/30 hover:scale-[1.02] transition-all">
                     <action.icon className={cn("h-5 w-5 mb-2", action.color)} />
