@@ -45,6 +45,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       setSubscribed(data?.subscribed ?? false);
       setSubscriptionEnd(data?.subscription_end ?? null);
+      setSource(data?.source ?? null);
     } catch {
       setSubscribed(false);
       setSubscriptionEnd(null);
