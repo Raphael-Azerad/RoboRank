@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { Search, Loader2, Zap, Globe } from "lucide-react";
@@ -297,6 +297,12 @@ export default function Rankings() {
           <Button variant={tab === "skills" ? "default" : "outline"} size="sm" onClick={() => setTab("skills")}>
             <Zap className="h-3.5 w-3.5 mr-1.5" /> Skills Leaderboard
           </Button>
+        </div>
+
+        <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 px-4 py-2.5 text-xs text-muted-foreground leading-relaxed">
+          <strong className="text-yellow-400/90">Note:</strong> The RoboRank leaderboard is based on a sample of the <strong>top 2,000 skills teams</strong> globally. 
+          Teams outside this pool won't appear on the leaderboard but can be searched individually to calculate their score on the fly. 
+          <Link to="/about" className="text-primary hover:underline ml-1">Learn how RoboRank is calculated →</Link>
         </div>
 
         <form onSubmit={handleSearch} className="max-w-md">
