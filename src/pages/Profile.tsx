@@ -308,7 +308,10 @@ export default function Profile() {
                   <Crown className="h-3 w-3" /> Upgrade
                 </Button>
               )}
-              {subscribed && (
+              {subscribed && source === "permanent" && (
+                <span className="text-[10px] text-muted-foreground italic">Lifetime access</span>
+              )}
+              {subscribed && source !== "permanent" && (
                 <Button variant="ghost" size="sm" onClick={async () => {
                   try {
                     await openPortal();
