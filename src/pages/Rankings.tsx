@@ -299,6 +299,12 @@ export default function Rankings() {
           </Button>
         </div>
 
+        <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 px-4 py-2.5 text-xs text-muted-foreground leading-relaxed">
+          <strong className="text-yellow-400/90">Note:</strong> The RoboRank leaderboard is based on a sample of the <strong>top 2,000 skills teams</strong> globally. 
+          Teams outside this pool won't appear on the leaderboard but can be searched individually to calculate their score on the fly. 
+          <Link to="/about" className="text-primary hover:underline ml-1">Learn how RoboRank is calculated →</Link>
+        </div>
+
         <form onSubmit={handleSearch} className="max-w-md">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
