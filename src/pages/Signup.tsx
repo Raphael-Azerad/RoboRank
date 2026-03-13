@@ -180,8 +180,8 @@ export default function Signup() {
         </div>
 
         {/* Account type selector */}
-        <div className="space-y-2">
-          <Label className="text-xs text-muted-foreground">I am a...</Label>
+        <div className="space-y-3">
+          <Label className="text-xs text-muted-foreground">How will you use RoboRank?</Label>
           <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
@@ -195,7 +195,7 @@ export default function Signup() {
               <Users className={`h-5 w-5 ${accountMode === "member" ? "text-primary" : "text-muted-foreground"}`} />
               <div>
                 <p className="text-sm font-semibold">Team Member</p>
-                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Player on a VEX team</p>
+                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">I compete on this team</p>
               </div>
             </button>
             <button
@@ -210,10 +210,35 @@ export default function Signup() {
               <Eye className={`h-5 w-5 ${accountMode === "follower" ? "text-primary" : "text-muted-foreground"}`} />
               <div>
                 <p className="text-sm font-semibold">Parent / Coach</p>
-                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Follow a team's stats</p>
+                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">I support this team</p>
               </div>
             </button>
           </div>
+
+          {/* Explanation of what each mode includes */}
+          {accountMode === "member" ? (
+            <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 space-y-1.5">
+              <p className="text-xs font-medium text-foreground">Full team access includes:</p>
+              <ul className="text-[11px] text-muted-foreground space-y-1 list-disc list-inside">
+                <li>Dashboard with all team stats & rankings</li>
+                <li>Scouting reports for upcoming matches</li>
+                <li>Shared team notes & strategy planning</li>
+                <li>Match predictor & season progress</li>
+              </ul>
+            </div>
+          ) : (
+            <div className="rounded-lg bg-accent/50 border border-border/50 p-3 space-y-1.5">
+              <p className="text-xs font-medium text-foreground">Follow mode includes:</p>
+              <ul className="text-[11px] text-muted-foreground space-y-1 list-disc list-inside">
+                <li>Dashboard with team stats & rankings</li>
+                <li>Event schedules & match results</li>
+                <li>Match predictor & season progress</li>
+              </ul>
+              <p className="text-[11px] text-muted-foreground mt-2 pt-1.5 border-t border-border/50">
+                Scouting reports and team notes are reserved for team members only.
+              </p>
+            </div>
+          )}
         </div>
 
         <form onSubmit={handleSignup} className="space-y-4">
@@ -238,11 +263,6 @@ export default function Signup() {
             </div>
             {teamName && teamValid && (
               <p className="text-xs text-[hsl(var(--success))]">{teamName}</p>
-            )}
-            {accountMode === "follower" && (
-              <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-                You'll see all stats, rankings, and event results for this team. Scouting reports and team notes are reserved for team members.
-              </p>
             )}
           </div>
           <div className="space-y-2">
