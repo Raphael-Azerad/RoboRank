@@ -189,6 +189,7 @@ export type Database = {
         Row: {
           created_at: string
           email: string | null
+          followed_team: string | null
           id: string
           robotevents_team_id: number | null
           team_name: string | null
@@ -198,6 +199,7 @@ export type Database = {
         Insert: {
           created_at?: string
           email?: string | null
+          followed_team?: string | null
           id: string
           robotevents_team_id?: number | null
           team_name?: string | null
@@ -207,6 +209,7 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string | null
+          followed_team?: string | null
           id?: string
           robotevents_team_id?: number | null
           team_name?: string | null

@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
-import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check, Clock, Users } from "lucide-react";
+import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check, Clock, Users, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,9 +40,12 @@ export default function Dashboard() {
   const {
     status: teamStatus,
     teamNumber: memberTeamNumber,
+    followedTeam,
     userId: memberUserId,
     role: memberRole,
   } = useTeamStatus();
+
+  const isFollower = teamStatus === "follower";
 
   // Don't auto-redirect to join-team - let users use dashboard even without a team
   // They can join a team from the Profile > Team tab
@@ -188,6 +191,20 @@ export default function Dashboard() {
             </div>
           </motion.div>
         )}
+        {/* Follower banner */}
+        {isFollower && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-[hsl(var(--chart-2))]/30 bg-[hsl(var(--chart-2))]/5 p-4 flex items-center gap-3"
+          >
+            <Eye className="h-5 w-5 text-[hsl(var(--chart-2))] shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Following {followedTeam}</p>
+              <p className="text-xs text-muted-foreground">You're viewing stats as a parent/coach. Scouting reports and team notes are for team members only.</p>
+            </div>
+          </motion.div>
+        )}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
@@ -234,11 +251,13 @@ export default function Dashboard() {
               )}
             </div>
             <div className="shrink-0">
-              <Link to="/scouting">
-                <Button variant="hero" className="gap-1.5">
-                  Scout Report <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
+              {!isFollower && (
+                <Link to="/scouting">
+                  <Button variant="hero" className="gap-1.5">
+                    Scout Report <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </motion.div>
@@ -431,11 +450,11 @@ export default function Dashboard() {
               className="grid gap-2.5 grid-cols-2"
             >
               {[
-                { to: "/predictor", icon: Swords, label: "Match Predictor", desc: "Simulate 2v2 matches", color: "text-primary" },
-                { to: "/rankings", icon: Trophy, label: "Rankings", desc: "Look up any team", color: "text-[hsl(var(--chart-4))]" },
-                { to: "/notes", icon: Flag, label: "Team Notes", desc: "Strategy & observations", color: "text-[hsl(var(--chart-2))]" },
-                { to: `/team/${teamNumber}`, icon: TrendingUp, label: "Full Stats", desc: "Detailed team profile", color: "text-[hsl(var(--success))]" },
-              ].map((action) => (
+                { to: "/predictor", icon: Swords, label: "Match Predictor", desc: "Simulate 2v2 matches", color: "text-primary", showForFollower: true },
+                { to: "/rankings", icon: Trophy, label: "Rankings", desc: "Look up any team", color: "text-[hsl(var(--chart-4))]", showForFollower: true },
+                { to: "/notes", icon: Flag, label: "Team Notes", desc: "Strategy & observations", color: "text-[hsl(var(--chart-2))]", showForFollower: false },
+                { to: `/team/${teamNumber}`, icon: TrendingUp, label: "Full Stats", desc: "Detailed team profile", color: "text-[hsl(var(--success))]", showForFollower: true },
+              ].filter(action => !isFollower || action.showForFollower).map((action) => (
                 <Link key={action.to} to={action.to}>
                   <div className="rounded-xl border border-border/50 card-gradient p-4 hover:border-primary/30 hover:scale-[1.02] transition-all">
                     <action.icon className={cn("h-5 w-5 mb-2", action.color)} />

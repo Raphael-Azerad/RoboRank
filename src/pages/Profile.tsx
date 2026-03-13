@@ -72,10 +72,19 @@ export default function Profile() {
         .limit(1)
         .maybeSingle();
 
+      // Get followed team from profile
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("followed_team")
+        .eq("id", u.id)
+        .maybeSingle();
+
+      const resolvedTeam = membership?.team_number || u.user_metadata?.team_number || profile?.followed_team || null;
+
       setUser({
         id: u.id,
         email: u.email,
-        team_number: membership?.team_number || u.user_metadata?.team_number || null,
+        team_number: resolvedTeam,
       });
 
       // Load logo
