@@ -30,6 +30,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
+  const [source, setSource] = useState<string | null>(null);
 
   const checkSubscription = useCallback(async () => {
     try {
