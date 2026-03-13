@@ -212,6 +212,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Link to="/privacy" className="hover:text-primary transition-colors">Privacy</Link>
             <Link to="/refund" className="hover:text-primary transition-colors">Refund Policy</Link>
             <Link to="/cookies" className="hover:text-primary transition-colors">Cookies</Link>
+            <Link to="/about#scoring" className="hover:text-primary transition-colors">How RoboRank Works</Link>
           </nav>
         </div>
       </footer>

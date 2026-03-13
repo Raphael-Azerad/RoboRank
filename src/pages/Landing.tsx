@@ -316,6 +316,7 @@ export default function Landing() {
                 <Link to="/privacy" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Privacy Policy</Link>
                 <Link to="/refund" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Refund Policy</Link>
                 <Link to="/cookies" className="block text-sm text-muted-foreground hover:text-primary transition-colors">Cookie Policy</Link>
+                <Link to="/about#scoring" className="block text-sm text-muted-foreground hover:text-primary transition-colors">How RoboRank Works</Link>
               </div>
             </div>
             <div className="space-y-2">
