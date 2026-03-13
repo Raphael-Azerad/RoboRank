@@ -41,7 +41,7 @@ export default function About() {
           <div className="grid gap-3 sm:grid-cols-2">
             {[
               { weight: "25%", label: "Win Rate", desc: "Your total wins divided by total matches played (qualifications + eliminations). A perfect record earns the full 25 points." },
-              { weight: "20%", label: "Ranking Percentile", desc: "At each event, your final ranking is converted into a percentile based on the number of teams at that event. For example, finishing 3rd out of 40 teams puts you in the 93rd percentile. This is then averaged across all events you've attended." },
+              { weight: "20%", label: "Ranking Percentile", desc: "Your qualification ranking (end-of-quals standing) at each event, converted to a percentile based on the number of teams. For example, ranking 3rd out of 40 teams = 93rd percentile. This percentile is averaged across all your events." },
               { weight: "20%", label: "Skills Score", desc: "Your combined Driver + Programming skills score, measured as a percentage of the highest skills score earned by any team this season. The #1 skills team earns the full 20 points; all others are scaled relative to that top score." },
               { weight: "15%", label: "Consistency", desc: "Measures how stable your event-to-event performance is. If your ranking percentile stays similar across events, you score higher here. Large swings between events lower this score." },
               { weight: "10%", label: "Event Volume", desc: "Rewards teams that compete frequently. Each event attended contributes points, up to a maximum of 6 events. After 6, additional events don't add more." },
