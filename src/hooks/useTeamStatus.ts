@@ -21,8 +21,7 @@ export function useTeamStatus() {
 
       setUserId(user.id);
 
-      // Always check team_members table (single source of truth)
-      const { data: membership } = await supabase
+      const { data: membership, error: membershipError } = await supabase
         .from("team_members")
         .select("team_number, status, role")
         .eq("user_id", user.id)
@@ -30,15 +29,53 @@ export function useTeamStatus() {
         .maybeSingle();
 
       if (cancelled) return;
-
-      if (!membership) {
+      if (membershipError) {
         setStatus("no-team");
         return;
       }
 
-      setTeamNumber(membership.team_number);
-      setRole(membership.role);
-      setStatus(membership.status === "approved" ? "approved" : "pending");
+      let resolvedMembership = membership;
+
+      // Safety net: if profile metadata has a team but membership row is missing,
+      // create it now (covers post-email-verification and older accounts).
+      if (!resolvedMembership) {
+        const metaTeam = String(user.user_metadata?.team_number || "").trim().toUpperCase();
+        if (metaTeam) {
+          const { data: createdMembership, error: createError } = await supabase
+            .from("team_members")
+            .insert({
+              team_number: metaTeam,
+              user_id: user.id,
+            })
+            .select("team_number, status, role")
+            .single();
+
+          if (!createError && createdMembership) {
+            resolvedMembership = createdMembership;
+          } else if (createError?.code === "23505") {
+            const { data: existingMembership } = await supabase
+              .from("team_members")
+              .select("team_number, status, role")
+              .eq("user_id", user.id)
+              .limit(1)
+              .maybeSingle();
+            resolvedMembership = existingMembership;
+          }
+        }
+      }
+
+      if (cancelled) return;
+
+      if (!resolvedMembership) {
+        setTeamNumber(null);
+        setRole(null);
+        setStatus("no-team");
+        return;
+      }
+
+      setTeamNumber(resolvedMembership.team_number);
+      setRole(resolvedMembership.role);
+      setStatus(resolvedMembership.status === "approved" ? "approved" : "pending");
     }
 
     check();

@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { useTeamStatus } from "@/hooks/useTeamStatus";
+import { toast } from "sonner";
 
 // Season goals stored in localStorage
 function loadGoals(): { label: string; done: boolean }[] {
@@ -36,7 +37,12 @@ export default function Dashboard() {
   const [addingGoal, setAddingGoal] = useState(false);
   const [goalLabel, setGoalLabel] = useState("");
   const seasonInfo = SEASONS[season];
-  const { status: teamStatus, teamNumber: memberTeamNumber } = useTeamStatus();
+  const {
+    status: teamStatus,
+    teamNumber: memberTeamNumber,
+    userId: memberUserId,
+    role: memberRole,
+  } = useTeamStatus();
 
   // Don't auto-redirect to join-team - let users use dashboard even without a team
   // They can join a team from the Profile > Team tab
@@ -51,6 +57,15 @@ export default function Dashboard() {
       });
     }
   }, [memberTeamNumber]);
+
+  useEffect(() => {
+    if (teamStatus !== "approved" || memberRole !== "owner" || !memberTeamNumber || !memberUserId) return;
+    const captainToastKey = `captain-toast:${memberUserId}:${memberTeamNumber}`;
+    if (sessionStorage.getItem(captainToastKey)) return;
+
+    toast.success(`You're the team captain for ${memberTeamNumber}.`, { duration: 6000 });
+    sessionStorage.setItem(captainToastKey, "1");
+  }, [teamStatus, memberRole, memberTeamNumber, memberUserId]);
 
   const { data: teamData, isLoading: teamLoading } = useQuery({
     queryKey: ["team", teamNumber],
