@@ -6,6 +6,7 @@ interface SubscriptionState {
   subscribed: boolean;
   loading: boolean;
   subscriptionEnd: string | null;
+  source: string | null;
   checkSubscription: () => Promise<void>;
   startCheckout: () => Promise<void>;
   openPortal: () => Promise<void>;
@@ -15,6 +16,7 @@ const SubscriptionContext = createContext<SubscriptionState>({
   subscribed: false,
   loading: true,
   subscriptionEnd: null,
+  source: null,
   checkSubscription: async () => {},
   startCheckout: async () => {},
   openPortal: async () => {},
