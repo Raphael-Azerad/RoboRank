@@ -251,11 +251,13 @@ export default function Dashboard() {
               )}
             </div>
             <div className="shrink-0">
-              <Link to="/scouting">
-                <Button variant="hero" className="gap-1.5">
-                  Scout Report <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
+              {!isFollower && (
+                <Link to="/scouting">
+                  <Button variant="hero" className="gap-1.5">
+                    Scout Report <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </motion.div>
