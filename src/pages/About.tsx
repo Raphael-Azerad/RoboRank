@@ -33,7 +33,7 @@ export default function About() {
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-xl font-display font-semibold">The RoboRank Score — Full Transparency</h2>
+          <h2 id="scoring" className="text-xl font-display font-semibold scroll-mt-24">The RoboRank Score — Full Transparency</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
             The RoboRank score is a 0–100 composite rating calculated from publicly available competition data. 
             Here's exactly how it's broken down:
