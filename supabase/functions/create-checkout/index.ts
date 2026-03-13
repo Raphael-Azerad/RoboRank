@@ -35,10 +35,15 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
+    
+    console.log("[CREATE-CHECKOUT] Listing customers for email:", user.email);
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    console.log("[CREATE-CHECKOUT] Customers found:", customers.data.length);
 
     const customerId = customers.data.length > 0 ? customers.data[0].id : undefined;
+    console.log("[CREATE-CHECKOUT] Customer ID:", customerId ?? "new customer");
 
+    console.log("[CREATE-CHECKOUT] Creating checkout session...");
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
@@ -47,12 +52,14 @@ serve(async (req) => {
       success_url: `${req.headers.get("origin")}/profile?upgraded=true`,
       cancel_url: `${req.headers.get("origin")}/profile`,
     });
+    console.log("[CREATE-CHECKOUT] Session created:", session.id);
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
+    console.error("[CREATE-CHECKOUT] ERROR:", error?.message || error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
