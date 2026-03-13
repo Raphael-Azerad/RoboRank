@@ -264,11 +264,6 @@ export default function Signup() {
             {teamName && teamValid && (
               <p className="text-xs text-[hsl(var(--success))]">{teamName}</p>
             )}
-            {accountMode === "follower" && (
-              <p className="text-xs text-muted-foreground bg-muted/50 rounded-lg px-3 py-2">
-                You'll see all stats, rankings, and event results for this team. Scouting reports and team notes are reserved for team members.
-              </p>
-            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
