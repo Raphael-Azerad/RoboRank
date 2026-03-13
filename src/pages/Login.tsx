@@ -50,7 +50,7 @@ export default function Login() {
         }
       } else {
         const { error } = await lovable.auth.signInWithOAuth("google", {
-          redirect_uri: `${window.location.origin}/dashboard`,
+          redirect_uri: window.location.origin,
         });
         if (error) throw error;
       }
