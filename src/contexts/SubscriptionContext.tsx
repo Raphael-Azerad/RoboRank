@@ -49,6 +49,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     } catch {
       setSubscribed(false);
       setSubscriptionEnd(null);
+      setSource(null);
     } finally {
       setLoading(false);
     }
