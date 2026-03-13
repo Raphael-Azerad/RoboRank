@@ -105,7 +105,7 @@ export default function Signup() {
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
           options: {
-            redirectTo: `${window.location.origin}/dashboard`,
+            redirectTo: window.location.origin,
             skipBrowserRedirect: true,
           },
         });
@@ -116,7 +116,7 @@ export default function Signup() {
         }
       } else {
         const { error } = await lovable.auth.signInWithOAuth("google", {
-          redirect_uri: `${window.location.origin}/dashboard`,
+          redirect_uri: window.location.origin,
         });
         if (error) throw error;
       }
