@@ -50,6 +50,7 @@ export default function Contact() {
           <BarChart3 className="h-8 w-8 text-primary mx-auto" />
           <h1 className="text-3xl font-display font-bold">Contact Us</h1>
           <p className="text-muted-foreground">Have a question, suggestion, or issue? We'd love to hear from you.</p>
+          <p className="text-sm text-muted-foreground">You can also reach us directly at <a href="mailto:admin@roborank.site" className="text-primary hover:underline">admin@roborank.site</a></p>
         </div>
 
         {sent ? (
