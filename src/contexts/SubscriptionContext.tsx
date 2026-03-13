@@ -6,6 +6,7 @@ interface SubscriptionState {
   subscribed: boolean;
   loading: boolean;
   subscriptionEnd: string | null;
+  source: string | null;
   checkSubscription: () => Promise<void>;
   startCheckout: () => Promise<void>;
   openPortal: () => Promise<void>;
@@ -15,6 +16,7 @@ const SubscriptionContext = createContext<SubscriptionState>({
   subscribed: false,
   loading: true,
   subscriptionEnd: null,
+  source: null,
   checkSubscription: async () => {},
   startCheckout: async () => {},
   openPortal: async () => {},
@@ -28,6 +30,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const [subscribed, setSubscribed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
+  const [source, setSource] = useState<string | null>(null);
 
   const checkSubscription = useCallback(async () => {
     try {
@@ -42,9 +45,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       if (error) throw error;
       setSubscribed(data?.subscribed ?? false);
       setSubscriptionEnd(data?.subscription_end ?? null);
+      setSource(data?.source ?? null);
     } catch {
       setSubscribed(false);
       setSubscriptionEnd(null);
+      setSource(null);
     } finally {
       setLoading(false);
     }
@@ -87,7 +92,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
   }, [checkSubscription]);
 
   return (
-    <SubscriptionContext.Provider value={{ subscribed, loading, subscriptionEnd, checkSubscription, startCheckout, openPortal }}>
+    <SubscriptionContext.Provider value={{ subscribed, loading, subscriptionEnd, source, checkSubscription, startCheckout, openPortal }}>
       {children}
     </SubscriptionContext.Provider>
   );
