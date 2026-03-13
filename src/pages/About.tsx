@@ -40,12 +40,12 @@ export default function About() {
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
             {[
-              { weight: "25%", label: "Win Rate", desc: "Your wins divided by total matches played. A perfect record scores the full 25 points." },
-              { weight: "20%", label: "Ranking Percentile", desc: "Where you place relative to the field at each event. Finishing 1st in a 24-team event = 100th percentile. Averaged across all events." },
-              { weight: "20%", label: "Skills Score", desc: "Your combined Driver + Programming skills score, normalized against a benchmark of 350. Higher skills scores push this component toward 20 points." },
-              { weight: "15%", label: "Consistency", desc: "How stable your ranking percentile is across events. Low variance = high consistency. Calculated using standard deviation of your percentiles." },
-              { weight: "10%", label: "Event Volume", desc: "Number of events attended, capped at 6. Attending more events (up to 6) earns more points here." },
-              { weight: "10%", label: "High Score", desc: "Your single highest match score across all events, normalized against a benchmark of 100 points." },
+              { weight: "25%", label: "Win Rate", desc: "Your total wins divided by total matches played (qualifications + eliminations). A perfect record earns the full 25 points." },
+              { weight: "20%", label: "Ranking Percentile", desc: "At each event, your final ranking is converted into a percentile based on the number of teams at that event. For example, finishing 3rd out of 40 teams puts you in the 93rd percentile. This is then averaged across all events you've attended." },
+              { weight: "20%", label: "Skills Score", desc: "Your combined Driver + Programming skills score, measured as a percentage of the highest skills score earned by any team this season. The #1 skills team earns the full 20 points; all others are scaled relative to that top score." },
+              { weight: "15%", label: "Consistency", desc: "Measures how stable your event-to-event performance is. If your ranking percentile stays similar across events, you score higher here. Large swings between events lower this score." },
+              { weight: "10%", label: "Event Volume", desc: "Rewards teams that compete frequently. Each event attended contributes points, up to a maximum of 6 events. After 6, additional events don't add more." },
+              { weight: "10%", label: "High Score", desc: "Your single highest match score across all events, measured as a percentage of the highest match score earned by any team this season. The team with the season's top match score earns the full 10 points." },
             ].map((item) => (
               <div key={item.label} className="rounded-lg border border-border/50 bg-card/50 p-4 space-y-1">
                 <div className="flex items-center justify-between">
