@@ -191,6 +191,20 @@ export default function Dashboard() {
             </div>
           </motion.div>
         )}
+        {/* Follower banner */}
+        {isFollower && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-[hsl(var(--chart-2))]/30 bg-[hsl(var(--chart-2))]/5 p-4 flex items-center gap-3"
+          >
+            <Eye className="h-5 w-5 text-[hsl(var(--chart-2))] shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Following {followedTeam}</p>
+              <p className="text-xs text-muted-foreground">You're viewing stats as a parent/coach. Scouting reports and team notes are for team members only.</p>
+            </div>
+          </motion.div>
+        )}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
