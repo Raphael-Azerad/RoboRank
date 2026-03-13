@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface SubscriptionState {
   subscribed: boolean;
@@ -33,6 +34,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         setSubscribed(false);
+        setSubscriptionEnd(null);
         setLoading(false);
         return;
       }
@@ -42,21 +44,32 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
       setSubscriptionEnd(data?.subscription_end ?? null);
     } catch {
       setSubscribed(false);
+      setSubscriptionEnd(null);
     } finally {
       setLoading(false);
     }
   }, []);
 
   const startCheckout = useCallback(async () => {
-    const { data, error } = await supabase.functions.invoke("create-checkout");
-    if (error) throw error;
-    if (data?.url) window.open(data.url, "_blank");
+    try {
+      const { data, error } = await supabase.functions.invoke("create-checkout");
+      if (error) throw error;
+      if (!data?.url) throw new Error("Checkout URL was not returned");
+      window.location.assign(data.url);
+    } catch (err: any) {
+      toast.error(err?.message || "Could not start checkout. Please try again.");
+    }
   }, []);
 
   const openPortal = useCallback(async () => {
-    const { data, error } = await supabase.functions.invoke("customer-portal");
-    if (error) throw error;
-    if (data?.url) window.open(data.url, "_blank");
+    try {
+      const { data, error } = await supabase.functions.invoke("customer-portal");
+      if (error) throw error;
+      if (!data?.url) throw new Error("Portal URL was not returned");
+      window.location.assign(data.url);
+    } catch (err: any) {
+      toast.error(err?.message || "Could not open plan management. Please try again.");
+    }
   }, []);
 
   useEffect(() => {
