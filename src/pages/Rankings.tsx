@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { Search, Loader2, Zap, Globe } from "lucide-react";
