@@ -46,7 +46,7 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          from: "RoboRank <noreply@notify.roborank.site>",
+          from: "RoboRank <noreply@roborank.site>",
           to: [NOTIFICATION_EMAIL],
           subject: `[RoboRank Contact] ${subject}`,
           html: `
