@@ -40,9 +40,12 @@ export default function Dashboard() {
   const {
     status: teamStatus,
     teamNumber: memberTeamNumber,
+    followedTeam,
     userId: memberUserId,
     role: memberRole,
   } = useTeamStatus();
+
+  const isFollower = teamStatus === "follower";
 
   // Don't auto-redirect to join-team - let users use dashboard even without a team
   // They can join a team from the Profile > Team tab
