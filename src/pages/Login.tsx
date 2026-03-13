@@ -8,10 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { toast } from "sonner";
 
-const isCustomDomain = () =>
-  !window.location.hostname.includes("lovable.app") &&
-  !window.location.hostname.includes("lovableproject.com");
-
 export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -35,25 +31,10 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
-      if (isCustomDomain()) {
-        const { data, error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: window.location.origin,
-            skipBrowserRedirect: true,
-          },
-        });
-        if (error) throw error;
-        if (data?.url) {
-          window.location.href = data.url;
-          return;
-        }
-      } else {
-        const { error } = await lovable.auth.signInWithOAuth("google", {
-          redirect_uri: window.location.origin,
-        });
-        if (error) throw error;
-      }
+      const { error } = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (error) throw error;
     } catch {
       toast.error("Google sign-in failed. Please try again.");
     }
