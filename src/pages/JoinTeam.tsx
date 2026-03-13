@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { BarChart3, Loader2, CheckCircle2, XCircle, Users } from "lucide-react";
+import { BarChart3, Loader2, CheckCircle2, XCircle, Users, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,8 +8,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { validateTeamNumber } from "@/lib/robotevents";
 import { toast } from "sonner";
 
+type JoinMode = "member" | "follower";
+
 export default function JoinTeam() {
   const navigate = useNavigate();
+  const [joinMode, setJoinMode] = useState<JoinMode>("member");
   const [teamNumber, setTeamNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState(false);
@@ -39,8 +42,19 @@ export default function JoinTeam() {
         return;
       }
 
+      // Check if already following a team
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("followed_team")
+        .eq("id", data.user.id)
+        .maybeSingle();
+
+      if (profile?.followed_team) {
+        navigate("/dashboard");
+        return;
+      }
+
       // If user signed up with a team number but team_member row wasn't created
-      // (e.g. email confirmation was required), create it now
       const metaTeam = data.user.user_metadata?.team_number;
       if (metaTeam) {
         const num = String(metaTeam).trim().toUpperCase();
@@ -50,7 +64,7 @@ export default function JoinTeam() {
             .insert({ team_number: num, user_id: data.user.id })
             .select("role, status")
             .single();
-          
+
           if (!error && newMembership) {
             if (newMembership.role === "owner" && newMembership.status === "approved") {
               toast.success("Welcome! You're the team captain for " + num + ".", { duration: 6000 });
@@ -58,7 +72,17 @@ export default function JoinTeam() {
               toast.success("Join request sent for " + num + ". Waiting for admin approval.", { duration: 6000 });
             }
           }
-          // Navigate even on duplicate (23505)
+          navigate("/dashboard");
+          return;
+        }
+      }
+
+      // Check for followed_team in metadata (Google OAuth follower flow)
+      const metaFollowed = data.user.user_metadata?.followed_team;
+      if (metaFollowed) {
+        const num = String(metaFollowed).trim().toUpperCase();
+        if (num) {
+          await supabase.from("profiles").update({ followed_team: num }).eq("id", data.user.id);
           navigate("/dashboard");
           return;
         }
@@ -90,13 +114,27 @@ export default function JoinTeam() {
 
     const num = teamNumber.trim().toUpperCase();
 
-    // Insert membership and let backend enforce owner/pending rules
+    if (joinMode === "follower") {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ followed_team: num })
+        .eq("id", userId);
+
+      if (error) {
+        toast.error(error.message);
+        setLoading(false);
+        return;
+      }
+      toast.success(`Now following team ${num}!`);
+      navigate("/dashboard");
+      setLoading(false);
+      return;
+    }
+
+    // Team member flow
     const { data: membership, error } = await supabase
       .from("team_members")
-      .insert({
-        team_number: num,
-        user_id: userId,
-      })
+      .insert({ team_number: num, user_id: userId })
       .select("role, status")
       .single();
 
@@ -132,19 +170,62 @@ export default function JoinTeam() {
             <BarChart3 className="h-8 w-8 text-primary" />
             <span className="text-2xl font-display font-bold text-gradient">RoboRank</span>
           </div>
-          <h1 className="text-2xl font-display font-bold">Join Your Team</h1>
+          <h1 className="text-2xl font-display font-bold">Get Connected</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Enter your VEX team number to connect with your team
+            Choose how you'd like to track a VEX team
           </p>
         </div>
 
+        {/* Mode selector */}
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => { setJoinMode("member"); setTeamNumber(""); setTeamValid(null); setTeamName(null); }}
+            className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-all text-center ${
+              joinMode === "member"
+                ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                : "border-border/50 hover:border-primary/30"
+            }`}
+          >
+            <Users className={`h-5 w-5 ${joinMode === "member" ? "text-primary" : "text-muted-foreground"}`} />
+            <div>
+              <p className="text-sm font-semibold">Join Team</p>
+              <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">I'm on this team</p>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setJoinMode("follower"); setTeamNumber(""); setTeamValid(null); setTeamName(null); }}
+            className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-all text-center ${
+              joinMode === "follower"
+                ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                : "border-border/50 hover:border-primary/30"
+            }`}
+          >
+            <Eye className={`h-5 w-5 ${joinMode === "follower" ? "text-primary" : "text-muted-foreground"}`} />
+            <div>
+              <p className="text-sm font-semibold">Follow Team</p>
+              <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">Parent, coach, or fan</p>
+            </div>
+          </button>
+        </div>
+
         <div className="rounded-xl border border-border/50 card-gradient p-6 space-y-4">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
-            <Users className="h-5 w-5 text-primary shrink-0" />
-            <p className="text-xs text-muted-foreground">
-              If your team already has members, your request will need to be approved by an admin. First members become team owner automatically.
-            </p>
-          </div>
+          {joinMode === "member" ? (
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-primary/5 border border-primary/20">
+              <Users className="h-5 w-5 text-primary shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                First members become team owner automatically. Others need admin approval.
+              </p>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-[hsl(var(--chart-2))]/5 border border-[hsl(var(--chart-2))]/20">
+              <Eye className="h-5 w-5 text-[hsl(var(--chart-2))] shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                You'll see all stats, rankings, and events. Scouting reports and notes are team-member only.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="team">Team Number</Label>
@@ -173,7 +254,13 @@ export default function JoinTeam() {
             onClick={handleJoin}
             disabled={loading || !teamNumber.trim() || teamValid === false}
           >
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Join Team"}
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : joinMode === "member" ? (
+              "Join Team"
+            ) : (
+              "Follow Team"
+            )}
           </Button>
         </div>
 
