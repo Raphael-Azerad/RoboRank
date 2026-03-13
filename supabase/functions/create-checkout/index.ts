@@ -44,14 +44,23 @@ serve(async (req) => {
     console.log("[CREATE-CHECKOUT] Customer ID:", customerId ?? "new customer");
 
     console.log("[CREATE-CHECKOUT] Creating checkout session...");
+
+    const appBaseUrl = (() => {
+      const origin = req.headers.get("origin");
+      if (origin) return origin;
+      const referer = req.headers.get("referer");
+      if (referer) return new URL(referer).origin;
+      return "https://robo-rank-central.lovable.app";
+    })();
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       customer_email: customerId ? undefined : user.email,
       payment_method_types: ["card"],
       line_items: [{ price: "price_1TAUUVDgfCrdJvcKQBwC4NiW", quantity: 1 }],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/profile?upgraded=true`,
-      cancel_url: `${req.headers.get("origin")}/profile`,
+      success_url: `${appBaseUrl}/profile?upgraded=true`,
+      cancel_url: `${appBaseUrl}/profile`,
     });
     console.log("[CREATE-CHECKOUT] Session created:", session.id);
 
