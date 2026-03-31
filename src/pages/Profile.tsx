@@ -252,6 +252,26 @@ export default function Profile() {
     setChangingPassword(false);
   };
 
+  const handleSwitchRole = async (mode: "team_member" | "viewer") => {
+    if (!user.id) return;
+    // If switching to viewer and user is paying, show warning
+    if (mode === "viewer" && subscribed && source !== "permanent") {
+      setShowSwitchWarning(true);
+      return;
+    }
+    await applyRoleSwitch(mode);
+  };
+
+  const applyRoleSwitch = async (mode: "team_member" | "viewer") => {
+    if (!user.id) return;
+    setViewMode(mode);
+    setShowSwitchWarning(false);
+    await supabase.from("profiles").update({ view_mode: mode } as any).eq("id", user.id);
+    toast.success(mode === "viewer" ? "Switched to Viewer mode" : "Switched to Team Member mode");
+    // Reload page to reflect changes across the app
+    window.location.reload();
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success("Logged out");
