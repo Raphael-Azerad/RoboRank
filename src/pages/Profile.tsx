@@ -724,6 +724,32 @@ export default function Profile() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Role Switch Warning Dialog */}
+      <Dialog open={showSwitchWarning} onOpenChange={setShowSwitchWarning}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Switch to Viewer Mode?
+            </DialogTitle>
+            <DialogDescription className="space-y-3 pt-2">
+              <p>You are currently the premium subscriber for your team. Switching to Viewer mode means:</p>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>Your team will <strong>lose premium access</strong> to scouting reports</li>
+                <li>You'll only see stats, rankings, and schedules</li>
+                <li>You can switch back to Team Member at any time to restore access</li>
+              </ul>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowSwitchWarning(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => applyRoleSwitch("viewer")}>
+              Switch to Viewer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
