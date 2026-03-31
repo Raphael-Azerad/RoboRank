@@ -25,6 +25,7 @@ import TeamNotes from "./pages/TeamNotes";
 import SeasonProgress from "./pages/SeasonProgress";
 import JoinTeam from "./pages/JoinTeam";
 import NotFound from "./pages/NotFound";
+import VerifyEmail from "./pages/VerifyEmail";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import RefundPolicy from "./pages/RefundPolicy";
