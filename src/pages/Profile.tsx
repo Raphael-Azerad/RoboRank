@@ -656,6 +656,11 @@ export default function Profile() {
             )}
           </TabsContent>
 
+          {/* ALLIANCES TAB */}
+          <TabsContent value="alliances" className="space-y-4 mt-4">
+            <AlliancesTab teamNumber={user.team_number || null} />
+          </TabsContent>
+
           {/* SETTINGS TAB */}
           <TabsContent value="settings" className="space-y-4 mt-4">
             <div className="rounded-xl border border-border/50 card-gradient p-5 space-y-5">
