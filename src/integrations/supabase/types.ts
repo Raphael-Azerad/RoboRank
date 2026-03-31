@@ -195,6 +195,7 @@ export type Database = {
           team_name: string | null
           team_number: string | null
           updated_at: string
+          view_mode: string
         }
         Insert: {
           created_at?: string
@@ -205,6 +206,7 @@ export type Database = {
           team_name?: string | null
           team_number?: string | null
           updated_at?: string
+          view_mode?: string
         }
         Update: {
           created_at?: string
@@ -215,6 +217,7 @@ export type Database = {
           team_name?: string | null
           team_number?: string | null
           updated_at?: string
+          view_mode?: string
         }
         Relationships: []
       }
