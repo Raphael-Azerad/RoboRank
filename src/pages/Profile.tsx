@@ -52,6 +52,10 @@ export default function Profile() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
+  // Role switching
+  const [viewMode, setViewMode] = useState<"team_member" | "viewer">("team_member");
+  const [showSwitchWarning, setShowSwitchWarning] = useState(false);
+
   // Logo upload
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
