@@ -354,9 +354,10 @@ export default function Profile() {
 
         {/* Tabs */}
         <Tabs defaultValue="account" className="w-full">
-          <TabsList className="w-full grid grid-cols-3 bg-muted/50">
+          <TabsList className="w-full grid grid-cols-4 bg-muted/50">
             <TabsTrigger value="account" className="gap-1.5 text-xs"><User className="h-3.5 w-3.5" /> Account</TabsTrigger>
             <TabsTrigger value="team" className="gap-1.5 text-xs"><Users className="h-3.5 w-3.5" /> Team</TabsTrigger>
+            <TabsTrigger value="alliances" className="gap-1.5 text-xs"><Users className="h-3.5 w-3.5" /> Alliances</TabsTrigger>
             <TabsTrigger value="settings" className="gap-1.5 text-xs"><GraduationCap className="h-3.5 w-3.5" /> Settings</TabsTrigger>
           </TabsList>
 
