@@ -302,6 +302,36 @@ export default function TeamDetail() {
             No event results for {seasonInfo.name} ({seasonInfo.year}).
           </div>
         )}
+
+        {/* Match Videos / Webcasts */}
+        {webcasts.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+            <h2 className="text-xl font-display font-semibold mb-4 flex items-center gap-2">
+              <Video className="h-5 w-5 text-primary" />
+              Match Videos · {seasonInfo.name}
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {webcasts.map((w, i) => (
+                <a
+                  key={i}
+                  href={w.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 rounded-xl border border-border/50 card-gradient p-4 hover:border-primary/30 transition-all group"
+                >
+                  <div className="rounded-full bg-primary/10 p-2.5 group-hover:bg-primary/20 transition-colors">
+                    <Video className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{w.eventName}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{w.type}</p>
+                  </div>
+                  <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                </a>
+              ))}
+            </div>
+          </motion.div>
+        )}
       </div>
     </AppLayout>
   );
