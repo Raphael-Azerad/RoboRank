@@ -91,6 +91,8 @@ export default function Profile() {
         team_number: resolvedTeam,
       });
 
+      setViewMode(((profile as any)?.view_mode as "team_member" | "viewer") || "team_member");
+
       // Load logo
       const { data: files } = supabase.storage.from("team-logos").getPublicUrl(`${u.id}/logo`);
       fetch(files.publicUrl, { method: "HEAD" }).then(res => {
