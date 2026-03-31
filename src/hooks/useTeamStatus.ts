@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export type TeamStatus = "loading" | "no-team" | "pending" | "approved" | "follower";
+export type ViewMode = "team_member" | "viewer";
 
 export function useTeamStatus() {
   const [status, setStatus] = useState<TeamStatus>("loading");
@@ -9,8 +10,9 @@ export function useTeamStatus() {
   const [followedTeam, setFollowedTeam] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [role, setRole] = useState<string | null>(null);
+  const [viewMode, setViewModeState] = useState<ViewMode>("team_member");
 
-  useEffect(() => {
+  const refresh = useCallback(() => {
     let cancelled = false;
 
     async function check() {
@@ -21,6 +23,16 @@ export function useTeamStatus() {
       }
 
       setUserId(user.id);
+
+      // Get profile view_mode
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("followed_team, view_mode")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const currentViewMode = (profile?.view_mode as ViewMode) || "team_member";
+      setViewModeState(currentViewMode);
 
       // Check team_members for actual membership
       const { data: membership, error: membershipError } = await supabase
@@ -37,8 +49,7 @@ export function useTeamStatus() {
 
       let resolvedMembership = membership;
 
-      // Safety net: if profile metadata has a team but membership row is missing,
-      // create it now (covers post-email-verification and older accounts).
+      // Safety net: if profile metadata has a team but membership row is missing
       if (!resolvedMembership) {
         const metaTeam = String(user.user_metadata?.team_number || "").trim().toUpperCase();
         if (metaTeam) {
@@ -67,17 +78,19 @@ export function useTeamStatus() {
       if (resolvedMembership) {
         setTeamNumber(resolvedMembership.team_number);
         setRole(resolvedMembership.role);
+
+        // If user is in viewer mode, treat them as a follower viewing the team
+        if (currentViewMode === "viewer") {
+          setFollowedTeam(resolvedMembership.team_number);
+          setStatus("follower");
+          return;
+        }
+
         setStatus(resolvedMembership.status === "approved" ? "approved" : "pending");
         return;
       }
 
-      // Check if user is a follower (has followed_team in profile)
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("followed_team")
-        .eq("id", user.id)
-        .maybeSingle();
-
+      // Check if user is a follower
       if (cancelled) return;
 
       if (profile?.followed_team) {
@@ -97,5 +110,17 @@ export function useTeamStatus() {
     return () => { cancelled = true; };
   }, []);
 
-  return { status, teamNumber, followedTeam, userId, role };
+  useEffect(() => {
+    const cleanup = refresh();
+    return cleanup;
+  }, [refresh]);
+
+  const setViewMode = useCallback(async (mode: ViewMode) => {
+    if (!userId) return;
+    setViewModeState(mode);
+    await supabase.from("profiles").update({ view_mode: mode } as any).eq("id", userId);
+    refresh();
+  }, [userId, refresh]);
+
+  return { status, teamNumber, followedTeam, userId, role, viewMode, setViewMode, refresh };
 }
