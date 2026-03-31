@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { validateTeamNumber } from "@/lib/robotevents";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
+import { AlliancesTab } from "@/components/profile/AlliancesTab";
 
 const GRADE_OPTIONS: { value: GradeLevel; label: string }[] = [
   { value: "Both", label: "All Teams" },
