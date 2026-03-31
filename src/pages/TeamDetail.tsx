@@ -97,6 +97,33 @@ export default function TeamDetail() {
     enabled: !!teamId,
   });
 
+  const { data: events } = useQuery({
+    queryKey: ["teamEvents", teamId, season],
+    queryFn: () => getTeamEvents(teamId!, season),
+    enabled: !!teamId,
+  });
+
+  // Extract webcasts from events
+  const webcasts = useMemo(() => {
+    if (!events) return [];
+    const results: { eventName: string; eventId: number; url: string; type: string }[] = [];
+    events.forEach((event: any) => {
+      if (event.webcasts && event.webcasts.length > 0) {
+        event.webcasts.forEach((w: any) => {
+          if (w.url) {
+            results.push({
+              eventName: event.name,
+              eventId: event.id,
+              url: w.url,
+              type: w.type || "livestream",
+            });
+          }
+        });
+      }
+    });
+    return results;
+  }, [events]);
+
   const { data: skillsScore } = useQuery({
     queryKey: ["teamSkillsScore", teamId, season],
     queryFn: () => getTeamSkillsScore(teamId!, season),
