@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN view_mode text NOT NULL DEFAULT 'team_member';

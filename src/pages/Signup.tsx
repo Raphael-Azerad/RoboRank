@@ -104,8 +104,7 @@ export default function Signup() {
           .eq("id", signUpData.user.id);
       }
 
-      toast.success("Account created! Check your email to verify.");
-      navigate("/login");
+      navigate("/verify-email");
     }
     setLoading(false);
   };

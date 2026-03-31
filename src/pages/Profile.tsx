@@ -5,7 +5,7 @@ import { getTeamByNumber, SEASONS, SEASON_LIST } from "@/lib/robotevents";
 import { useSeason, type GradeLevel } from "@/contexts/SeasonContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock, Crown, ChevronDown, ChevronUp, Trash2, Shield, Key, LogOut, Camera, CreditCard } from "lucide-react";
+import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock, Crown, ChevronDown, ChevronUp, Trash2, Shield, Key, LogOut, Camera, CreditCard, Eye, AlertTriangle, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { validateTeamNumber } from "@/lib/robotevents";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useNavigate } from "react-router-dom";
+import { AlliancesTab } from "@/components/profile/AlliancesTab";
 
 const GRADE_OPTIONS: { value: GradeLevel; label: string }[] = [
   { value: "Both", label: "All Teams" },
@@ -52,6 +53,10 @@ export default function Profile() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [changingPassword, setChangingPassword] = useState(false);
 
+  // Role switching
+  const [viewMode, setViewMode] = useState<"team_member" | "viewer">("team_member");
+  const [showSwitchWarning, setShowSwitchWarning] = useState(false);
+
   // Logo upload
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -72,10 +77,10 @@ export default function Profile() {
         .limit(1)
         .maybeSingle();
 
-      // Get followed team from profile
+      // Get followed team and view_mode from profile
       const { data: profile } = await supabase
         .from("profiles")
-        .select("followed_team")
+        .select("followed_team, view_mode")
         .eq("id", u.id)
         .maybeSingle();
 
@@ -86,6 +91,8 @@ export default function Profile() {
         email: u.email,
         team_number: resolvedTeam,
       });
+
+      setViewMode(((profile as any)?.view_mode as "team_member" | "viewer") || "team_member");
 
       // Load logo
       const { data: files } = supabase.storage.from("team-logos").getPublicUrl(`${u.id}/logo`);
@@ -246,6 +253,26 @@ export default function Profile() {
     setChangingPassword(false);
   };
 
+  const handleSwitchRole = async (mode: "team_member" | "viewer") => {
+    if (!user.id) return;
+    // If switching to viewer and user is paying, show warning
+    if (mode === "viewer" && subscribed && source !== "permanent") {
+      setShowSwitchWarning(true);
+      return;
+    }
+    await applyRoleSwitch(mode);
+  };
+
+  const applyRoleSwitch = async (mode: "team_member" | "viewer") => {
+    if (!user.id) return;
+    setViewMode(mode);
+    setShowSwitchWarning(false);
+    await supabase.from("profiles").update({ view_mode: mode } as any).eq("id", user.id);
+    toast.success(mode === "viewer" ? "Switched to Viewer mode" : "Switched to Team Member mode");
+    // Reload page to reflect changes across the app
+    window.location.reload();
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     toast.success("Logged out");
@@ -328,9 +355,10 @@ export default function Profile() {
 
         {/* Tabs */}
         <Tabs defaultValue="account" className="w-full">
-          <TabsList className="w-full grid grid-cols-3 bg-muted/50">
+          <TabsList className="w-full grid grid-cols-4 bg-muted/50">
             <TabsTrigger value="account" className="gap-1.5 text-xs"><User className="h-3.5 w-3.5" /> Account</TabsTrigger>
             <TabsTrigger value="team" className="gap-1.5 text-xs"><Users className="h-3.5 w-3.5" /> Team</TabsTrigger>
+            <TabsTrigger value="alliances" className="gap-1.5 text-xs"><Users className="h-3.5 w-3.5" /> Alliances</TabsTrigger>
             <TabsTrigger value="settings" className="gap-1.5 text-xs"><GraduationCap className="h-3.5 w-3.5" /> Settings</TabsTrigger>
           </TabsList>
 
@@ -447,6 +475,49 @@ export default function Profile() {
 
           {/* TEAM TAB */}
           <TabsContent value="team" className="space-y-4 mt-4">
+            {/* Role Switch */}
+            <div className="rounded-xl border border-border/50 card-gradient p-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <ArrowRightLeft className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-display font-semibold text-sm">Active Role</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {viewMode === "team_member" ? "Team Member — full access to scouting & notes" : "Viewer — stats, rankings & schedules only"}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSwitchRole("team_member")}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all text-center",
+                    viewMode === "team_member"
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                      : "border-border/50 hover:border-primary/30"
+                  )}
+                >
+                  <Users className={cn("h-4 w-4", viewMode === "team_member" ? "text-primary" : "text-muted-foreground")} />
+                  <span className="text-xs font-semibold">Team Member</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchRole("viewer")}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all text-center",
+                    viewMode === "viewer"
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                      : "border-border/50 hover:border-primary/30"
+                  )}
+                >
+                  <Eye className={cn("h-4 w-4", viewMode === "viewer" ? "text-primary" : "text-muted-foreground")} />
+                  <span className="text-xs font-semibold">Viewer</span>
+                </button>
+              </div>
+            </div>
+
             {user.team_number ? (
               <div className="rounded-xl border border-border/50 card-gradient p-5 space-y-4">
                 <button
@@ -585,6 +656,11 @@ export default function Profile() {
             )}
           </TabsContent>
 
+          {/* ALLIANCES TAB */}
+          <TabsContent value="alliances" className="space-y-4 mt-4">
+            <AlliancesTab teamNumber={user.team_number || null} />
+          </TabsContent>
+
           {/* SETTINGS TAB */}
           <TabsContent value="settings" className="space-y-4 mt-4">
             <div className="rounded-xl border border-border/50 card-gradient p-5 space-y-5">
@@ -651,6 +727,32 @@ export default function Profile() {
             <Button variant="ghost" onClick={() => setRemoveMember(null)}>Cancel</Button>
             <Button variant="destructive" onClick={() => removeMember && handleRemoveMember(removeMember.id)}>
               Remove Member
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Role Switch Warning Dialog */}
+      <Dialog open={showSwitchWarning} onOpenChange={setShowSwitchWarning}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Switch to Viewer Mode?
+            </DialogTitle>
+            <DialogDescription className="space-y-3 pt-2">
+              <p>You are currently the premium subscriber for your team. Switching to Viewer mode means:</p>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>Your team will <strong>lose premium access</strong> to scouting reports</li>
+                <li>You'll only see stats, rankings, and schedules</li>
+                <li>You can switch back to Team Member at any time to restore access</li>
+              </ul>
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowSwitchWarning(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => applyRoleSwitch("viewer")}>
+              Switch to Viewer
             </Button>
           </DialogFooter>
         </DialogContent>

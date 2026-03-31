@@ -25,6 +25,7 @@ import TeamNotes from "./pages/TeamNotes";
 import SeasonProgress from "./pages/SeasonProgress";
 import JoinTeam from "./pages/JoinTeam";
 import NotFound from "./pages/NotFound";
+import VerifyEmail from "./pages/VerifyEmail";
 import TermsOfService from "./pages/TermsOfService";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import RefundPolicy from "./pages/RefundPolicy";
@@ -105,6 +106,7 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/cookies" element={<CookiePolicy />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/join-team" element={<ProtectedRoute><JoinTeam /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
               <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
