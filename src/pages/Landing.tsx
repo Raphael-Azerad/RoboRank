@@ -340,7 +340,6 @@ export default function Landing() {
               <li>We'll verify and reassign ownership within 24-48 hours.</li>
             </ol>
           </div>
-          </div>
           <div className="border-t border-border/50 pt-6">
             <p className="text-xs text-muted-foreground text-center">
               © {new Date().getFullYear()} RoboRank. Built for VEX Robotics teams. Not affiliated with the REC Foundation or VEX Robotics.
