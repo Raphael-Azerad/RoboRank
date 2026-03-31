@@ -473,6 +473,49 @@ export default function Profile() {
 
           {/* TEAM TAB */}
           <TabsContent value="team" className="space-y-4 mt-4">
+            {/* Role Switch */}
+            <div className="rounded-xl border border-border/50 card-gradient p-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-primary/10 p-2">
+                  <ArrowRightLeft className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-display font-semibold text-sm">Active Role</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {viewMode === "team_member" ? "Team Member — full access to scouting & notes" : "Viewer — stats, rankings & schedules only"}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleSwitchRole("team_member")}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all text-center",
+                    viewMode === "team_member"
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                      : "border-border/50 hover:border-primary/30"
+                  )}
+                >
+                  <Users className={cn("h-4 w-4", viewMode === "team_member" ? "text-primary" : "text-muted-foreground")} />
+                  <span className="text-xs font-semibold">Team Member</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSwitchRole("viewer")}
+                  className={cn(
+                    "flex flex-col items-center gap-1.5 rounded-xl border p-3 transition-all text-center",
+                    viewMode === "viewer"
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                      : "border-border/50 hover:border-primary/30"
+                  )}
+                >
+                  <Eye className={cn("h-4 w-4", viewMode === "viewer" ? "text-primary" : "text-muted-foreground")} />
+                  <span className="text-xs font-semibold">Viewer</span>
+                </button>
+              </div>
+            </div>
+
             {user.team_number ? (
               <div className="rounded-xl border border-border/50 card-gradient p-5 space-y-4">
                 <button
