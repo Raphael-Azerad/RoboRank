@@ -327,6 +327,20 @@ export default function Landing() {
               </div>
             </div>
           </div>
+
+          {/* Team Ownership Help */}
+          <div className="border-t border-border/50 pt-6 space-y-3">
+            <h4 className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground">Wrong Team Captain?</h4>
+            <p className="text-xs text-muted-foreground leading-relaxed max-w-2xl">
+              The first person to create or join a team on RoboRank automatically becomes the team captain. If someone who isn't actually on your team claimed the captain role, here's what to do:
+            </p>
+            <ol className="text-xs text-muted-foreground leading-relaxed space-y-1.5 list-decimal list-inside max-w-2xl">
+              <li>Ask the incorrect captain to <strong className="text-foreground">transfer leadership</strong> to the real team member via their Profile → Team tab.</li>
+              <li>If they won't cooperate, contact us at <a href="mailto:admin@roborank.site" className="text-primary hover:underline">admin@roborank.site</a> with your team number and proof of membership (e.g. RobotEvents profile link).</li>
+              <li>We'll verify and reassign ownership within 24-48 hours.</li>
+            </ol>
+          </div>
+          </div>
           <div className="border-t border-border/50 pt-6">
             <p className="text-xs text-muted-foreground text-center">
               © {new Date().getFullYear()} RoboRank. Built for VEX Robotics teams. Not affiliated with the REC Foundation or VEX Robotics.
