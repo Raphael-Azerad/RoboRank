@@ -5,7 +5,7 @@ import { getTeamByNumber, SEASONS, SEASON_LIST } from "@/lib/robotevents";
 import { useSeason, type GradeLevel } from "@/contexts/SeasonContext";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock, Crown, ChevronDown, ChevronUp, Trash2, Shield, Key, LogOut, Camera, CreditCard } from "lucide-react";
+import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock, Crown, ChevronDown, ChevronUp, Trash2, Shield, Key, LogOut, Camera, CreditCard, Eye, AlertTriangle, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
