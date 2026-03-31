@@ -76,10 +76,10 @@ export default function Profile() {
         .limit(1)
         .maybeSingle();
 
-      // Get followed team from profile
+      // Get followed team and view_mode from profile
       const { data: profile } = await supabase
         .from("profiles")
-        .select("followed_team")
+        .select("followed_team, view_mode")
         .eq("id", u.id)
         .maybeSingle();
 
