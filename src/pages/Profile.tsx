@@ -324,31 +324,9 @@ export default function Profile() {
               <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
             </div>
             <div className="shrink-0 flex flex-col gap-1.5 items-end">
-              <span className={cn(
-                "text-[10px] px-2.5 py-1 rounded-full font-semibold uppercase tracking-wider",
-                subscribed ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
-              )}>
-                {subscribed ? "Premium" : "Free"}
+              <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold uppercase tracking-wider bg-primary/15 text-primary">
+                Full Access
               </span>
-              {!subscribed && !subLoading && (
-                <Button size="sm" onClick={startCheckout} className="gap-1 text-xs h-7">
-                  <Crown className="h-3 w-3" /> Upgrade
-                </Button>
-              )}
-              {subscribed && source === "permanent" && (
-                <span className="text-[10px] text-muted-foreground italic">Lifetime access</span>
-              )}
-              {subscribed && source !== "permanent" && (
-                <Button variant="ghost" size="sm" onClick={async () => {
-                  try {
-                    await openPortal();
-                  } catch (err: any) {
-                    toast.error("Could not open plan management. Please try again.");
-                  }
-                }} className="gap-1 text-xs h-7">
-                  <CreditCard className="h-3 w-3" /> Manage Plan
-                </Button>
-              )}
             </div>
           </div>
         </motion.div>
