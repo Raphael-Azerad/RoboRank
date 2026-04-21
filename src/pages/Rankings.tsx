@@ -516,6 +516,110 @@ export default function Rankings() {
               : `No teams found for ${seasonInfo.name}.`}
           </div>
         )}
+
+        {tab === "regions" && (
+          <>
+            <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 text-xs text-muted-foreground leading-relaxed">
+              <strong className="text-primary">How this works:</strong> Each region's strength is the average RoboRank of its top 100 teams (by skills score).
+              Big states like Texas and California are split into sub-regions by RobotEvents (e.g. "Texas - Region 3"). Only regions with 25+ teams are shown.
+              Scores fill in as the global RoboRank leaderboard finishes computing.
+            </div>
+
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Filter regions..."
+                className="pl-10 bg-card"
+                value={regionSearch}
+                onChange={(e) => setRegionSearch(e.target.value)}
+              />
+            </div>
+
+            {skillsLoading && (
+              <div className="flex flex-col items-center gap-2 py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">Loading region data...</p>
+              </div>
+            )}
+
+            {!skillsLoading && regionData.rows.length > 0 && (
+              <>
+                {(roboRankLoading || regionData.scoredTeams < regionData.totalTeams) && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>RoboRank coverage filling in...</span>
+                      <span>{regionData.scoredTeams}/{regionData.totalTeams} teams scored</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all duration-300"
+                        style={{ width: `${(regionData.scoredTeams / Math.max(regionData.totalTeams, 1)) * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="rounded-xl border border-border/50 overflow-hidden">
+                  <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <div className="col-span-1">#</div>
+                    <div className="col-span-4">Region</div>
+                    <div className="col-span-2 text-center">Avg RoboRank</div>
+                    <div className="col-span-2 text-center hidden sm:block">Teams Scored</div>
+                    <div className="col-span-3 text-center hidden sm:block">Top Team</div>
+                  </div>
+                  {regionData.rows
+                    .filter((r) => !regionSearch.trim() || r.region.toLowerCase().includes(regionSearch.trim().toLowerCase()))
+                    .map((row, i) => (
+                      <motion.div
+                        key={row.region}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: Math.min(i * 0.015, 0.5) }}
+                        className="grid grid-cols-12 gap-2 px-6 py-4 items-center border-t border-border/30 hover:bg-accent/30 transition-colors"
+                      >
+                        <div className="col-span-1 stat-number text-muted-foreground">{i + 1}</div>
+                        <div className="col-span-4">
+                          <div className="font-display font-semibold flex items-center gap-1.5">
+                            <MapPin className="h-3.5 w-3.5 text-primary/70" />
+                            {row.region}
+                          </div>
+                          <div className="text-xs text-muted-foreground">{row.teamCount} teams in region</div>
+                        </div>
+                        <div className="col-span-2 flex justify-center">
+                          {row.scoredCount > 0 ? (
+                            <RoboRankScore score={Math.round(row.avgRoboRank)} size="sm" />
+                          ) : (
+                            <span className="text-xs text-muted-foreground">pending</span>
+                          )}
+                        </div>
+                        <div className="col-span-2 text-center text-sm text-muted-foreground hidden sm:block">
+                          {row.scoredCount}/{Math.min(row.teamCount, 100)}
+                        </div>
+                        <div className="col-span-3 text-center hidden sm:block">
+                          {row.topTeam ? (
+                            <button
+                              onClick={() => navigate(`/team/${row.topTeam!.number}`)}
+                              className="text-sm font-display font-semibold text-primary hover:underline"
+                            >
+                              {row.topTeam.number} <span className="text-xs text-muted-foreground">({row.topTeam.score})</span>
+                            </button>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                </div>
+              </>
+            )}
+
+            {!skillsLoading && regionData.rows.length === 0 && (
+              <div className="text-sm text-muted-foreground rounded-lg border border-border/50 card-gradient p-8 text-center">
+                No regions with 25+ teams found for {seasonInfo.name}.
+              </div>
+            )}
+          </>
+        )}
       </div>
     </AppLayout>
   );
