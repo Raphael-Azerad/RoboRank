@@ -48,7 +48,15 @@ interface RankedTeam {
   skillsCombined: number;
 }
 
-type Tab = "skills" | "roborank";
+type Tab = "skills" | "roborank" | "regions";
+
+interface RegionRow {
+  region: string;
+  teamCount: number;
+  scoredCount: number;
+  avgRoboRank: number;
+  topTeam: { number: string; score: number } | null;
+}
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
