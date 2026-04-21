@@ -333,7 +333,6 @@ export default function MatchPredictor() {
           <div>
             <h1 className="text-3xl font-display font-bold flex items-center gap-2">
               Match Predictor
-              {!subscribed && <Crown className="h-5 w-5 text-primary" />}
             </h1>
             <p className="text-muted-foreground mt-1">
               Simulate 2v2 alliance matches · {seasonInfo.name} {seasonInfo.year}
@@ -341,8 +340,7 @@ export default function MatchPredictor() {
           </div>
         </div>
 
-        <PremiumGate subscribed={subscribed} onUpgrade={startCheckout}>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="predict">2v2 Predict</TabsTrigger>
               <TabsTrigger value="h2h">Head-to-Head</TabsTrigger>
@@ -585,7 +583,6 @@ export default function MatchPredictor() {
               )}
             </TabsContent>
           </Tabs>
-        </PremiumGate>
       </div>
     </AppLayout>
   );
