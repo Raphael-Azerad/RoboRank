@@ -4,9 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getTeamRankings, getTeamMatches, getTeamSkillsScore, calculateRoboRank, calculateRecordFromMatches, SEASONS, searchTeamsPartial } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
-import { useSubscription } from "@/contexts/SubscriptionContext";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
-import { Loader2, Search, Swords, Zap, Info, Users, X, Bookmark, BookmarkCheck, Trash2, Lock, Crown } from "lucide-react";
+import { Loader2, Search, Swords, Zap, Info, Users, X, Bookmark, BookmarkCheck, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -252,22 +251,6 @@ function TeamStatCard({ team, color }: { team: TeamStats; color: "red" | "blue" 
   );
 }
 
-function PremiumGate({ children, subscribed, onUpgrade }: { children: React.ReactNode; subscribed: boolean; onUpgrade: () => void }) {
-  if (subscribed) return <>{children}</>;
-  return (
-    <div className="relative">
-      <div className="blur-sm pointer-events-none select-none">{children}</div>
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm rounded-xl">
-        <Lock className="h-8 w-8 text-primary mb-3" />
-        <p className="text-sm font-medium mb-2">Premium Feature</p>
-        <p className="text-xs text-muted-foreground mb-4 text-center max-w-xs">Upgrade to RoboRank Premium to access the Match Predictor</p>
-        <Button onClick={onUpgrade} className="gap-1.5">
-          <Crown className="h-3.5 w-3.5" /> Upgrade to Premium
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 export default function MatchPredictor() {
   const { season } = useSeason();
