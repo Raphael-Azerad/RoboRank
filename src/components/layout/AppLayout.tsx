@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { MobileTabBar } from "./MobileTabBar";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -64,7 +65,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      <header className="sticky top-0 z-50 glass border-b border-border/50">
+      <header className="sticky top-0 z-50 glass border-b border-border/50 safe-top">
         <div className="container flex h-16 items-center justify-between">
           <Link to="/dashboard" className="flex items-center gap-2">
             <BarChart3 className="h-7 w-7 text-primary" />
@@ -201,9 +202,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
-      <main className="container py-6 flex-1 w-full">{children}</main>
+      <main className="container py-6 flex-1 w-full pb-24 md:pb-6">{children}</main>
 
-      <footer className="border-t border-border/30 bg-card/30 mt-auto">
+      <MobileTabBar />
+
+      <footer className="border-t border-border/30 bg-card/30 mt-auto hidden md:block">
         <div className="container py-6 flex flex-wrap items-center justify-between gap-4 text-xs text-muted-foreground">
           <span>© {new Date().getFullYear()} RoboRank</span>
           <nav className="flex flex-wrap gap-4">
