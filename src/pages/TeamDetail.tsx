@@ -6,12 +6,17 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { useQuery } from "@tanstack/react-query";
 import { getTeamByNumber, getTeamRankings, getTeamMatches, getTeamAwards, getTeamEvents, calculateRecordFromRankings, calculateRecordFromMatches, calculateRoboRank, getTeamSkillsScore, SEASONS } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
-import { Trophy, Target, Award, MapPin, Building, ArrowLeft, Loader2, TrendingUp, Medal, ChevronDown, ChevronRight, Video, ExternalLink } from "lucide-react";
+import { Trophy, Target, Award, MapPin, Building, ArrowLeft, Loader2, TrendingUp, Medal, ChevronDown, ChevronRight, Video, ExternalLink, Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { MatchesPlayedModal, WinsModal, groupMatchesByEvent, filterWonMatches } from "@/components/matches/MatchModals";
+import { ShareButton } from "@/components/ShareButton";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
+import { RoboRankHistory } from "@/components/profile/RoboRankHistory";
+import { AwardsHeatmap } from "@/components/profile/AwardsHeatmap";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface GroupedAward {
   title: string;
