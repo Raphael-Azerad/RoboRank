@@ -181,9 +181,62 @@ export default function Rankings() {
       setProgress((p) => ({ ...p, done: true }));
       return results.sort((a, b) => b.score - a.score || b.skillsCombined - a.skillsCombined);
     },
-    enabled: tab === "roborank",
+    enabled: tab === "roborank" || tab === "regions",
     staleTime: 15 * 60 * 1000,
   });
+
+  // Build region rankings from skills pool + computed RoboRank scores
+  const regionData = useMemo<{ rows: RegionRow[]; scoredTeams: number; totalTeams: number }>(() => {
+    if (!skillsLeaderboard || skillsLeaderboard.length === 0) {
+      return { rows: [], scoredTeams: 0, totalTeams: 0 };
+    }
+    const rrLookup = new Map<number, { score: number; number: string }>();
+    (roboRankLeaderboard ?? streamedResults).forEach((t) => {
+      rrLookup.set(t.id, { score: t.score, number: t.number });
+    });
+
+    // Bucket teams by region (eventRegion already encodes sub-regions like "Texas - Region 3")
+    const buckets = new Map<string, SkillsTeam[]>();
+    skillsLeaderboard.forEach((t) => {
+      const region = (t.region || "").trim();
+      if (!region) return;
+      if (!buckets.has(region)) buckets.set(region, []);
+      buckets.get(region)!.push(t);
+    });
+
+    const rows: RegionRow[] = [];
+    let scoredTeams = 0;
+    let totalTeams = 0;
+    buckets.forEach((teams, region) => {
+      if (teams.length < 25) return; // require at least 25 teams in a region
+      const topTeams = teams.slice().sort((a, b) => b.combined - a.combined).slice(0, 100);
+      const scored = topTeams
+        .map((t) => ({ team: t, rr: rrLookup.get(t.id) }))
+        .filter((x) => x.rr && x.rr.score > 0);
+
+      if (scored.length === 0) {
+        rows.push({ region, teamCount: teams.length, scoredCount: 0, avgRoboRank: 0, topTeam: null });
+        totalTeams += topTeams.length;
+        return;
+      }
+
+      const avg = scored.reduce((s, x) => s + x.rr!.score, 0) / scored.length;
+      const top = scored.reduce((best, x) => (!best || x.rr!.score > best.rr!.score ? x : best), scored[0]);
+
+      rows.push({
+        region,
+        teamCount: teams.length,
+        scoredCount: scored.length,
+        avgRoboRank: Math.round(avg * 10) / 10,
+        topTeam: top.rr ? { number: top.team.number, score: top.rr.score } : null,
+      });
+      scoredTeams += scored.length;
+      totalTeams += topTeams.length;
+    });
+
+    rows.sort((a, b) => b.avgRoboRank - a.avgRoboRank || b.scoredCount - a.scoredCount);
+    return { rows, scoredTeams, totalTeams };
+  }, [skillsLeaderboard, roboRankLeaderboard, streamedResults]);
 
   // Debounce search for live API lookup
   useEffect(() => {
