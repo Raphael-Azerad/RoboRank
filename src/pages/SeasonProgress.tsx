@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,11 +6,14 @@ import { getTeamByNumber, getTeamRankings, getTeamSkillsScore, getTeamAwards, ca
 
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, BarChart, Bar } from "recharts";
-import { TrendingUp, Calendar, Trophy, Loader2, Award, Plus, X, Search, Users } from "lucide-react";
+import { TrendingUp, Calendar, Trophy, Loader2, Award, Plus, X, Search, Users, Download } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EmptyState } from "@/components/ui/empty-state";
+import { toPng } from "html-to-image";
+import { toast } from "sonner";
 
 
 const COMPARE_COLORS = [
@@ -102,15 +105,39 @@ function CompareTeamSearch({ onSelect, index }: { onSelect: (team: any) => void;
 
 export default function SeasonProgress() {
   const [user, setUser] = useState<{ team_number?: string | null }>({});
-  
+
   const [activeTab, setActiveTab] = useState("my-team");
   const [compareRawTeams, setCompareRawTeams] = useState<any[]>([]);
+  const [exporting, setExporting] = useState(false);
+  const compareExportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser({ team_number: data.user?.user_metadata?.team_number || null });
     });
   }, []);
+
+  const handleExportCompare = async () => {
+    if (!compareExportRef.current) return;
+    try {
+      setExporting(true);
+      const dataUrl = await toPng(compareExportRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: getComputedStyle(document.body).backgroundColor || "#0F172A",
+      });
+      const link = document.createElement("a");
+      const teamSlug = compareRawTeams.map((t: any) => t.number).join("-vs-");
+      link.download = `roborank-compare-${teamSlug || "teams"}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success("Comparison image downloaded");
+    } catch (err: any) {
+      toast.error("Couldn't generate image");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const { data: teamData } = useQuery({
     queryKey: ["teamProfile", user.team_number],
@@ -180,10 +207,11 @@ export default function SeasonProgress() {
         </div>
 
         {!user.team_number ? (
-          <div className="rounded-xl border border-border/50 card-gradient p-8 text-center space-y-3">
-            <TrendingUp className="h-10 w-10 text-muted-foreground mx-auto" />
-            <p className="text-muted-foreground">Join a team to see season progress</p>
-          </div>
+          <EmptyState
+            icon={TrendingUp}
+            title="Join a team first"
+            description="Set your team number on your profile to track season-over-season progress and unlock comparison tools."
+          />
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
@@ -364,6 +392,31 @@ export default function SeasonProgress() {
 
                   {compareData && compareData.length > 0 && compareChartData.length > 0 && (
                     <>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <p className="text-xs text-muted-foreground">
+                          Comparing <span className="text-foreground font-medium">{compareData.length}</span> team{compareData.length === 1 ? "" : "s"} across {compareChartData.length} season{compareChartData.length === 1 ? "" : "s"}
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleExportCompare}
+                          disabled={exporting}
+                          className="gap-1.5"
+                        >
+                          {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                          Export as PNG
+                        </Button>
+                      </div>
+                      <div ref={compareExportRef} className="space-y-6 bg-background p-4 rounded-xl">
+                        <div className="flex items-center justify-between gap-3 pb-2 border-b border-border/30">
+                          <div>
+                            <h2 className="font-display font-bold text-lg">Team Comparison</h2>
+                            <p className="text-xs text-muted-foreground">
+                              {compareData.map((t) => t.number).join(" · ")}
+                            </p>
+                          </div>
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">RoboRank.site</span>
+                        </div>
                       {/* RoboRank comparison */}
                       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border/50 card-gradient p-6">
                         <h3 className="font-display font-semibold mb-4">RoboRank Comparison</h3>
@@ -431,14 +484,16 @@ export default function SeasonProgress() {
                           </BarChart>
                         </ResponsiveContainer>
                       </motion.div>
+                      </div>
                     </>
                   )}
 
                   {compareRawTeams.length === 0 && (
-                    <div className="rounded-xl border border-border/50 card-gradient p-8 text-center space-y-3">
-                      <Users className="h-10 w-10 text-muted-foreground mx-auto" />
-                      <p className="text-muted-foreground">Search and add up to 4 teams to compare their progress side by side</p>
-                    </div>
+                    <EmptyState
+                      icon={Users}
+                      title="Compare up to 4 teams"
+                      description="Search and add teams to chart their RoboRank, win rate, skills, and awards across every season side by side. Export as PNG to share."
+                    />
                   )}
                 </div>
               </div>

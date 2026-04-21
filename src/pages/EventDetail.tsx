@@ -12,6 +12,8 @@ import {
 import { useSeason } from "@/contexts/SeasonContext";
 
 import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download } from "lucide-react";
+import { ShareButton } from "@/components/ShareButton";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
@@ -70,6 +72,11 @@ export default function EventDetail() {
   const divisions = event?.divisions || [];
   const hasDivisions = divisions.length > 1;
   const divisionId = divisions[selectedDivisionIdx]?.id || divisions[0]?.id || 1;
+
+  useDocumentMeta({
+    title: event?.name ? `${event.name} | RoboRank` : "Event | RoboRank",
+    description: event ? `Rankings, matches, skills and predictions for ${event.name}${event.location?.city ? " in " + event.location.city : ""}.` : undefined,
+  });
 
   const { data: teams, isLoading: teamsLoading } = useQuery({
     queryKey: ["eventTeams", eventId],
@@ -249,7 +256,10 @@ export default function EventDetail() {
 
         {event && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-2xl font-display font-bold">{event.name}</h1>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="text-2xl font-display font-bold">{event.name}</h1>
+              <ShareButton title={`${event.name} on RoboRank`} text={`Live coverage, rankings & matches for ${event.name}`} />
+            </div>
             <div className="flex flex-wrap gap-4 mt-2 text-sm text-muted-foreground">
               {event.location && (
                 <span className="flex items-center gap-1.5">

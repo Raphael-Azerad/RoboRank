@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { StickyNote, Plus, Trash2, Edit3, Save, Clock, User, Tag, Pin, PinOff, X, Settings2 } from "lucide-react";
+import { StickyNote, Plus, Trash2, Edit3, Save, Clock, User, Tag, Pin, PinOff, X, Settings2, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const DEFAULT_CATEGORIES = [
   { value: "strategy", label: "Strategy", color: "bg-[hsl(var(--chart-2))]/15 text-[hsl(var(--chart-2))] border-[hsl(var(--chart-2))]/30" },
@@ -45,6 +46,7 @@ interface Note {
   title: string;
   content: string;
   tagged_team: string | null;
+  match_id: string | null;
   pinned: boolean;
   category: string | null;
   created_at: string;
@@ -60,6 +62,7 @@ export default function TeamNotes() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [taggedTeam, setTaggedTeam] = useState("");
+  const [matchId, setMatchId] = useState("");
   const [category, setCategory] = useState("general");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [filterTeam, setFilterTeam] = useState("");
@@ -124,6 +127,7 @@ export default function TeamNotes() {
       title: title.trim(),
       content: content.trim(),
       tagged_team: taggedTeam.trim().toUpperCase() || null,
+      match_id: matchId.trim() || null,
       category,
     } as any);
     if (error) { toast.error(error.message); return; }
@@ -138,6 +142,7 @@ export default function TeamNotes() {
         title: title.trim(),
         content: content.trim(),
         tagged_team: taggedTeam.trim().toUpperCase() || null,
+        match_id: matchId.trim() || null,
         category,
         updated_at: new Date().toISOString(),
       } as any)
@@ -169,6 +174,7 @@ export default function TeamNotes() {
     setTitle(note.title);
     setContent(note.content);
     setTaggedTeam(note.tagged_team || "");
+    setMatchId(note.match_id || "");
     setCategory(note.category || "general");
     setCreating(false);
   };
@@ -179,6 +185,7 @@ export default function TeamNotes() {
     setTitle("");
     setContent("");
     setTaggedTeam("");
+    setMatchId("");
     setCategory("general");
   };
 
@@ -214,10 +221,11 @@ export default function TeamNotes() {
       <AppLayout>
         <div className="max-w-2xl mx-auto space-y-6">
           <h1 className="text-3xl font-display font-bold">Team Notes</h1>
-          <div className="rounded-xl border border-border/50 card-gradient p-8 text-center space-y-3">
-            <StickyNote className="h-10 w-10 text-muted-foreground mx-auto" />
-            <p className="text-muted-foreground">Join a team to start sharing notes and strategy</p>
-          </div>
+          <EmptyState
+            icon={StickyNote}
+            title="Join a team first"
+            description="Team Notes let your whole team share scouting insights, match observations, and strategy in one place. Set your team number on your profile to get started."
+          />
         </div>
       </AppLayout>
     );
@@ -291,10 +299,14 @@ export default function TeamNotes() {
               className="rounded-xl border border-primary/30 bg-primary/5 p-5 space-y-3"
             >
               <Input placeholder="Note title..." value={title} onChange={(e) => setTitle(e.target.value)} className="bg-card font-medium" />
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative flex-1">
                   <Tag className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input placeholder="Tag with team # (e.g. 1234A)" value={taggedTeam} onChange={(e) => setTaggedTeam(e.target.value)} className="bg-card pl-9 uppercase text-sm" />
+                </div>
+                <div className="relative flex-1">
+                  <Hash className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input placeholder="Match (e.g. Q-12, F-1)" value={matchId} onChange={(e) => setMatchId(e.target.value)} className="bg-card pl-9 text-sm" />
                 </div>
               </div>
               <div className="flex gap-1.5 flex-wrap">
@@ -363,6 +375,11 @@ export default function TeamNotes() {
                           <Tag className="h-2.5 w-2.5" /> {note.tagged_team}
                         </Badge>
                       )}
+                      {note.match_id && (
+                        <Badge variant="outline" className="gap-1 text-[10px] shrink-0 border-primary/40 text-primary">
+                          <Hash className="h-2.5 w-2.5" /> {note.match_id}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
@@ -396,12 +413,22 @@ export default function TeamNotes() {
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border border-border/50 card-gradient p-8 text-center space-y-3">
-            <StickyNote className="h-10 w-10 text-muted-foreground mx-auto" />
-            <p className="text-muted-foreground">
-              {filterTeam || filterCategory ? "No notes match your filters" : "No notes yet. Create one to share strategy with your team!"}
-            </p>
-          </div>
+          <EmptyState
+            icon={StickyNote}
+            title={filterTeam || filterCategory ? "No matching notes" : "No notes yet"}
+            description={
+              filterTeam || filterCategory
+                ? "Try clearing your filters to see all team notes."
+                : "Capture strategy, robot strengths, alliance ideas, or per-match observations. Notes are shared with your whole team."
+            }
+            action={
+              !filterTeam && !filterCategory ? (
+                <Button onClick={() => { resetForm(); setCreating(true); }} className="gap-1.5">
+                  <Plus className="h-4 w-4" /> Create your first note
+                </Button>
+              ) : undefined
+            }
+          />
         )}
 
         {/* Delete Confirm */}
