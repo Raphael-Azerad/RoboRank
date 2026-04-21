@@ -1,0 +1,1 @@
+ALTER TABLE public.team_notes ADD COLUMN IF NOT EXISTS match_id text;

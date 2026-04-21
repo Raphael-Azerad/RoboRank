@@ -350,6 +350,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          match_id: string | null
           pinned: boolean
           tagged_team: string | null
           team_number: string
@@ -362,6 +363,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          match_id?: string | null
           pinned?: boolean
           tagged_team?: string | null
           team_number: string
@@ -374,6 +376,7 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          match_id?: string | null
           pinned?: boolean
           tagged_team?: string | null
           team_number?: string
