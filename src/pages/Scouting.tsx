@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAllPages, getTeamByNumber, getTeamEvents, SEASONS } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
-import { useSubscription } from "@/contexts/SubscriptionContext";
+
 import { generateScoutingReport, downloadCSV, downloadExcel, type ScoutingReport } from "@/lib/scoutingReport";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { toast } from "sonner";
@@ -21,7 +21,7 @@ type SortField = "roboRank" | "matches" | "winPct" | "wins" | "totalAwards" | "c
 export default function Scouting() {
   const navigate = useNavigate();
   const { season } = useSeason();
-  const { subscribed, startCheckout } = useSubscription();
+  
   const queryClient = useQueryClient();
   const { status: teamStatus } = useTeamStatus();
   const [searchQuery, setSearchQuery] = useState("");
@@ -73,15 +73,8 @@ export default function Scouting() {
     },
   });
 
-  // Check free tier limit (1 per team per month)
-  const canGenerate = useMemo(() => {
-    if (subscribed) return true; // Premium: unlimited
-    if (!existingReports || !teamNumber) return false;
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const thisMonthReports = existingReports.filter(r => new Date(r.created_at) >= monthStart);
-    return thisMonthReports.length < 1;
-  }, [existingReports, teamNumber, subscribed]);
+  // Free for everyone — unlimited reports
+  const canGenerate = true;
 
   // Check if team has events this season
   const hasSeasonEvents = myEvents && myEvents.length > 0;
@@ -134,12 +127,12 @@ export default function Scouting() {
       toast.error("Your team membership is pending approval. You can't generate reports yet.");
       return;
     }
-    if (!teamNumber && !subscribed) {
-      toast.error("You need a team to generate free scouting reports");
+    if (!teamNumber) {
+      toast.error("You need a team to generate scouting reports");
       return;
     }
-    if (!subscribed && !hasSeasonEvents) {
-      toast.error("Your team has no events this season. Upgrade to generate reports.");
+    if (!hasSeasonEvents) {
+      toast.error("Your team has no events this season.");
       return;
     }
     if (!canGenerate) {
