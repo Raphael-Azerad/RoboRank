@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Search, FileText, Lock, Loader2, Download, ChevronDown, ChevronUp, Trophy, Target, Zap, Medal, BarChart3, Crown, Clock } from "lucide-react";
+import { Search, FileText, Lock, Loader2, Download, ChevronDown, ChevronUp, Trophy, Target, Zap, Medal, BarChart3, Clock } from "lucide-react";
 import { useTeamStatus } from "@/hooks/useTeamStatus";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
