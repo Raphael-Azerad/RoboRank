@@ -320,22 +320,13 @@ export default function Scouting() {
         {!teamNumber && (
           <div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-muted-foreground">
             <Lock className="h-4 w-4 inline mr-2 text-destructive" />
-            You need a team to generate free scouting reports. Connect a team in your profile or upgrade to a paid plan.
+            You need a team to generate scouting reports. Connect a team in your profile.
           </div>
         )}
 
         {teamNumber && !hasSeasonEvents && myEvents !== undefined && (
           <div className="rounded-lg border border-[hsl(var(--chart-4))]/30 bg-[hsl(var(--chart-4))]/5 px-4 py-3 text-sm text-muted-foreground">
-            Your team has no events this season. Teams without tournaments cannot generate free reports.
-          </div>
-        )}
-
-        {teamNumber && hasSeasonEvents && !canGenerate && !subscribed && (
-          <div className="rounded-lg border border-[hsl(var(--chart-4))]/30 bg-[hsl(var(--chart-4))]/5 px-4 py-3 text-sm flex items-center justify-between">
-            <span className="text-muted-foreground">You've used your free report this month.</span>
-            <Button variant="hero" size="sm" onClick={startCheckout} className="gap-1.5">
-              <Crown className="h-3.5 w-3.5" /> Upgrade - $10/mo
-            </Button>
+            Your team has no events this season yet.
           </div>
         )}
 
