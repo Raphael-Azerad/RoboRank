@@ -209,10 +209,20 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-2xl border border-primary/20 p-6 md:p-8"
-          style={{ background: "linear-gradient(135deg, hsl(0 85% 50% / 0.12), hsl(220 20% 7%), hsl(200 70% 50% / 0.08))" }}
+          className="relative overflow-hidden rounded-2xl border border-border/60 bg-card/60 backdrop-blur-xl p-6 md:p-8 mesh-bg"
         >
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
+          {/* Decorative grid lines */}
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.04]"
+            style={{
+              backgroundImage:
+                "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
+              backgroundSize: "32px 32px",
+              maskImage: "radial-gradient(ellipse at top right, black 30%, transparent 75%)",
+            }}
+          />
+          <div className="absolute -top-20 -right-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
+
           <div className="relative flex flex-col md:flex-row items-center gap-6">
             <div className="shrink-0">
               {loading ? (
@@ -223,31 +233,38 @@ export default function Dashboard() {
                 <RoboRankScore score={roboRank ?? 0} size="lg" />
               )}
             </div>
-            <div className="flex-1 text-center md:text-left space-y-2">
-              <h1 className="text-3xl md:text-4xl font-display font-bold">
+            <div className="flex-1 text-center md:text-left space-y-2.5">
+              <div className="flex items-center gap-2 justify-center md:justify-start">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                  {seasonLabel}
+                </span>
+              </div>
+              <h1 className="text-3xl md:text-4xl font-display font-bold tracking-tight">
                 Team <span className="text-gradient">{teamNumber || "-"}</span>
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {teamData?.team_name || "Your competition command center"}
-                <span className="mx-2 text-border">·</span>
-                <span className="text-primary text-sm font-medium">{seasonLabel}</span>
               </p>
               {matchRecord && (
-                <div className="flex items-center gap-4 justify-center md:justify-start text-sm">
+                <div className="flex items-center gap-3 justify-center md:justify-start text-sm pt-1">
                   <span className="flex items-center gap-1.5">
-                    <div className="h-2 w-2 rounded-full bg-[hsl(var(--success))]" />
-                    <span className="font-display font-bold text-[hsl(var(--success))]">{matchRecord.wins}W</span>
+                    <div className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--success))]" />
+                    <span className="font-display font-bold text-[hsl(var(--success))] tabular-nums">{matchRecord.wins}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">W</span>
                   </span>
+                  <span className="text-border">·</span>
                   <span className="flex items-center gap-1.5">
-                    <div className="h-2 w-2 rounded-full bg-destructive" />
-                    <span className="font-display font-bold text-destructive">{matchRecord.losses}L</span>
+                    <span className="font-display font-bold text-destructive tabular-nums">{matchRecord.losses}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">L</span>
                   </span>
+                  <span className="text-border">·</span>
                   <span className="flex items-center gap-1.5">
-                    <div className="h-2 w-2 rounded-full bg-muted-foreground" />
-                    <span className="font-display font-bold text-muted-foreground">{matchRecord.ties}T</span>
+                    <span className="font-display font-bold text-muted-foreground tabular-nums">{matchRecord.ties}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">T</span>
                   </span>
-                  <span className="text-muted-foreground">·</span>
-                  <span className="font-display font-bold">{matchRecord.winRate}% WR</span>
+                  <span className="text-border">·</span>
+                  <span className="font-display font-bold tabular-nums">{matchRecord.winRate}%</span>
                 </div>
               )}
             </div>
@@ -279,16 +296,18 @@ export default function Dashboard() {
               transition={{ delay: i * 0.05 }}
               onClick={stat.onClick}
               className={cn(
-                "text-left rounded-xl border border-border/50 card-gradient p-4 transition-all hover:border-primary/30 hover:scale-[1.02]",
+                "group relative text-left rounded-xl border border-border/60 card-gradient p-4 transition-all duration-200 hover:border-primary/40 hover:-translate-y-0.5",
                 stat.onClick && "cursor-pointer"
               )}
             >
-              <div className="flex items-start justify-between mb-2">
-                <span className="text-xs text-muted-foreground font-medium">{stat.title}</span>
-                <stat.icon className={cn("h-4 w-4", stat.color)} />
+              <div className="flex items-start justify-between mb-3">
+                <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{stat.title}</span>
+                <div className="rounded-md bg-background/60 p-1.5 ring-1 ring-border/60 transition-colors group-hover:ring-primary/30">
+                  <stat.icon className={cn("h-3.5 w-3.5", stat.color)} />
+                </div>
               </div>
-              <div className={cn("text-2xl font-display font-bold", stat.color)}>{stat.value}</div>
-              {stat.sub && <p className="text-[11px] text-muted-foreground mt-1">{stat.sub}</p>}
+              <div className={cn("text-3xl font-display font-bold tabular-nums leading-none", stat.color)}>{stat.value}</div>
+              {stat.sub && <p className="text-[11px] text-muted-foreground mt-2 tabular-nums">{stat.sub}</p>}
             </motion.button>
           ))}
         </div>
