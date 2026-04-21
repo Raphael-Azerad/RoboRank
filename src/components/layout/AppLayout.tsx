@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, Calendar, Home, Search, Trophy, User, LogOut, Menu, X, Swords, StickyNote, TrendingUp, Bell } from "lucide-react";
+import { BarChart3, Calendar, Home, Search, Trophy, User, LogOut, Menu, X, Swords, StickyNote, TrendingUp, Bell, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -12,6 +12,7 @@ const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
   { href: "/events", label: "Events", icon: Calendar },
   { href: "/rankings", label: "Rankings", icon: Trophy },
+  { href: "/high-scores", label: "High Scores", icon: Flame },
   { href: "/scouting", label: "Scouting", icon: Search },
   { href: "/predictor", label: "Predictor", icon: Swords },
   { href: "/notes", label: "Notes", icon: StickyNote },
