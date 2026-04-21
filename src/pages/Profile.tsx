@@ -48,6 +48,11 @@ export default function Profile() {
   const [showMembers, setShowMembers] = useState(false);
   const [removeMember, setRemoveMember] = useState<{ id: string; email: string | null } | null>(null);
 
+  // Display name
+  const [displayName, setDisplayName] = useState("");
+  const [savedDisplayName, setSavedDisplayName] = useState("");
+  const [savingDisplayName, setSavingDisplayName] = useState(false);
+
   // Password change
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -77,10 +82,10 @@ export default function Profile() {
         .limit(1)
         .maybeSingle();
 
-      // Get followed team and view_mode from profile
+      // Get followed team, view_mode, display_name from profile
       const { data: profile } = await supabase
         .from("profiles")
-        .select("followed_team, view_mode")
+        .select("followed_team, view_mode, display_name")
         .eq("id", u.id)
         .maybeSingle();
 
@@ -93,6 +98,9 @@ export default function Profile() {
       });
 
       setViewMode(((profile as any)?.view_mode as "team_member" | "viewer") || "team_member");
+      const initialName = ((profile as any)?.display_name as string) || "";
+      setDisplayName(initialName);
+      setSavedDisplayName(initialName);
 
       // Load logo
       const { data: files } = supabase.storage.from("team-logos").getPublicUrl(`${u.id}/logo`);
@@ -142,10 +150,13 @@ export default function Profile() {
       if (!members || members.length === 0) return [];
       const allUserIds = members.map(m => m.user_id);
       const { data: profiles } = await supabase.from("profiles")
-        .select("id, email")
+        .select("id, email, display_name")
         .in("id", allUserIds);
-      const emailMap = new Map((profiles || []).map(p => [p.id, p.email]));
-      return members.map(m => ({ ...m, email: emailMap.get(m.user_id) || null }));
+      const profileMap = new Map((profiles || []).map(p => [p.id, p as any]));
+      return members.map(m => {
+        const p = profileMap.get(m.user_id);
+        return { ...m, email: p?.email || null, display_name: p?.display_name || null };
+      });
     },
     enabled: !!user.team_number,
   });
