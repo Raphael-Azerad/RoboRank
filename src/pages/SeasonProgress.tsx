@@ -207,10 +207,11 @@ export default function SeasonProgress() {
         </div>
 
         {!user.team_number ? (
-          <div className="rounded-xl border border-border/50 card-gradient p-8 text-center space-y-3">
-            <TrendingUp className="h-10 w-10 text-muted-foreground mx-auto" />
-            <p className="text-muted-foreground">Join a team to see season progress</p>
-          </div>
+          <EmptyState
+            icon={TrendingUp}
+            title="Join a team first"
+            description="Set your team number on your profile to track season-over-season progress and unlock comparison tools."
+          />
         ) : (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-2">
