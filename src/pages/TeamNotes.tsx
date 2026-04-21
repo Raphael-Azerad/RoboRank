@@ -62,6 +62,7 @@ export default function TeamNotes() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [taggedTeam, setTaggedTeam] = useState("");
+  const [matchId, setMatchId] = useState("");
   const [category, setCategory] = useState("general");
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [filterTeam, setFilterTeam] = useState("");
@@ -126,6 +127,7 @@ export default function TeamNotes() {
       title: title.trim(),
       content: content.trim(),
       tagged_team: taggedTeam.trim().toUpperCase() || null,
+      match_id: matchId.trim() || null,
       category,
     } as any);
     if (error) { toast.error(error.message); return; }
@@ -140,6 +142,7 @@ export default function TeamNotes() {
         title: title.trim(),
         content: content.trim(),
         tagged_team: taggedTeam.trim().toUpperCase() || null,
+        match_id: matchId.trim() || null,
         category,
         updated_at: new Date().toISOString(),
       } as any)
@@ -171,6 +174,7 @@ export default function TeamNotes() {
     setTitle(note.title);
     setContent(note.content);
     setTaggedTeam(note.tagged_team || "");
+    setMatchId(note.match_id || "");
     setCategory(note.category || "general");
     setCreating(false);
   };
@@ -181,6 +185,7 @@ export default function TeamNotes() {
     setTitle("");
     setContent("");
     setTaggedTeam("");
+    setMatchId("");
     setCategory("general");
   };
 
