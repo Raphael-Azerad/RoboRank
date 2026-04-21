@@ -102,7 +102,7 @@ function CompareTeamSearch({ onSelect, index }: { onSelect: (team: any) => void;
 
 export default function SeasonProgress() {
   const [user, setUser] = useState<{ team_number?: string | null }>({});
-  const { subscribed, startCheckout } = useSubscription();
+  
   const [activeTab, setActiveTab] = useState("my-team");
   const [compareRawTeams, setCompareRawTeams] = useState<any[]>([]);
 
@@ -239,18 +239,10 @@ export default function SeasonProgress() {
                     )}
                   </motion.div>
 
-                  {/* Past seasons - premium */}
+                  {/* Past seasons */}
                   {hasPastSeasons && (
                     <div className="relative">
-                      {!subscribed && (
-                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm rounded-xl">
-                          <Lock className="h-8 w-8 text-primary mb-3" />
-                          <p className="text-sm font-medium mb-2">Past Season History</p>
-                          <p className="text-xs text-muted-foreground mb-4 text-center max-w-xs">Upgrade to Premium to view historical season data</p>
-                          <Button onClick={startCheckout} className="gap-1.5"><Crown className="h-3.5 w-3.5" /> Upgrade to Premium</Button>
-                        </div>
-                      )}
-                      <div className={cn(!subscribed && "blur-sm pointer-events-none select-none", "space-y-6")}>
+                      <div className="space-y-6">
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="rounded-xl border border-border/50 card-gradient p-6">
                           <h3 className="font-display font-semibold mb-4">RoboRank Over Time</h3>
                           <ResponsiveContainer width="100%" height={280}>
@@ -338,15 +330,7 @@ export default function SeasonProgress() {
             {/* ==================== COMPARE TAB ==================== */}
             <TabsContent value="compare" className="space-y-6 mt-4">
               <div className="relative">
-                {!subscribed && (
-                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm rounded-xl">
-                    <Lock className="h-8 w-8 text-primary mb-3" />
-                    <p className="text-sm font-medium mb-2">Compare Teams</p>
-                    <p className="text-xs text-muted-foreground mb-4 text-center max-w-xs">Upgrade to Premium to compare up to 4 teams' progress across seasons</p>
-                    <Button onClick={startCheckout} className="gap-1.5"><Crown className="h-3.5 w-3.5" /> Upgrade to Premium</Button>
-                  </div>
-                )}
-                <div className={cn(!subscribed && "blur-sm pointer-events-none select-none", "space-y-6")}>
+                <div className="space-y-6">
                   {/* Team selector */}
                   <div className="rounded-xl border border-border/50 card-gradient p-5 space-y-4">
                     <div className="flex items-center justify-between">
