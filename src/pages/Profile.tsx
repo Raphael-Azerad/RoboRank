@@ -244,6 +244,28 @@ export default function Profile() {
     }
   };
 
+  const handleSaveDisplayName = async () => {
+    if (!user.id) return;
+    const trimmed = displayName.trim();
+    if (trimmed.length > 60) {
+      toast.error("Display name must be 60 characters or fewer");
+      return;
+    }
+    setSavingDisplayName(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ display_name: trimmed || null } as any)
+      .eq("id", user.id);
+    setSavingDisplayName(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setSavedDisplayName(trimmed);
+      toast.success(trimmed ? "Display name updated" : "Display name cleared");
+      queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
+    }
+  };
+
   const handleChangePassword = async () => {
     if (newPassword.length < 8) {
       toast.error("Password must be at least 8 characters");
