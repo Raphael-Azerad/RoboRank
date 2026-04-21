@@ -116,13 +116,14 @@ export default function Rankings() {
   const [streamedResults, setStreamedResults] = useState<RankedTeam[]>([]);
   const [progress, setProgress] = useState({ processed: 0, total: 0, done: false });
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [regionSearch, setRegionSearch] = useState("");
 
   const seasonInfo = SEASONS[season];
 
   const { data: skillsLeaderboard, isLoading: skillsLoading } = useQuery({
     queryKey: ["globalSkillsLeaderboard", season, gradeLevel],
     queryFn: () => getGlobalSkillsPool(season, gradeLevel),
-    enabled: tab === "skills",
+    enabled: tab === "skills" || tab === "regions",
     staleTime: 15 * 60 * 1000,
   });
 
