@@ -391,6 +391,24 @@ export default function SeasonProgress() {
 
                   {compareData && compareData.length > 0 && compareChartData.length > 0 && (
                     <>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <p className="text-xs text-muted-foreground">
+                          Comparing <span className="text-foreground font-medium">{compareData.length}</span> team{compareData.length === 1 ? "" : "s"} across {compareChartData.length} season{compareChartData.length === 1 ? "" : "s"}
+                        </p>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={handleExportCompare}
+                          disabled={exporting}
+                          className="gap-1.5"
+                        >
+                          {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                          Export as PNG
+                        </Button>
+                      </div>
+                      <div ref={compareExportRef} className="space-y-6 bg-background p-1">
+                      <div className="text-center pb-2 pt-1 hidden data-[exporting=true]:block" />
+                      </div>
                       {/* RoboRank comparison */}
                       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border/50 card-gradient p-6">
                         <h3 className="font-display font-semibold mb-4">RoboRank Comparison</h3>
