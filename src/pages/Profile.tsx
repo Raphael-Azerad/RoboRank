@@ -374,8 +374,6 @@ export default function Profile() {
 
           {/* ACCOUNT TAB */}
           <TabsContent value="account" className="space-y-4 mt-4">
-            {/* Profile Info */}
-            <div className="rounded-xl border border-border/50 card-gradient p-5 space-y-4">
             {/* Display Name */}
             <div className="rounded-xl border border-border/50 card-gradient p-5 space-y-3">
               <div>
