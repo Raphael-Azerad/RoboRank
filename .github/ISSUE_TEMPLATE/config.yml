@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Question or general discussion
+    url: https://roborank.site/contact
+    about: For non-bug, non-feature questions, use the contact page.
+  - name: 🌐 Live app
+    url: https://roborank.site
+    about: Try RoboRank in your browser.

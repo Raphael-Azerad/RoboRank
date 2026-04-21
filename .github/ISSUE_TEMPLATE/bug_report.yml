@@ -1,0 +1,74 @@
+name: 🐛 Bug Report
+description: Something is broken or behaving unexpectedly
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! The more detail you give, the faster it can be fixed.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+      placeholder: When I clicked the Scout Report button, nothing happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+      placeholder: I expected a CSV file to download.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can someone else trigger this bug?
+      placeholder: |
+        1. Go to /scouting
+        2. Pick "Worlds 2026"
+        3. Click "Generate Report"
+        4. Nothing happens
+    validations:
+      required: true
+
+  - type: dropdown
+    id: device
+    attributes:
+      label: Where did this happen?
+      options:
+        - iPhone (Safari)
+        - iPhone (RoboRank app)
+        - Android (Chrome)
+        - Android (RoboRank app)
+        - Desktop (Chrome)
+        - Desktop (Safari)
+        - Desktop (Firefox)
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: url
+    attributes:
+      label: Page URL (if applicable)
+      placeholder: https://roborank.site/scouting
+
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: Screenshot or screen recording
+      description: Drag and drop images or videos here.
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Browser console errors (if any)
+      description: Open DevTools → Console and paste any red error messages.
+      render: shell
