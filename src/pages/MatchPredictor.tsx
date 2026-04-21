@@ -4,9 +4,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { getTeamRankings, getTeamMatches, getTeamSkillsScore, calculateRoboRank, calculateRecordFromMatches, SEASONS, searchTeamsPartial } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
-import { useSubscription } from "@/contexts/SubscriptionContext";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
-import { Loader2, Search, Swords, Zap, Info, Users, X, Bookmark, BookmarkCheck, Trash2, Lock, Crown } from "lucide-react";
+import { Loader2, Search, Swords, Zap, Info, Users, X, Bookmark, BookmarkCheck, Trash2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
@@ -252,28 +251,12 @@ function TeamStatCard({ team, color }: { team: TeamStats; color: "red" | "blue" 
   );
 }
 
-function PremiumGate({ children, subscribed, onUpgrade }: { children: React.ReactNode; subscribed: boolean; onUpgrade: () => void }) {
-  if (subscribed) return <>{children}</>;
-  return (
-    <div className="relative">
-      <div className="blur-sm pointer-events-none select-none">{children}</div>
-      <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-sm rounded-xl">
-        <Lock className="h-8 w-8 text-primary mb-3" />
-        <p className="text-sm font-medium mb-2">Premium Feature</p>
-        <p className="text-xs text-muted-foreground mb-4 text-center max-w-xs">Upgrade to RoboRank Premium to access the Match Predictor</p>
-        <Button onClick={onUpgrade} className="gap-1.5">
-          <Crown className="h-3.5 w-3.5" /> Upgrade to Premium
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 export default function MatchPredictor() {
   const { season } = useSeason();
   const seasonInfo = SEASONS[season];
   const queryClient = useQueryClient();
-  const { subscribed, startCheckout } = useSubscription();
+  
 
   const [red1Raw, setRed1Raw] = useState<any>(null);
   const [red2Raw, setRed2Raw] = useState<any>(null);
@@ -350,7 +333,6 @@ export default function MatchPredictor() {
           <div>
             <h1 className="text-3xl font-display font-bold flex items-center gap-2">
               Match Predictor
-              {!subscribed && <Crown className="h-5 w-5 text-primary" />}
             </h1>
             <p className="text-muted-foreground mt-1">
               Simulate 2v2 alliance matches · {seasonInfo.name} {seasonInfo.year}
@@ -358,8 +340,7 @@ export default function MatchPredictor() {
           </div>
         </div>
 
-        <PremiumGate subscribed={subscribed} onUpgrade={startCheckout}>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="predict">2v2 Predict</TabsTrigger>
               <TabsTrigger value="h2h">Head-to-Head</TabsTrigger>
@@ -602,7 +583,6 @@ export default function MatchPredictor() {
               )}
             </TabsContent>
           </Tabs>
-        </PremiumGate>
       </div>
     </AppLayout>
   );

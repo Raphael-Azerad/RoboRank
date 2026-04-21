@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { getTeamByNumber, SEASONS, SEASON_LIST } from "@/lib/robotevents";
 import { useSeason, type GradeLevel } from "@/contexts/SeasonContext";
-import { useSubscription } from "@/contexts/SubscriptionContext";
+
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock, Crown, ChevronDown, ChevronUp, Trash2, Shield, Key, LogOut, Camera, CreditCard, Eye, AlertTriangle, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -39,7 +39,7 @@ function getAvatarColor(str: string) {
 
 export default function Profile() {
   const { season, setSeason, gradeLevel, setGradeLevel } = useSeason();
-  const { subscribed, loading: subLoading, subscriptionEnd, source, startCheckout, openPortal } = useSubscription();
+  
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [user, setUser] = useState<{ id?: string; email?: string; team_number?: string | null }>({});
