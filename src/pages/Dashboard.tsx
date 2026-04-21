@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check, Clock, Users, Eye } from "lucide-react";
+import { TrendingTeamsWidget } from "@/components/dashboard/TrendingTeamsWidget";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -466,6 +467,9 @@ export default function Dashboard() {
             </motion.div>
           </div>
         </div>
+
+        {/* Trending Teams — global breakout performances */}
+        <TrendingTeamsWidget />
 
         {/* Modals */}
         {teamNumber && (
