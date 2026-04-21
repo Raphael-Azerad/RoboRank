@@ -382,26 +382,18 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Subscription */}
-            <div className={cn(
-              "rounded-xl border p-5",
-              subscribed ? "border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10" : "border-border/50 card-gradient"
-            )}>
+            {/* Plan — RoboRank is free for everyone */}
+            <div className="rounded-xl border border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10 p-5">
               <div className="flex items-center gap-3">
-                <div className={cn("rounded-full p-2.5", subscribed ? "bg-primary/15" : "bg-muted")}>
-                  <Crown className={cn("h-5 w-5", subscribed ? "text-primary" : "text-muted-foreground")} />
+                <div className="rounded-full p-2.5 bg-primary/15">
+                  <Crown className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-display font-semibold">{subscribed ? "Premium Plan" : "Free Plan"}</h3>
+                  <h3 className="font-display font-semibold">All Features Unlocked</h3>
                   <p className="text-xs text-muted-foreground">
-                    {subscribed
-                      ? `Unlimited scouting reports · Renews ${subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString() : "-"}`
-                      : "1 scouting report per month · Upgrade for unlimited"}
+                    RoboRank is currently free for everyone — every feature, no limits.
                   </p>
                 </div>
-                {!subscribed && (
-                  <Button variant="outline" size="sm" onClick={startCheckout} className="gap-1.5 shrink-0">$10/mo</Button>
-                )}
               </div>
             </div>
 
