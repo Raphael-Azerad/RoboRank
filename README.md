@@ -1,73 +1,126 @@
-# Welcome to your Lovable project
+<div align="center">
 
-## Project info
+# 🤖 RoboRank
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+### Analytics & Scouting for VEX V5 Robotics Teams
 
-## How can I edit this code?
+[![Live App](https://img.shields.io/badge/Live-roborank.site-DC2626?style=for-the-badge)](https://roborank.site)
+[![Built with Lovable](https://img.shields.io/badge/Built%20with-Lovable-1A1D23?style=for-the-badge)](https://lovable.dev)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
-There are several ways of editing your application.
+**Scouting reports • Team ratings • Match prediction • Tournament analytics**
 
-**Use Lovable**
+[Live Site](https://roborank.site) · [Report a Bug](https://roborank.site/contact) · [Request a Feature](https://roborank.site/contact)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+</div>
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## ✨ Features
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- 📊 **RoboRank Score** — Proprietary 0-100 rating algorithm for every team
+- 🔍 **Auto-Generated Scouting Reports** — One-click CSV/Excel exports for any event
+- 🎯 **Match Predictor** — 2v2 alliance simulation with win-probability modeling
+- 📅 **Event Browser** — Live search across global VEX competitions
+- 🏆 **Tournament Tools** — Elimination brackets, rankings, schedule difficulty
+- 📝 **Team Notes** — Tagged, categorized internal strategy notes
+- 📈 **Season Progress** — Compare up to 4 teams across multiple seasons
+- 🔔 **Notifications** — Real-time alerts for watched events
+- 📱 **Mobile App** — Native iOS & Android via Capacitor
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## 🛠️ Tech Stack
 
-Follow these steps:
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 18 · TypeScript · Vite |
+| Styling | Tailwind CSS · shadcn/ui |
+| Backend | Supabase (Postgres · Auth · Edge Functions · Storage) |
+| Native | Capacitor (iOS + Android) |
+| Data Source | [RobotEvents API](https://www.robotevents.com/api/v2) |
+| Hosting | Lovable |
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🚀 Quick Start
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+```bash
+# Clone
+git clone https://github.com/YOUR_USERNAME/roborank.git
+cd roborank
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Run dev server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Visit `http://localhost:8080` — you're up.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 📱 Running on iOS / Android
 
-**Use GitHub Codespaces**
+```bash
+# Build the web bundle
+npm run build
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Add native platforms (one time)
+npx cap add ios
+npx cap add android
 
-## What technologies are used for this project?
+# Sync web assets into native projects (after every build)
+npx cap sync
 
-This project is built with:
+# Open in Xcode / Android Studio
+npx cap open ios
+npx cap open android
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+> **Requirements:** Xcode 15+ on macOS for iOS · Android Studio for Android
 
-## How can I deploy this project?
+## 🏗️ Project Structure
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+```
+roborank/
+├── src/
+│   ├── components/      # Reusable UI (shadcn-based)
+│   ├── pages/           # Route-level views
+│   ├── contexts/        # Global React contexts (season, subscription)
+│   ├── hooks/           # Custom React hooks
+│   ├── lib/             # Utilities, API clients, native bridge
+│   └── integrations/    # Supabase client + generated types
+├── supabase/
+│   ├── functions/       # Edge Functions (RobotEvents proxy, email, etc.)
+│   └── migrations/      # SQL schema migrations
+├── public/              # Static assets, PWA manifest
+└── capacitor.config.ts  # Native app configuration
+```
 
-## Can I connect a custom domain to my Lovable project?
+## 🔐 Environment
 
-Yes, you can!
+This project uses Supabase via Lovable Cloud. Environment variables are auto-managed — `.env` is generated automatically with:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- `VITE_SUPABASE_PROJECT_ID`
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 🤝 Contributing
+
+This is primarily a personal project, but bug reports and feature requests are welcome via the [Contact page](https://roborank.site/contact).
+
+## 📄 License
+
+MIT © RoboRank — see [LICENSE](LICENSE)
+
+## 🙏 Acknowledgements
+
+- [RobotEvents](https://www.robotevents.com) for the public competition API
+- [VEX Robotics](https://www.vexrobotics.com) for an incredible competitive ecosystem
+- The VRC community — this app exists for you
+
+---
+
+<div align="center">
+
+**Built with ❤️ for the VEX Robotics community**
+
+[roborank.site](https://roborank.site)
+
+</div>
