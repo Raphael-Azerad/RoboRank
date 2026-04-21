@@ -42,24 +42,19 @@ const features = [
   },
 ];
 
-const pricingFeatures = {
-  free: [
-    "Full team rankings & RoboRank scores",
-    "Event discovery with calendar & map",
-    "2v2 match predictor with save",
-    "Team notes with pinning & categories",
-    "Season progress timeline",
-    "1 scouting report per month",
-  ],
-  premium: [
-    "Everything in Free",
-    "Unlimited scouting reports",
-    "Premium shared across your team",
-    "Historical season data",
-    "Head-to-head comparisons",
-    "Priority support",
-  ],
-};
+const allFeatures = [
+  "Full team rankings & RoboRank scores",
+  "Event discovery with calendar & map",
+  "Region strength leaderboard",
+  "Global high-score showcase",
+  "Trending teams feed",
+  "2v2 match predictor with saved scenarios",
+  "Head-to-head team comparisons",
+  "Unlimited scouting reports",
+  "Team notes with pinning & categories",
+  "Season progress timeline + history",
+  "Multi-team and multi-season comparisons",
+];
 
 const stats = [
   { value: "5,000+", label: "Teams Tracked" },
@@ -196,78 +191,48 @@ export default function Landing() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center mb-16"
+          className="text-center mb-12"
         >
           <h2 className="text-3xl md:text-4xl font-display font-bold mb-4">
-            Simple, <span className="text-gradient">Team-Friendly</span> Pricing
+            <span className="text-gradient">Free</span> for Every Team
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            One teammate subscribes, the whole team benefits. No per-seat pricing.
+            Every feature, no limits, no paywalls. Built for VEX teams by people who care about the community.
           </p>
         </motion.div>
 
-        <div className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="rounded-xl border border-border/50 card-gradient p-8 space-y-6"
-          >
-            <div>
-              <h3 className="text-xl font-display font-bold">Free</h3>
-              <div className="mt-2">
-                <span className="text-4xl stat-number">$0</span>
-                <span className="text-muted-foreground">/forever</span>
-              </div>
-              <p className="text-sm text-muted-foreground mt-2">Perfect for getting started</p>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="rounded-xl border-2 border-primary/40 bg-gradient-to-b from-primary/5 to-transparent p-8 md:p-10 space-y-6 max-w-2xl mx-auto"
+        >
+          <div className="text-center">
+            <div className="inline-flex items-center gap-1.5 bg-primary/10 text-primary text-xs font-semibold px-3 py-1 rounded-full mb-4">
+              <Crown className="h-3 w-3" /> 100% FREE
             </div>
-            <ul className="space-y-3">
-              {pricingFeatures.free.map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm">
-                  <Check className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <Link to="/signup" className="block">
-              <Button variant="outline" className="w-full">Get Started Free</Button>
-            </Link>
-          </motion.div>
+            <div className="flex items-baseline justify-center gap-2">
+              <span className="text-5xl stat-number text-primary">$0</span>
+              <span className="text-muted-foreground">/ forever</span>
+            </div>
+            <p className="text-sm text-muted-foreground mt-3">Sign up and unlock everything immediately.</p>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            className="rounded-xl border-2 border-primary/40 bg-gradient-to-b from-primary/5 to-transparent p-8 space-y-6 relative"
-          >
-            <div className="absolute -top-3 left-6">
-              <span className="bg-primary text-primary-foreground text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1">
-                <Crown className="h-3 w-3" /> MOST POPULAR
-              </span>
-            </div>
-            <div>
-              <h3 className="text-xl font-display font-bold">Premium</h3>
-              <div className="mt-2">
-                <span className="text-4xl stat-number text-primary">$10</span>
-                <span className="text-muted-foreground">/month</span>
-              </div>
-              <p className="text-sm text-muted-foreground mt-2">Unlimited power for your whole team</p>
-            </div>
-            <ul className="space-y-3">
-              {pricingFeatures.premium.map((f) => (
-                <li key={f} className="flex items-start gap-2 text-sm">
-                  <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-            <Link to="/signup" className="block">
-              <Button className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 gap-1.5">
-                <Crown className="h-4 w-4" /> Start Premium
-              </Button>
-            </Link>
-          </motion.div>
-        </div>
+          <ul className="grid sm:grid-cols-2 gap-3">
+            {allFeatures.map((f) => (
+              <li key={f} className="flex items-start gap-2 text-sm">
+                <Check className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                <span>{f}</span>
+              </li>
+            ))}
+          </ul>
+
+          <Link to="/signup" className="block">
+            <Button className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70">
+              Get Started — It's Free
+            </Button>
+          </Link>
+        </motion.div>
       </section>
 
       {/* CTA */}
