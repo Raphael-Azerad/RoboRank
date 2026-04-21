@@ -406,9 +406,16 @@ export default function SeasonProgress() {
                           Export as PNG
                         </Button>
                       </div>
-                      <div ref={compareExportRef} className="space-y-6 bg-background p-1">
-                      <div className="text-center pb-2 pt-1 hidden data-[exporting=true]:block" />
-                      </div>
+                      <div ref={compareExportRef} className="space-y-6 bg-background p-4 rounded-xl">
+                        <div className="flex items-center justify-between gap-3 pb-2 border-b border-border/30">
+                          <div>
+                            <h2 className="font-display font-bold text-lg">Team Comparison</h2>
+                            <p className="text-xs text-muted-foreground">
+                              {compareData.map((t) => t.number).join(" · ")}
+                            </p>
+                          </div>
+                          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">RoboRank.site</span>
+                        </div>
                       {/* RoboRank comparison */}
                       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="rounded-xl border border-border/50 card-gradient p-6">
                         <h3 className="font-display font-semibold mb-4">RoboRank Comparison</h3>
@@ -476,6 +483,7 @@ export default function SeasonProgress() {
                           </BarChart>
                         </ResponsiveContainer>
                       </motion.div>
+                      </div>
                     </>
                   )}
 
