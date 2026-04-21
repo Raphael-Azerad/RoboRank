@@ -468,6 +468,9 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Trending Teams — global breakout performances */}
+        <TrendingTeamsWidget />
+
         {/* Modals */}
         {teamNumber && (
           <>
