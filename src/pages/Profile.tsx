@@ -39,7 +39,7 @@ function getAvatarColor(str: string) {
 
 export default function Profile() {
   const { season, setSeason, gradeLevel, setGradeLevel } = useSeason();
-  const { subscribed, loading: subLoading, subscriptionEnd, source, startCheckout, openPortal } = useSubscription();
+  
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [user, setUser] = useState<{ id?: string; email?: string; team_number?: string | null }>({});
