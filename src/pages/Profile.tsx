@@ -255,11 +255,6 @@ export default function Profile() {
 
   const handleSwitchRole = async (mode: "team_member" | "viewer") => {
     if (!user.id) return;
-    // If switching to viewer and user is paying, show warning
-    if (mode === "viewer" && subscribed && source !== "permanent") {
-      setShowSwitchWarning(true);
-      return;
-    }
     await applyRoleSwitch(mode);
   };
 
@@ -324,31 +319,9 @@ export default function Profile() {
               <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
             </div>
             <div className="shrink-0 flex flex-col gap-1.5 items-end">
-              <span className={cn(
-                "text-[10px] px-2.5 py-1 rounded-full font-semibold uppercase tracking-wider",
-                subscribed ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
-              )}>
-                {subscribed ? "Premium" : "Free"}
+              <span className="text-[10px] px-2.5 py-1 rounded-full font-semibold uppercase tracking-wider bg-primary/15 text-primary">
+                Full Access
               </span>
-              {!subscribed && !subLoading && (
-                <Button size="sm" onClick={startCheckout} className="gap-1 text-xs h-7">
-                  <Crown className="h-3 w-3" /> Upgrade
-                </Button>
-              )}
-              {subscribed && source === "permanent" && (
-                <span className="text-[10px] text-muted-foreground italic">Lifetime access</span>
-              )}
-              {subscribed && source !== "permanent" && (
-                <Button variant="ghost" size="sm" onClick={async () => {
-                  try {
-                    await openPortal();
-                  } catch (err: any) {
-                    toast.error("Could not open plan management. Please try again.");
-                  }
-                }} className="gap-1 text-xs h-7">
-                  <CreditCard className="h-3 w-3" /> Manage Plan
-                </Button>
-              )}
             </div>
           </div>
         </motion.div>
@@ -404,26 +377,18 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Subscription */}
-            <div className={cn(
-              "rounded-xl border p-5",
-              subscribed ? "border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10" : "border-border/50 card-gradient"
-            )}>
+            {/* Plan — RoboRank is free for everyone */}
+            <div className="rounded-xl border border-primary/30 bg-gradient-to-r from-primary/5 to-primary/10 p-5">
               <div className="flex items-center gap-3">
-                <div className={cn("rounded-full p-2.5", subscribed ? "bg-primary/15" : "bg-muted")}>
-                  <Crown className={cn("h-5 w-5", subscribed ? "text-primary" : "text-muted-foreground")} />
+                <div className="rounded-full p-2.5 bg-primary/15">
+                  <Crown className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-display font-semibold">{subscribed ? "Premium Plan" : "Free Plan"}</h3>
+                  <h3 className="font-display font-semibold">All Features Unlocked</h3>
                   <p className="text-xs text-muted-foreground">
-                    {subscribed
-                      ? `Unlimited scouting reports · Renews ${subscriptionEnd ? new Date(subscriptionEnd).toLocaleDateString() : "-"}`
-                      : "1 scouting report per month · Upgrade for unlimited"}
+                    RoboRank is currently free for everyone — every feature, no limits.
                   </p>
                 </div>
-                {!subscribed && (
-                  <Button variant="outline" size="sm" onClick={startCheckout} className="gap-1.5 shrink-0">$10/mo</Button>
-                )}
               </div>
             </div>
 
