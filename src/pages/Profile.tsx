@@ -255,11 +255,6 @@ export default function Profile() {
 
   const handleSwitchRole = async (mode: "team_member" | "viewer") => {
     if (!user.id) return;
-    // If switching to viewer and user is paying, show warning
-    if (mode === "viewer" && subscribed && source !== "permanent") {
-      setShowSwitchWarning(true);
-      return;
-    }
     await applyRoleSwitch(mode);
   };
 
