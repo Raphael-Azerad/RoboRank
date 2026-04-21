@@ -32,6 +32,7 @@ import RefundPolicy from "./pages/RefundPolicy";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import CookiePolicy from "./pages/CookiePolicy";
+import Install from "./pages/Install";
 
 const queryClient = new QueryClient();
 
@@ -106,6 +107,7 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/cookies" element={<CookiePolicy />} />
+              <Route path="/install" element={<Install />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/join-team" element={<ProtectedRoute><JoinTeam /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
