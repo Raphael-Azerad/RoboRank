@@ -256,7 +256,7 @@ export default function MatchPredictor() {
   const { season } = useSeason();
   const seasonInfo = SEASONS[season];
   const queryClient = useQueryClient();
-  const { subscribed, startCheckout } = useSubscription();
+  
 
   const [red1Raw, setRed1Raw] = useState<any>(null);
   const [red2Raw, setRed2Raw] = useState<any>(null);
