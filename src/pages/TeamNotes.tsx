@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { StickyNote, Plus, Trash2, Edit3, Save, Clock, User, Tag, Pin, PinOff, X, Settings2 } from "lucide-react";
+import { StickyNote, Plus, Trash2, Edit3, Save, Clock, User, Tag, Pin, PinOff, X, Settings2, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/ui/empty-state";
 
 const DEFAULT_CATEGORIES = [
   { value: "strategy", label: "Strategy", color: "bg-[hsl(var(--chart-2))]/15 text-[hsl(var(--chart-2))] border-[hsl(var(--chart-2))]/30" },
