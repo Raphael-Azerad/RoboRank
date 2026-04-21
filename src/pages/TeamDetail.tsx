@@ -159,6 +159,15 @@ export default function TeamDetail() {
 
   const seasonLabel = `${seasonInfo.name} ${seasonInfo.year}`;
 
+  useDocumentMeta({
+    title: teamData
+      ? `Team ${teamData.number}${teamData.team_name ? " - " + teamData.team_name : ""} | RoboRank`
+      : `Team ${teamNumber} | RoboRank`,
+    description: teamData
+      ? `${teamData.team_name || "VEX V5 team"} from ${teamData.location?.city || "-"}, ${teamData.location?.region || ""}. RoboRank ${roboRank ?? "-"}, ${matchRecord?.wins ?? 0}W-${matchRecord?.losses ?? 0}L this ${seasonInfo.name} season.`
+      : undefined,
+  });
+
   if (loading) {
     return (
       <AppLayout>
