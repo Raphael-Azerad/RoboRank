@@ -33,6 +33,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import CookiePolicy from "./pages/CookiePolicy";
 import Install from "./pages/Install";
+import HighScores from "./pages/HighScores";
 
 const queryClient = new QueryClient();
 
@@ -121,6 +122,7 @@ const App = () => (
               <Route path="/team/:teamNumber" element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />
               <Route path="/event/:eventId" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
               <Route path="/awards" element={<ProtectedRoute><Awards /></ProtectedRoute>} />
+              <Route path="/high-scores" element={<ProtectedRoute><HighScores /></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
