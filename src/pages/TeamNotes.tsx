@@ -46,6 +46,7 @@ interface Note {
   title: string;
   content: string;
   tagged_team: string | null;
+  match_id: string | null;
   pinned: boolean;
   category: string | null;
   created_at: string;
