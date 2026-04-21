@@ -10,7 +10,7 @@ import {
   calculateEventScheduleDifficulty,
 } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
-import { useSubscription } from "@/contexts/SubscriptionContext";
+
 import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -44,7 +44,7 @@ export default function EventDetail() {
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
   const { season } = useSeason();
-  const { subscribed } = useSubscription();
+  
   const [tab, setTab] = useState<DetailTab>("teams");
   const [h2hTeams, setH2hTeams] = useState<[string, string] | null>(null);
   const [h2hOpen, setH2hOpen] = useState(false);
@@ -302,18 +302,8 @@ export default function EventDetail() {
                       navigate("/scouting");
                       return;
                     }
-                    // Check free tier limit (1 per month) - skip for subscribers
-                    if (!subscribed) {
-                      const now = new Date();
-                      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-                      const { data: monthReports } = await supabase.from("scouting_reports")
-                        .select("id").eq("user_id", user.id)
-                        .gte("created_at", monthStart.toISOString());
-                      if (monthReports && monthReports.length >= 1) {
-                        toast.error("Free tier limit reached (1 report/month). Upgrade for unlimited.");
-                        return;
-                      }
-                    }
+                    // Free for everyone — no per-month limit
+
                     toast.info("Generating report... This may take a minute.");
                     const divId = divisions[selectedDivisionIdx]?.id || 1;
                     const report = await generateScoutingReport(
