@@ -576,7 +576,7 @@ export default function Profile() {
                     </p>
                     {pendingRequests.map((req) => (
                       <div key={req.id} className="flex items-center justify-between bg-[hsl(var(--chart-4))]/5 border border-[hsl(var(--chart-4))]/20 rounded-lg px-4 py-2.5">
-                        <span className="text-sm font-medium">{(req as any).email || req.user_id.slice(0, 8) + "..."}</span>
+                        <span className="text-sm font-medium">{(req as any).display_name || (req as any).email || req.user_id.slice(0, 8) + "..."}</span>
                         <div className="flex gap-1.5">
                           <Button size="sm" variant="ghost" className="h-7 px-2 text-[hsl(var(--success))]"
                             onClick={() => handleApproveRequest(req.id, req.team_number, req.user_id)}>
