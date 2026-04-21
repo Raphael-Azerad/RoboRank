@@ -594,19 +594,25 @@ export default function Profile() {
 
                 {showMembers && (
                   <div className="space-y-1.5 border-t border-border/30 pt-3">
-                    {approvedMembers.map((member) => (
+                    {approvedMembers.map((member) => {
+                      const memberName = (member as any).display_name || (member as any).email || null;
+                      const memberInitial = (memberName || "?")[0].toUpperCase();
+                      return (
                       <div key={member.id} className="flex items-center justify-between text-sm py-2.5 px-3 rounded-lg hover:bg-muted/30 transition-colors">
                         <div className="flex items-center gap-3 min-w-0">
                           <div
                             className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0"
-                            style={{ background: getAvatarColor((member as any).email || member.user_id) }}
+                            style={{ background: getAvatarColor(memberName || member.user_id) }}
                           >
-                            {((member as any).email || "?")[0].toUpperCase()}
+                            {memberInitial}
                           </div>
                           <div className="flex flex-col min-w-0">
                             <span className={cn("truncate", member.user_id === user.id && "text-primary font-medium")}>
-                              {member.user_id === user.id ? "You" : ((member as any).email || `Member ${member.user_id.slice(0, 8)}...`)}
+                              {member.user_id === user.id ? "You" : (memberName || `Member ${member.user_id.slice(0, 8)}...`)}
                             </span>
+                            {(member as any).display_name && (member as any).email && member.user_id !== user.id && (
+                              <span className="text-[10px] text-muted-foreground truncate">{(member as any).email}</span>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
