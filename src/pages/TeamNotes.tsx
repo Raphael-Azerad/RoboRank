@@ -298,10 +298,14 @@ export default function TeamNotes() {
               className="rounded-xl border border-primary/30 bg-primary/5 p-5 space-y-3"
             >
               <Input placeholder="Note title..." value={title} onChange={(e) => setTitle(e.target.value)} className="bg-card font-medium" />
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative flex-1">
                   <Tag className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
                   <Input placeholder="Tag with team # (e.g. 1234A)" value={taggedTeam} onChange={(e) => setTaggedTeam(e.target.value)} className="bg-card pl-9 uppercase text-sm" />
+                </div>
+                <div className="relative flex-1">
+                  <Hash className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                  <Input placeholder="Match (e.g. Q-12, F-1)" value={matchId} onChange={(e) => setMatchId(e.target.value)} className="bg-card pl-9 text-sm" />
                 </div>
               </div>
               <div className="flex gap-1.5 flex-wrap">
@@ -370,6 +374,11 @@ export default function TeamNotes() {
                           <Tag className="h-2.5 w-2.5" /> {note.tagged_team}
                         </Badge>
                       )}
+                      {note.match_id && (
+                        <Badge variant="outline" className="gap-1 text-[10px] shrink-0 border-primary/40 text-primary">
+                          <Hash className="h-2.5 w-2.5" /> {note.match_id}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
@@ -403,12 +412,22 @@ export default function TeamNotes() {
             ))}
           </div>
         ) : (
-          <div className="rounded-xl border border-border/50 card-gradient p-8 text-center space-y-3">
-            <StickyNote className="h-10 w-10 text-muted-foreground mx-auto" />
-            <p className="text-muted-foreground">
-              {filterTeam || filterCategory ? "No notes match your filters" : "No notes yet. Create one to share strategy with your team!"}
-            </p>
-          </div>
+          <EmptyState
+            icon={StickyNote}
+            title={filterTeam || filterCategory ? "No matching notes" : "No notes yet"}
+            description={
+              filterTeam || filterCategory
+                ? "Try clearing your filters to see all team notes."
+                : "Capture strategy, robot strengths, alliance ideas, or per-match observations. Notes are shared with your whole team."
+            }
+            action={
+              !filterTeam && !filterCategory ? (
+                <Button onClick={() => { resetForm(); setCreating(true); }} className="gap-1.5">
+                  <Plus className="h-4 w-4" /> Create your first note
+                </Button>
+              ) : undefined
+            }
+          />
         )}
 
         {/* Delete Confirm */}
