@@ -282,6 +282,12 @@ export default function TeamDetail() {
           </DialogContent>
         </Dialog>
 
+        {/* History + Awards Heatmap */}
+        <div className="grid gap-4 md:grid-cols-2">
+          <RoboRankHistory teamId={teamId} />
+          <AwardsHeatmap awards={awards} />
+        </div>
+
         {rankings && rankings.length > 0 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
             <h2 className="text-xl font-display font-semibold mb-4">Event Results · {seasonInfo.name}</h2>
@@ -318,9 +324,11 @@ export default function TeamDetail() {
         )}
 
         {rankings && rankings.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            No event results for {seasonInfo.name} ({seasonInfo.year}).
-          </div>
+          <EmptyState
+            icon={Inbox}
+            title={`No event results yet`}
+            description={`Team ${teamData.number} hasn't competed in any ${seasonInfo.name} (${seasonInfo.year}) events that we can see yet. Try a different season above.`}
+          />
         )}
 
         {/* Match Videos / Webcasts */}
