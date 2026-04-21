@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,11 +6,14 @@ import { getTeamByNumber, getTeamRankings, getTeamSkillsScore, getTeamAwards, ca
 
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, BarChart, Bar } from "recharts";
-import { TrendingUp, Calendar, Trophy, Loader2, Award, Plus, X, Search, Users } from "lucide-react";
+import { TrendingUp, Calendar, Trophy, Loader2, Award, Plus, X, Search, Users, Download } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EmptyState } from "@/components/ui/empty-state";
+import { toPng } from "html-to-image";
+import { toast } from "sonner";
 
 
 const COMPARE_COLORS = [
