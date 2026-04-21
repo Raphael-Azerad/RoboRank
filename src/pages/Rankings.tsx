@@ -359,6 +359,9 @@ export default function Rankings() {
           <Button variant={tab === "skills" ? "default" : "outline"} size="sm" onClick={() => setTab("skills")}>
             <Zap className="h-3.5 w-3.5 mr-1.5" /> Skills Leaderboard
           </Button>
+          <Button variant={tab === "regions" ? "default" : "outline"} size="sm" onClick={() => setTab("regions")}>
+            <MapPin className="h-3.5 w-3.5 mr-1.5" /> Regions
+          </Button>
         </div>
 
         <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/5 px-4 py-2.5 text-xs text-muted-foreground leading-relaxed">
