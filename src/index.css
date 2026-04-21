@@ -47,10 +47,14 @@
 
     /* Custom tokens */
     --gradient-primary: linear-gradient(135deg, hsl(0 85% 50%), hsl(15 80% 55%));
-    --gradient-card: linear-gradient(135deg, hsl(220 18% 10%), hsl(220 18% 13%));
+    --gradient-card: linear-gradient(180deg, hsl(220 18% 11%), hsl(220 20% 8.5%));
+    --gradient-card-hover: linear-gradient(180deg, hsl(220 18% 13%), hsl(220 20% 10%));
     --gradient-hero: linear-gradient(135deg, hsl(220 20% 7%), hsl(220 24% 12%));
+    --gradient-mesh: radial-gradient(at 20% 0%, hsl(0 85% 50% / 0.10) 0px, transparent 50%), radial-gradient(at 80% 100%, hsl(200 70% 50% / 0.06) 0px, transparent 50%);
     --shadow-glow: 0 0 20px hsl(0 85% 50% / 0.15);
-    --shadow-card: 0 4px 24px hsl(0 0% 0% / 0.3);
+    --shadow-card: 0 1px 0 hsl(220 14% 30% / 0.08) inset, 0 1px 2px hsl(0 0% 0% / 0.4), 0 8px 24px hsl(0 0% 0% / 0.25);
+    --shadow-elevated: 0 1px 0 hsl(220 14% 35% / 0.10) inset, 0 4px 12px hsl(0 0% 0% / 0.5), 0 16px 48px hsl(0 0% 0% / 0.35);
+    --ring-subtle: 0 0 0 1px hsl(220 14% 22%);
 
     --chart-1: 0 85% 50%;
     --chart-2: 200 70% 50%;
@@ -90,6 +94,16 @@
 
   .card-gradient {
     background: var(--gradient-card);
+    box-shadow: var(--shadow-card);
+  }
+
+  .card-elevated {
+    background: var(--gradient-card);
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .mesh-bg {
+    background-image: var(--gradient-mesh);
   }
 
   .glass {
@@ -97,7 +111,22 @@
   }
 
   .stat-number {
-    @apply font-display font-bold tracking-tight;
+    @apply font-display font-bold tracking-tight tabular-nums;
+  }
+
+  .hairline {
+    border: 1px solid hsl(220 14% 20% / 0.8);
+  }
+
+  /* Subtle noise texture for premium dark surfaces */
+  .grain::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.04;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
   }
 }
 
