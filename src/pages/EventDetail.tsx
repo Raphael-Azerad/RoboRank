@@ -251,7 +251,10 @@ export default function EventDetail() {
 
         {event && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-2xl font-display font-bold">{event.name}</h1>
+            <div className="flex items-start justify-between gap-3">
+              <h1 className="text-2xl font-display font-bold">{event.name}</h1>
+              <ShareButton title={`${event.name} on RoboRank`} text={`Live coverage, rankings & matches for ${event.name}`} />
+            </div>
             <div className="flex flex-wrap gap-4 mt-2 text-sm text-muted-foreground">
               {event.location && (
                 <span className="flex items-center gap-1.5">
