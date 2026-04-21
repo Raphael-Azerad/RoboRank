@@ -105,15 +105,39 @@ function CompareTeamSearch({ onSelect, index }: { onSelect: (team: any) => void;
 
 export default function SeasonProgress() {
   const [user, setUser] = useState<{ team_number?: string | null }>({});
-  
+
   const [activeTab, setActiveTab] = useState("my-team");
   const [compareRawTeams, setCompareRawTeams] = useState<any[]>([]);
+  const [exporting, setExporting] = useState(false);
+  const compareExportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser({ team_number: data.user?.user_metadata?.team_number || null });
     });
   }, []);
+
+  const handleExportCompare = async () => {
+    if (!compareExportRef.current) return;
+    try {
+      setExporting(true);
+      const dataUrl = await toPng(compareExportRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: getComputedStyle(document.body).backgroundColor || "#0F172A",
+      });
+      const link = document.createElement("a");
+      const teamSlug = compareRawTeams.map((t: any) => t.number).join("-vs-");
+      link.download = `roborank-compare-${teamSlug || "teams"}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast.success("Comparison image downloaded");
+    } catch (err: any) {
+      toast.error("Couldn't generate image");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const { data: teamData } = useQuery({
     queryKey: ["teamProfile", user.team_number],
