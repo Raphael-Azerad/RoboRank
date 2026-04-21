@@ -218,7 +218,13 @@ export default function TeamDetail() {
               </div>
               <p className="text-xs text-primary mt-2">{seasonLabel}</p>
             </div>
-            <div className="shrink-0"><RoboRankScore score={roboRank ?? 0} size="lg" /></div>
+            <div className="flex flex-col items-end gap-3 shrink-0">
+              <RoboRankScore score={roboRank ?? 0} size="lg" />
+              <ShareButton
+                title={`Team ${teamData.number} on RoboRank`}
+                text={`${teamData.team_name || "VEX V5 team"} - RoboRank ${roboRank ?? "-"}`}
+              />
+            </div>
           </motion.div>
         </div>
 
