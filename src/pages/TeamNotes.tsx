@@ -221,10 +221,11 @@ export default function TeamNotes() {
       <AppLayout>
         <div className="max-w-2xl mx-auto space-y-6">
           <h1 className="text-3xl font-display font-bold">Team Notes</h1>
-          <div className="rounded-xl border border-border/50 card-gradient p-8 text-center space-y-3">
-            <StickyNote className="h-10 w-10 text-muted-foreground mx-auto" />
-            <p className="text-muted-foreground">Join a team to start sharing notes and strategy</p>
-          </div>
+          <EmptyState
+            icon={StickyNote}
+            title="Join a team first"
+            description="Team Notes let your whole team share scouting insights, match observations, and strategy in one place. Set your team number on your profile to get started."
+          />
         </div>
       </AppLayout>
     );
