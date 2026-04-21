@@ -1,6 +1,18 @@
-import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { createContext, useContext, type ReactNode } from "react";
+
+/**
+ * Subscription system is currently DISABLED — RoboRank is free for everyone.
+ *
+ * This context is intentionally left in place (rather than deleted) so we can
+ * re-enable paid plans in the future without rewiring every component that
+ * reads `subscribed`. The Stripe edge functions (create-checkout,
+ * check-subscription, customer-portal) and the Stripe price config are also
+ * preserved on the backend.
+ *
+ * To turn paid plans back on:
+ *   1. Restore the previous version of this file from git history.
+ *   2. Re-add the SubscriptionProvider's effects + Stripe invokes.
+ */
 
 interface SubscriptionState {
   subscribed: boolean;
@@ -12,87 +24,27 @@ interface SubscriptionState {
   openPortal: () => Promise<void>;
 }
 
-const SubscriptionContext = createContext<SubscriptionState>({
-  subscribed: false,
-  loading: true,
+const noop = async () => {};
+
+const FREE_FOR_EVERYONE: SubscriptionState = {
+  subscribed: true,
+  loading: false,
   subscriptionEnd: null,
-  source: null,
-  checkSubscription: async () => {},
-  startCheckout: async () => {},
-  openPortal: async () => {},
-});
+  source: "free",
+  checkSubscription: noop,
+  startCheckout: noop,
+  openPortal: noop,
+};
+
+const SubscriptionContext = createContext<SubscriptionState>(FREE_FOR_EVERYONE);
 
 export function useSubscription() {
   return useContext(SubscriptionContext);
 }
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
-  const [subscribed, setSubscribed] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
-  const [source, setSource] = useState<string | null>(null);
-
-  const checkSubscription = useCallback(async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setSubscribed(false);
-        setSubscriptionEnd(null);
-        setLoading(false);
-        return;
-      }
-      const { data, error } = await supabase.functions.invoke("check-subscription");
-      if (error) throw error;
-      setSubscribed(data?.subscribed ?? false);
-      setSubscriptionEnd(data?.subscription_end ?? null);
-      setSource(data?.source ?? null);
-    } catch {
-      setSubscribed(false);
-      setSubscriptionEnd(null);
-      setSource(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const startCheckout = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke("create-checkout");
-      if (error) throw error;
-      if (!data?.url) throw new Error("Checkout URL was not returned");
-      window.location.assign(data.url);
-    } catch (err: any) {
-      toast.error(err?.message || "Could not start checkout. Please try again.");
-    }
-  }, []);
-
-  const openPortal = useCallback(async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke("customer-portal");
-      if (error) throw error;
-      if (!data?.url) throw new Error("Portal URL was not returned");
-      window.location.assign(data.url);
-    } catch (err: any) {
-      toast.error(err?.message || "Could not open plan management. Please try again.");
-    }
-  }, []);
-
-  useEffect(() => {
-    checkSubscription();
-    const interval = setInterval(checkSubscription, 60000);
-    return () => clearInterval(interval);
-  }, [checkSubscription]);
-
-  // Re-check on auth change
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      checkSubscription();
-    });
-    return () => subscription.unsubscribe();
-  }, [checkSubscription]);
-
   return (
-    <SubscriptionContext.Provider value={{ subscribed, loading, subscriptionEnd, source, checkSubscription, startCheckout, openPortal }}>
+    <SubscriptionContext.Provider value={FREE_FOR_EVERYONE}>
       {children}
     </SubscriptionContext.Provider>
   );
