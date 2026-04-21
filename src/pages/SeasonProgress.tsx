@@ -6,12 +6,12 @@ import { getTeamByNumber, getTeamRankings, getTeamSkillsScore, getTeamAwards, ca
 
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area, BarChart, Bar } from "recharts";
-import { TrendingUp, Calendar, Trophy, Loader2, Lock, Crown, Award, Plus, X, Search, Users } from "lucide-react";
+import { TrendingUp, Calendar, Trophy, Loader2, Award, Plus, X, Search, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
+
 
 const COMPARE_COLORS = [
   "hsl(var(--primary))",
