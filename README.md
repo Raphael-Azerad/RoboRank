@@ -1,16 +1,17 @@
 <div align="center">
 
-# 🤖 RoboRank
+![RoboRank — VEX Robotics Analytics](public/github-banner.png)
 
 ### Analytics & Scouting for VEX V5 Robotics Teams
 
 [![Live App](https://img.shields.io/badge/Live-roborank.site-DC2626?style=for-the-badge)](https://roborank.site)
 [![Built with Lovable](https://img.shields.io/badge/Built%20with-Lovable-1A1D23?style=for-the-badge)](https://lovable.dev)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-success?style=for-the-badge)](CONTRIBUTING.md)
 
 **Scouting reports • Team ratings • Match prediction • Tournament analytics**
 
-[Live Site](https://roborank.site) · [Report a Bug](https://roborank.site/contact) · [Request a Feature](https://roborank.site/contact)
+[Live Site](https://roborank.site) · [Report a Bug](../../issues/new?template=bug_report.yml) · [Request a Feature](../../issues/new?template=feature_request.yml) · [Contributing](CONTRIBUTING.md)
 
 </div>
 
