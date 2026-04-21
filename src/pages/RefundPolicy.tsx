@@ -6,35 +6,42 @@ export default function RefundPolicy() {
     <LegalPageWrapper>
       <div className="space-y-6">
         <h1 className="text-3xl font-display font-bold">Refund & Cancellation Policy</h1>
-        <p className="text-sm text-muted-foreground">Last updated: March 12, 2026</p>
+        <p className="text-sm text-muted-foreground">Last updated: April 21, 2026</p>
 
         <div className="prose prose-invert max-w-none space-y-6 text-sm text-muted-foreground leading-relaxed">
           <section className="space-y-3">
-            <h2 className="text-lg font-display font-semibold text-foreground">Subscription Cancellation</h2>
-            <p>You can cancel your RoboRank Premium subscription at any time from your profile settings. When you cancel:</p>
-            <ul className="list-disc pl-6 space-y-1">
-              <li>Your premium access continues until the end of your current billing period</li>
-              <li>You will not be charged again after cancellation</li>
-              <li>You retain access to all free features after your premium expires</li>
-              <li>Your data (notes, saved predictions, reports) is preserved</li>
-            </ul>
+            <h2 className="text-lg font-display font-semibold text-foreground">RoboRank is Free</h2>
+            <p>
+              RoboRank is currently free for every team and every user. There are no subscriptions, no paid tiers,
+              and no charges of any kind. Because we do not collect payments, there is nothing to refund or cancel.
+            </p>
           </section>
+
           <section className="space-y-3">
-            <h2 className="text-lg font-display font-semibold text-foreground">Refund Policy</h2>
-            <p>We offer refunds under the following circumstances:</p>
-            <ul className="list-disc pl-6 space-y-1">
-              <li><strong className="text-foreground">Within 7 days of first purchase:</strong> Full refund, no questions asked</li>
-              <li><strong className="text-foreground">Service outages:</strong> If the Service is unavailable for an extended period, we will provide a prorated refund or credit</li>
-              <li><strong className="text-foreground">Billing errors:</strong> Any accidental charges will be fully refunded</li>
-            </ul>
+            <h2 className="text-lg font-display font-semibold text-foreground">Account Cancellation</h2>
+            <p>
+              You can stop using RoboRank at any time. If you would like your account or associated data
+              (notes, saved predictions, scouting reports) deleted, contact us through our{" "}
+              <Link to="/contact" className="text-primary hover:underline">Contact page</Link> and we will
+              process the request within 5 business days.
+            </p>
           </section>
+
           <section className="space-y-3">
-            <h2 className="text-lg font-display font-semibold text-foreground">How to Request a Refund</h2>
-            <p>Contact us through our <Link to="/contact" className="text-primary hover:underline">Contact page</Link> with your account email and reason for the refund. We aim to process all refund requests within 5 business days.</p>
+            <h2 className="text-lg font-display font-semibold text-foreground">Historical Charges</h2>
+            <p>
+              If you were previously charged for a RoboRank Premium subscription and believe you are owed a
+              refund, please reach out via the <Link to="/contact" className="text-primary hover:underline">Contact page</Link>{" "}
+              with your account email. We will review and respond within 5 business days.
+            </p>
           </section>
+
           <section className="space-y-3">
-            <h2 className="text-lg font-display font-semibold text-foreground">Team Premium Sharing</h2>
-            <p>If you cancel a premium subscription that is shared across your team, all team members will lose premium access at the end of the billing period. Another team member can subscribe to restore team-wide access.</p>
+            <h2 className="text-lg font-display font-semibold text-foreground">Future Changes</h2>
+            <p>
+              If we ever introduce paid plans in the future, this page will be updated with the applicable
+              billing, cancellation, and refund terms before any charges occur.
+            </p>
           </section>
         </div>
       </div>
