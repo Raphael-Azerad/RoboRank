@@ -48,6 +48,11 @@ export default function Profile() {
   const [showMembers, setShowMembers] = useState(false);
   const [removeMember, setRemoveMember] = useState<{ id: string; email: string | null } | null>(null);
 
+  // Display name
+  const [displayName, setDisplayName] = useState("");
+  const [savedDisplayName, setSavedDisplayName] = useState("");
+  const [savingDisplayName, setSavingDisplayName] = useState(false);
+
   // Password change
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -77,10 +82,10 @@ export default function Profile() {
         .limit(1)
         .maybeSingle();
 
-      // Get followed team and view_mode from profile
+      // Get followed team, view_mode, display_name from profile
       const { data: profile } = await supabase
         .from("profiles")
-        .select("followed_team, view_mode")
+        .select("followed_team, view_mode, display_name")
         .eq("id", u.id)
         .maybeSingle();
 
@@ -93,6 +98,9 @@ export default function Profile() {
       });
 
       setViewMode(((profile as any)?.view_mode as "team_member" | "viewer") || "team_member");
+      const initialName = ((profile as any)?.display_name as string) || "";
+      setDisplayName(initialName);
+      setSavedDisplayName(initialName);
 
       // Load logo
       const { data: files } = supabase.storage.from("team-logos").getPublicUrl(`${u.id}/logo`);
@@ -142,10 +150,13 @@ export default function Profile() {
       if (!members || members.length === 0) return [];
       const allUserIds = members.map(m => m.user_id);
       const { data: profiles } = await supabase.from("profiles")
-        .select("id, email")
+        .select("id, email, display_name")
         .in("id", allUserIds);
-      const emailMap = new Map((profiles || []).map(p => [p.id, p.email]));
-      return members.map(m => ({ ...m, email: emailMap.get(m.user_id) || null }));
+      const profileMap = new Map((profiles || []).map(p => [p.id, p as any]));
+      return members.map(m => {
+        const p = profileMap.get(m.user_id);
+        return { ...m, email: p?.email || null, display_name: p?.display_name || null };
+      });
     },
     enabled: !!user.team_number,
   });
@@ -233,6 +244,28 @@ export default function Profile() {
     }
   };
 
+  const handleSaveDisplayName = async () => {
+    if (!user.id) return;
+    const trimmed = displayName.trim();
+    if (trimmed.length > 60) {
+      toast.error("Display name must be 60 characters or fewer");
+      return;
+    }
+    setSavingDisplayName(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ display_name: trimmed || null } as any)
+      .eq("id", user.id);
+    setSavingDisplayName(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setSavedDisplayName(trimmed);
+      toast.success(trimmed ? "Display name updated" : "Display name cleared");
+      queryClient.invalidateQueries({ queryKey: ["teamMembers"] });
+    }
+  };
+
   const handleChangePassword = async () => {
     if (newPassword.length < 8) {
       toast.error("Password must be at least 8 characters");
@@ -312,9 +345,13 @@ export default function Profile() {
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-display font-bold truncate">{user.team_number || "No Team"}</h1>
+              <h1 className="text-2xl font-display font-bold truncate">
+                {savedDisplayName || user.team_number || "Welcome"}
+              </h1>
               <p className="text-sm text-muted-foreground truncate">
-                {teamData?.team_name || (user.team_number ? "VEX Robotics Team" : "Browse-only account")}
+                {savedDisplayName && user.team_number
+                  ? `Team ${user.team_number}${teamData?.team_name ? ` · ${teamData.team_name}` : ""}`
+                  : teamData?.team_name || (user.team_number ? "VEX Robotics Team" : "Browse-only account")}
               </p>
               <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
             </div>
@@ -337,6 +374,34 @@ export default function Profile() {
 
           {/* ACCOUNT TAB */}
           <TabsContent value="account" className="space-y-4 mt-4">
+            {/* Display Name */}
+            <div className="rounded-xl border border-border/50 card-gradient p-5 space-y-3">
+              <div>
+                <h3 className="text-sm font-display font-semibold uppercase tracking-wider text-muted-foreground">Display Name</h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Shown to teammates instead of your email. Leave blank to fall back to your email.
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="e.g. Alex M."
+                  maxLength={60}
+                  className="bg-card"
+                />
+                <Button
+                  size="sm"
+                  onClick={handleSaveDisplayName}
+                  disabled={savingDisplayName || displayName.trim() === savedDisplayName.trim()}
+                  className="gap-1.5 sm:w-auto"
+                >
+                  {savingDisplayName ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                  Save
+                </Button>
+              </div>
+            </div>
+
             {/* Profile Info */}
             <div className="rounded-xl border border-border/50 card-gradient p-5 space-y-4">
               <h3 className="text-sm font-display font-semibold uppercase tracking-wider text-muted-foreground">Profile Info</h3>
@@ -511,7 +576,7 @@ export default function Profile() {
                     </p>
                     {pendingRequests.map((req) => (
                       <div key={req.id} className="flex items-center justify-between bg-[hsl(var(--chart-4))]/5 border border-[hsl(var(--chart-4))]/20 rounded-lg px-4 py-2.5">
-                        <span className="text-sm font-medium">{(req as any).email || req.user_id.slice(0, 8) + "..."}</span>
+                        <span className="text-sm font-medium">{(req as any).display_name || (req as any).email || req.user_id.slice(0, 8) + "..."}</span>
                         <div className="flex gap-1.5">
                           <Button size="sm" variant="ghost" className="h-7 px-2 text-[hsl(var(--success))]"
                             onClick={() => handleApproveRequest(req.id, req.team_number, req.user_id)}>
@@ -529,19 +594,25 @@ export default function Profile() {
 
                 {showMembers && (
                   <div className="space-y-1.5 border-t border-border/30 pt-3">
-                    {approvedMembers.map((member) => (
+                    {approvedMembers.map((member) => {
+                      const memberName = (member as any).display_name || (member as any).email || null;
+                      const memberInitial = (memberName || "?")[0].toUpperCase();
+                      return (
                       <div key={member.id} className="flex items-center justify-between text-sm py-2.5 px-3 rounded-lg hover:bg-muted/30 transition-colors">
                         <div className="flex items-center gap-3 min-w-0">
                           <div
                             className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0"
-                            style={{ background: getAvatarColor((member as any).email || member.user_id) }}
+                            style={{ background: getAvatarColor(memberName || member.user_id) }}
                           >
-                            {((member as any).email || "?")[0].toUpperCase()}
+                            {memberInitial}
                           </div>
                           <div className="flex flex-col min-w-0">
                             <span className={cn("truncate", member.user_id === user.id && "text-primary font-medium")}>
-                              {member.user_id === user.id ? "You" : ((member as any).email || `Member ${member.user_id.slice(0, 8)}...`)}
+                              {member.user_id === user.id ? "You" : (memberName || `Member ${member.user_id.slice(0, 8)}...`)}
                             </span>
+                            {(member as any).display_name && (member as any).email && member.user_id !== user.id && (
+                              <span className="text-[10px] text-muted-foreground truncate">{(member as any).email}</span>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
@@ -579,7 +650,8 @@ export default function Profile() {
                           )}
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </div>
