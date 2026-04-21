@@ -12,6 +12,8 @@ import {
 import { useSeason } from "@/contexts/SeasonContext";
 
 import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download } from "lucide-react";
+import { ShareButton } from "@/components/ShareButton";
+import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
