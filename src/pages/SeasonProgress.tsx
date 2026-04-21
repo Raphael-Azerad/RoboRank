@@ -489,10 +489,11 @@ export default function SeasonProgress() {
                   )}
 
                   {compareRawTeams.length === 0 && (
-                    <div className="rounded-xl border border-border/50 card-gradient p-8 text-center space-y-3">
-                      <Users className="h-10 w-10 text-muted-foreground mx-auto" />
-                      <p className="text-muted-foreground">Search and add up to 4 teams to compare their progress side by side</p>
-                    </div>
+                    <EmptyState
+                      icon={Users}
+                      title="Compare up to 4 teams"
+                      description="Search and add teams to chart their RoboRank, win rate, skills, and awards across every season side by side. Export as PNG to share."
+                    />
                   )}
                 </div>
               </div>
