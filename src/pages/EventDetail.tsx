@@ -73,6 +73,11 @@ export default function EventDetail() {
   const hasDivisions = divisions.length > 1;
   const divisionId = divisions[selectedDivisionIdx]?.id || divisions[0]?.id || 1;
 
+  useDocumentMeta({
+    title: event?.name ? `${event.name} | RoboRank` : "Event | RoboRank",
+    description: event ? `Rankings, matches, skills and predictions for ${event.name}${event.location?.city ? " in " + event.location.city : ""}.` : undefined,
+  });
+
   const { data: teams, isLoading: teamsLoading } = useQuery({
     queryKey: ["eventTeams", eventId],
     queryFn: () => getEventTeams(Number(eventId)),
