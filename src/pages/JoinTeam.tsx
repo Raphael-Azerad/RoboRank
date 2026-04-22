@@ -55,6 +55,11 @@ export default function JoinTeam() {
       }
 
       // If user signed up with a team number but team_member row wasn't created
+      const metaMode = data.user.user_metadata?.account_mode;
+      if (metaMode === "follower") {
+        setJoinMode("follower");
+      }
+
       const metaTeam = data.user.user_metadata?.team_number;
       if (metaTeam) {
         const num = String(metaTeam).trim().toUpperCase();
@@ -82,6 +87,8 @@ export default function JoinTeam() {
       if (metaFollowed) {
         const num = String(metaFollowed).trim().toUpperCase();
         if (num) {
+          setJoinMode("follower");
+          setTeamNumber(num);
           await supabase.from("profiles").update({ followed_team: num }).eq("id", data.user.id);
           navigate("/dashboard");
           return;
@@ -172,7 +179,14 @@ export default function JoinTeam() {
           </div>
           <h1 className="text-2xl font-display font-bold">Get Connected</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Choose how you'd like to track a VEX team
+            Finish setup and choose how you'd like to track a VEX team
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-border/50 bg-card/40 p-4 text-left">
+          <p className="text-xs font-medium text-primary">Final setup step</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Add your team now, or skip and come back later from your profile without getting stuck in a loop.
           </p>
         </div>
 

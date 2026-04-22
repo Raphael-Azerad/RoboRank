@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { BarChart3, Loader2, CheckCircle2, XCircle, Users, Eye } from "lucide-react";
+import { BarChart3, Loader2, CheckCircle2, XCircle, Users, Eye, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,9 +13,11 @@ import { toast } from "sonner";
 
 
 type AccountMode = "member" | "follower";
+type SignupStep = 1 | 2 | 3;
 
 export default function Signup() {
   const navigate = useNavigate();
+  const [step, setStep] = useState<SignupStep>(1);
   const [accountMode, setAccountMode] = useState<AccountMode>("member");
   const [teamNumber, setTeamNumber] = useState("");
   const [email, setEmail] = useState("");
@@ -25,6 +27,36 @@ export default function Signup() {
   const [validating, setValidating] = useState(false);
   const [teamValid, setTeamValid] = useState<boolean | null>(null);
   const [teamName, setTeamName] = useState<string | null>(null);
+
+  const stepLabel = useMemo(() => {
+    if (step === 1) return "Choose your role";
+    if (step === 2) return "Connect your team";
+    return "Create your login";
+  }, [step]);
+
+  const nextStep = async () => {
+    if (step === 1) {
+      setStep(2);
+      return;
+    }
+
+    if (!teamNumber.trim()) {
+      toast.error("Please enter a team number");
+      return;
+    }
+
+    if (teamValid === null) {
+      await handleTeamBlur();
+      return;
+    }
+
+    if (teamValid === false) {
+      toast.error("Please enter a valid VEX team number");
+      return;
+    }
+
+    setStep(3);
+  };
 
   const handleTeamBlur = async () => {
     const num = teamNumber.trim().toUpperCase();
@@ -45,6 +77,10 @@ export default function Signup() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (step !== 3) {
+      await nextStep();
+      return;
+    }
     if (!teamNumber.trim()) {
       toast.error("Please enter a team number");
       return;
@@ -131,7 +167,28 @@ export default function Signup() {
             <span className="text-2xl font-display font-bold text-gradient">RoboRank</span>
           </Link>
           <h1 className="text-2xl font-display font-bold">Create your account</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Get started with VEX team stats</p>
+          <p className="mt-2 text-sm text-muted-foreground">{stepLabel}</p>
+        </div>
+
+        <div className="space-y-3 rounded-xl border border-border/50 bg-card/40 p-4">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>Setup progress</span>
+            <span>{step}/3</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {[1, 2, 3].map((item) => (
+              <div
+                key={item}
+                className={`h-2 rounded-full ${item <= step ? "bg-primary" : "bg-muted"}`}
+              />
+            ))}
+          </div>
+          <div className="flex items-start gap-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-left">
+            <Sparkles className="mt-0.5 h-4 w-4 text-primary shrink-0" />
+            <p className="text-xs text-muted-foreground">
+              New users start with a quick role + team setup, then jump straight into the dashboard.
+            </p>
+          </div>
         </div>
 
         <Button
@@ -162,120 +219,157 @@ export default function Signup() {
           </div>
         </div>
 
-        {/* Account type selector */}
-        <div className="space-y-3">
-          <Label className="text-xs text-muted-foreground">How will you use RoboRank?</Label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => { setAccountMode("member"); setTeamNumber(""); setTeamValid(null); setTeamName(null); }}
-              className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-all text-center ${
-                accountMode === "member"
-                  ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                  : "border-border/50 hover:border-primary/30"
-              }`}
-            >
-              <Users className={`h-5 w-5 ${accountMode === "member" ? "text-primary" : "text-muted-foreground"}`} />
-              <div>
-                <p className="text-sm font-semibold">Team Member</p>
-                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">I compete on this team</p>
+        <form onSubmit={handleSignup} className="space-y-4">
+          {step === 1 && (
+            <div className="space-y-3">
+              <Label className="text-xs text-muted-foreground">How will you use RoboRank?</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setAccountMode("member"); setTeamNumber(""); setTeamValid(null); setTeamName(null); }}
+                  className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-all text-center ${
+                    accountMode === "member"
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                      : "border-border/50 hover:border-primary/30"
+                  }`}
+                >
+                  <Users className={`h-5 w-5 ${accountMode === "member" ? "text-primary" : "text-muted-foreground"}`} />
+                  <div>
+                    <p className="text-sm font-semibold">Team Member</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">I compete on this team</p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAccountMode("follower"); setTeamNumber(""); setTeamValid(null); setTeamName(null); }}
+                  className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-all text-center ${
+                    accountMode === "follower"
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                      : "border-border/50 hover:border-primary/30"
+                  }`}
+                >
+                  <Eye className={`h-5 w-5 ${accountMode === "follower" ? "text-primary" : "text-muted-foreground"}`} />
+                  <div>
+                    <p className="text-sm font-semibold">Parent / Coach</p>
+                    <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">I support this team</p>
+                  </div>
+                </button>
               </div>
-            </button>
-            <button
-              type="button"
-              onClick={() => { setAccountMode("follower"); setTeamNumber(""); setTeamValid(null); setTeamName(null); }}
-              className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-all text-center ${
-                accountMode === "follower"
-                  ? "border-primary bg-primary/5 ring-1 ring-primary/20"
-                  : "border-border/50 hover:border-primary/30"
-              }`}
-            >
-              <Eye className={`h-5 w-5 ${accountMode === "follower" ? "text-primary" : "text-muted-foreground"}`} />
-              <div>
-                <p className="text-sm font-semibold">Parent / Coach</p>
-                <p className="text-[10px] text-muted-foreground leading-tight mt-0.5">I support this team</p>
-              </div>
-            </button>
-          </div>
 
-          {/* Explanation of what each mode includes */}
-          {accountMode === "member" ? (
-            <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 space-y-1.5">
-              <p className="text-xs font-medium text-foreground">Full team access includes:</p>
-              <ul className="text-[11px] text-muted-foreground space-y-1 list-disc list-inside">
-                <li>Dashboard with all team stats & rankings</li>
-                <li>Scouting reports for upcoming matches</li>
-                <li>Shared team notes & strategy planning</li>
-                <li>Match predictor & season progress</li>
-              </ul>
-            </div>
-          ) : (
-            <div className="rounded-lg bg-accent/50 border border-border/50 p-3 space-y-1.5">
-              <p className="text-xs font-medium text-foreground">Follow mode includes:</p>
-              <ul className="text-[11px] text-muted-foreground space-y-1 list-disc list-inside">
-                <li>Dashboard with team stats & rankings</li>
-                <li>Event schedules & match results</li>
-                <li>Match predictor & season progress</li>
-              </ul>
-              <p className="text-[11px] text-muted-foreground mt-2 pt-1.5 border-t border-border/50">
-                Scouting reports and team notes are reserved for team members only.
-              </p>
+              {accountMode === "member" ? (
+                <div className="rounded-lg bg-primary/5 border border-primary/20 p-3 space-y-1.5">
+                  <p className="text-xs font-medium text-foreground">Full team access includes:</p>
+                  <ul className="text-[11px] text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>Dashboard with all team stats and rankings</li>
+                    <li>Scouting reports for upcoming matches</li>
+                    <li>Shared team notes and strategy planning</li>
+                    <li>Match predictor and season progress</li>
+                  </ul>
+                </div>
+              ) : (
+                <div className="rounded-lg bg-accent/50 border border-border/50 p-3 space-y-1.5">
+                  <p className="text-xs font-medium text-foreground">Follow mode includes:</p>
+                  <ul className="text-[11px] text-muted-foreground space-y-1 list-disc list-inside">
+                    <li>Dashboard with team stats and rankings</li>
+                    <li>Event schedules and match results</li>
+                    <li>Match predictor and season progress</li>
+                  </ul>
+                  <p className="text-[11px] text-muted-foreground mt-2 pt-1.5 border-t border-border/50">
+                    Scouting reports and team notes are reserved for team members only.
+                  </p>
+                </div>
+              )}
             </div>
           )}
-        </div>
 
-        <form onSubmit={handleSignup} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="team">
-              {accountMode === "member" ? "Your Team Number" : "Team to Follow"}
-            </Label>
-            <div className="relative">
-              <Input
-                id="team"
-                placeholder="e.g. 1234A"
-                value={teamNumber}
-                onChange={(e) => { setTeamNumber(e.target.value); setTeamValid(null); setTeamName(null); }}
-                onBlur={handleTeamBlur}
-                className="bg-card uppercase pr-10"
-              />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                {validating && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                {!validating && teamValid === true && <CheckCircle2 className="h-4 w-4 text-[hsl(var(--success))]" />}
-                {!validating && teamValid === false && <XCircle className="h-4 w-4 text-destructive" />}
+          {step === 2 && (
+            <div className="space-y-4 rounded-xl border border-border/50 bg-card/40 p-4">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">{accountMode === "member" ? "Tell us your team" : "Which team are you following?"}</p>
+                <p className="text-xs text-muted-foreground">
+                  {accountMode === "member"
+                    ? "The first approved member becomes owner automatically."
+                    : "You can browse stats right away as a parent, coach, or fan."}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="team">
+                  {accountMode === "member" ? "Your Team Number" : "Team to Follow"}
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="team"
+                    placeholder="e.g. 1234A"
+                    value={teamNumber}
+                    onChange={(e) => { setTeamNumber(e.target.value); setTeamValid(null); setTeamName(null); }}
+                    onBlur={handleTeamBlur}
+                    className="bg-card uppercase pr-10"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    {validating && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                    {!validating && teamValid === true && <CheckCircle2 className="h-4 w-4 text-[hsl(var(--success))]" />}
+                    {!validating && teamValid === false && <XCircle className="h-4 w-4 text-destructive" />}
+                  </div>
+                </div>
+                {teamName && teamValid && <p className="text-xs text-[hsl(var(--success))]">{teamName}</p>}
               </div>
             </div>
-            {teamName && teamValid && (
-              <p className="text-xs text-[hsl(var(--success))]">{teamName}</p>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-4 rounded-xl border border-border/50 bg-card/40 p-4">
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Create your login</p>
+                <p className="text-xs text-muted-foreground">
+                  We’ll send a verification email before your first full sign-in.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="team@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="bg-card"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="bg-card"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            {step > 1 && (
+              <Button type="button" variant="outline" className="flex-1 gap-2" onClick={() => setStep((prev) => Math.max(1, prev - 1) as SignupStep)}>
+                <ArrowLeft className="h-4 w-4" /> Back
+              </Button>
             )}
+            <Button type="submit" className="flex-1 gap-2" disabled={loading || validating || teamValid === false}>
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : step === 3 ? (
+                "Create Account"
+              ) : (
+                <>
+                  Continue <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </Button>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="team@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="bg-card"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="bg-card"
-            />
-          </div>
-          <Button type="submit" className="w-full" disabled={loading || teamValid === false}>
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Account"}
-          </Button>
         </form>
 
         <p className="text-center text-sm text-muted-foreground">
