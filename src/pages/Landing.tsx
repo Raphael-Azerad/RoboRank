@@ -63,6 +63,27 @@ const stats = [
   { value: "100", label: "RoboRank Scale" },
 ];
 
+const onboardingSteps = [
+  {
+    icon: Zap,
+    eyebrow: "Step 1",
+    title: "Take the quick tour",
+    description: "See the three tools most teams open first: rankings, event scouting, and match predictions.",
+  },
+  {
+    icon: Users,
+    eyebrow: "Step 2",
+    title: "Pick your role",
+    description: "Sign up as a team member or as a parent / coach so RoboRank can tailor the setup flow.",
+  },
+  {
+    icon: Target,
+    eyebrow: "Step 3",
+    title: "Connect your team",
+    description: "Add your team number, unlock your dashboard, and start saving notes, predictions, and reports.",
+  },
+];
+
 
 export default function Landing() {
   return (
@@ -112,19 +133,70 @@ export default function Landing() {
               match predictions, and deep analytics to dominate your competition.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/signup">
-                <Button size="lg" className="text-base px-8 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 gap-2">
-                  Start Scouting — It's Free <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <a href="#features">
-                <Button variant="outline" size="lg" className="text-base px-8 gap-2">
-                  See Features ↓
+              <a href="#tour">
+                <Button size="lg" className="text-base px-8 gap-2">
+                  Take the 30-Second Tour <ArrowRight className="h-4 w-4" />
                 </Button>
               </a>
+              <Link to="/signup">
+                <Button variant="outline" size="lg" className="text-base px-8 gap-2">
+                  Skip to Sign Up
+                </Button>
+              </Link>
             </div>
           </motion.div>
         </div>
+      </section>
+
+      <section id="tour" className="container pb-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="rounded-2xl border border-border/60 bg-card/60 p-6 md:p-8"
+        >
+          <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div>
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+                <Zap className="h-3.5 w-3.5" />
+                First launch flow
+              </div>
+              <h2 className="text-3xl font-display font-bold md:text-4xl">
+                See what RoboRank does before you make an account.
+              </h2>
+              <p className="mt-4 max-w-2xl text-muted-foreground">
+                This first version is built for fast onboarding: quick tour first, account second, team setup right after.
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <Link to="/signup">
+                  <Button className="gap-2">
+                    Start after the tour <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+                <a href="#features">
+                  <Button variant="outline">Preview the full feature list</Button>
+                </a>
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              {onboardingSteps.map((step) => (
+                <div key={step.title} className="rounded-xl border border-border/50 bg-background/80 p-5">
+                  <div className="flex items-start gap-4">
+                    <div className="rounded-lg bg-primary/10 p-3 text-primary">
+                      <step.icon className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium uppercase tracking-wide text-primary">{step.eyebrow}</p>
+                      <h3 className="mt-1 text-base font-display font-semibold">{step.title}</h3>
+                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{step.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
       </section>
 
       {/* Stats */}
