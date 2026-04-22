@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
+import { getPostAuthRoute } from "@/lib/postAuthRoute";
 import { toast } from "sonner";
 
 export default function Login() {
@@ -23,7 +24,7 @@ export default function Login() {
       toast.error(error.message);
     } else {
       toast.success("Welcome back!");
-      navigate("/dashboard");
+      navigate(await getPostAuthRoute());
     }
     setLoading(false);
   };
