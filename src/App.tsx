@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SeasonProvider } from "@/contexts/SeasonContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
+import { getPostAuthRoute } from "@/lib/postAuthRoute";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -69,12 +70,33 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 function AuthRedirect({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const [redirectPath, setRedirectPath] = useState("/dashboard");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      setAuthenticated(!!data.session);
+    let mounted = true;
+
+    const resolveSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      const hasSession = !!data.session;
+
+      if (!mounted) return;
+
+      setAuthenticated(hasSession);
+
+      if (hasSession) {
+        const nextPath = await getPostAuthRoute();
+        if (!mounted) return;
+        setRedirectPath(nextPath);
+      }
+
       setLoading(false);
-    });
+    };
+
+    resolveSession();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   if (loading) {
@@ -85,7 +107,7 @@ function AuthRedirect({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return authenticated ? <Navigate to="/dashboard" replace /> : <>{children}</>;
+  return authenticated ? <Navigate to={redirectPath} replace /> : <>{children}</>;
 }
 
 const App = () => (
