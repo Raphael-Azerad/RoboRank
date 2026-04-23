@@ -13,7 +13,6 @@ import { useSeason } from "@/contexts/SeasonContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
 import { EventMap } from "@/components/events/EventMap";
 
 type Tab = "all" | "my" | "watchlist";
@@ -54,6 +53,10 @@ function formatDateRange(start: string, end?: string): string {
     return `${s.toLocaleDateString("en-US", opts)} – ${e.toLocaleDateString("en-US", { ...opts, year: "numeric" })}`;
   }
   return s.toLocaleDateString("en-US", { ...opts, year: "numeric" });
+}
+
+function formatShortDate(date: Date): string {
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
 function daysUntil(date: string): string {
@@ -472,9 +475,9 @@ export default function Events() {
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className={cn("gap-1.5 bg-card", (dateFrom || dateTo) && "border-primary text-primary")}>
                 <CalendarIcon className="h-3.5 w-3.5" />
-                {dateFrom && dateTo ? `${format(dateFrom, "MMM d")} – ${format(dateTo, "MMM d")}` :
-                 dateFrom ? `From ${format(dateFrom, "MMM d")}` :
-                 dateTo ? `Until ${format(dateTo, "MMM d")}` :
+                {dateFrom && dateTo ? `${formatShortDate(dateFrom)} – ${formatShortDate(dateTo)}` :
+                 dateFrom ? `From ${formatShortDate(dateFrom)}` :
+                 dateTo ? `Until ${formatShortDate(dateTo)}` :
                  "Date Range"}
               </Button>
             </PopoverTrigger>
