@@ -224,6 +224,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          deletion_requested_at: string | null
           display_name: string | null
           email: string | null
           followed_team: string | null
@@ -236,6 +237,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deletion_requested_at?: string | null
           display_name?: string | null
           email?: string | null
           followed_team?: string | null
@@ -248,6 +250,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deletion_requested_at?: string | null
           display_name?: string | null
           email?: string | null
           followed_team?: string | null

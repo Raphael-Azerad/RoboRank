@@ -67,6 +67,12 @@ export default function Profile() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
+  // Account deletion (30-day soft delete)
+  const [deletionRequestedAt, setDeletionRequestedAt] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletionLoading, setDeletionLoading] = useState(false);
+
   useEffect(() => {
     async function loadUser() {
       const { data: authData } = await supabase.auth.getUser();
@@ -85,7 +91,7 @@ export default function Profile() {
       // Get followed team, view_mode, display_name from profile
       const { data: profile } = await supabase
         .from("profiles")
-        .select("followed_team, view_mode, display_name")
+        .select("followed_team, view_mode, display_name, deletion_requested_at")
         .eq("id", u.id)
         .maybeSingle();
 
@@ -101,6 +107,7 @@ export default function Profile() {
       const initialName = ((profile as any)?.display_name as string) || "";
       setDisplayName(initialName);
       setSavedDisplayName(initialName);
+      setDeletionRequestedAt(((profile as any)?.deletion_requested_at as string) || null);
 
       // Load logo
       const { data: files } = supabase.storage.from("team-logos").getPublicUrl(`${u.id}/logo`);
@@ -307,6 +314,47 @@ export default function Profile() {
     navigate("/");
   };
 
+  const handleRequestDeletion = async () => {
+    if (deleteConfirmText !== "DELETE") {
+      toast.error('Type "DELETE" to confirm');
+      return;
+    }
+    setDeletionLoading(true);
+    const { data, error } = await supabase.functions.invoke("account-deletion", {
+      body: { action: "request" },
+    });
+    setDeletionLoading(false);
+    if (error || (data as any)?.error) {
+      toast.error("Couldn't schedule deletion: " + (error?.message || (data as any)?.error));
+      return;
+    }
+    setDeletionRequestedAt((data as any)?.deletion_requested_at || new Date().toISOString());
+    setShowDeleteDialog(false);
+    setDeleteConfirmText("");
+    toast.success("Account scheduled for deletion in 30 days. You can cancel anytime before then.");
+  };
+
+  const handleCancelDeletion = async () => {
+    setDeletionLoading(true);
+    const { data, error } = await supabase.functions.invoke("account-deletion", {
+      body: { action: "cancel" },
+    });
+    setDeletionLoading(false);
+    if (error || (data as any)?.error) {
+      toast.error("Couldn't cancel: " + (error?.message || (data as any)?.error));
+      return;
+    }
+    setDeletionRequestedAt(null);
+    toast.success("Account deletion cancelled.");
+  };
+
+  const deletionDeadline = deletionRequestedAt
+    ? new Date(new Date(deletionRequestedAt).getTime() + 30 * 24 * 60 * 60 * 1000)
+    : null;
+  const daysRemaining = deletionDeadline
+    ? Math.max(0, Math.ceil((deletionDeadline.getTime() - Date.now()) / (24 * 60 * 60 * 1000)))
+    : 0;
+
   const seasonInfo = SEASONS[season];
   const avatarStr = user.team_number || user.email || "?";
 
@@ -500,6 +548,49 @@ export default function Profile() {
                   <LogOut className="h-3.5 w-3.5" /> Sign Out
                 </Button>
               </div>
+            </div>
+
+            {/* Danger Zone — Account Deletion */}
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <h3 className="font-display font-semibold text-sm">Danger Zone</h3>
+              </div>
+              {deletionRequestedAt ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Your account is scheduled for permanent deletion on{" "}
+                    <strong className="text-foreground">
+                      {deletionDeadline?.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                    </strong>{" "}
+                    ({daysRemaining} day{daysRemaining === 1 ? "" : "s"} remaining). You can cancel anytime before then.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelDeletion}
+                    disabled={deletionLoading}
+                    className="gap-1.5"
+                  >
+                    {deletionLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    Cancel deletion
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Permanently delete your account and all associated data. Your account will be deactivated immediately and fully erased after a 30-day grace period. You can sign in during that window to cancel.
+                  </p>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="gap-1.5"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Delete my account
+                  </Button>
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -790,6 +881,49 @@ export default function Profile() {
             <Button variant="ghost" onClick={() => setShowSwitchWarning(false)}>Cancel</Button>
             <Button variant="destructive" onClick={() => applyRoleSwitch("viewer")}>
               Switch to Viewer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Account Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={(open) => { setShowDeleteDialog(open); if (!open) setDeleteConfirmText(""); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete your account?
+            </DialogTitle>
+            <DialogDescription className="space-y-3 pt-2">
+              <span className="block">This will schedule your account for permanent deletion. After 30 days, the following will be erased and cannot be recovered:</span>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>Your profile, team membership, and uploaded logo</li>
+                <li>Saved notes, predictions, and scouting reports</li>
+                <li>Your active subscription (cancel separately if applicable)</li>
+              </ul>
+              <span className="block">You can sign back in within 30 days to cancel deletion.</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="delete-confirm" className="text-xs">Type <strong>DELETE</strong> to confirm</Label>
+            <Input
+              id="delete-confirm"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="DELETE"
+              className="bg-card"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={handleRequestDeletion}
+              disabled={deletionLoading || deleteConfirmText !== "DELETE"}
+              className="gap-1.5"
+            >
+              {deletionLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+              Schedule deletion
             </Button>
           </DialogFooter>
         </DialogContent>

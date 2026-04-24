@@ -6,7 +6,7 @@ export default function PrivacyPolicy() {
     <LegalPageWrapper>
       <div className="space-y-6">
         <h1 className="text-3xl font-display font-bold">Privacy Policy</h1>
-        <p className="text-sm text-muted-foreground">Last updated: March 12, 2026</p>
+        <p className="text-sm text-muted-foreground">Last updated: April 24, 2026</p>
 
         <div className="prose prose-invert max-w-none space-y-6 text-sm text-muted-foreground leading-relaxed">
           <section className="space-y-3">
@@ -46,13 +46,17 @@ export default function PrivacyPolicy() {
             <p>We do not sell, rent, or share your personal information with third parties for marketing purposes. We may share data only as required by law or to protect the Service.</p>
           </section>
           <section className="space-y-3">
-            <h2 className="text-lg font-display font-semibold text-foreground">6. Your Rights</h2>
+            <h2 className="text-lg font-display font-semibold text-foreground">6. Your Rights & Account Deletion</h2>
             <p>You have the right to:</p>
             <ul className="list-disc pl-6 space-y-1">
-              <li>Access, update, or delete your account data</li>
-              <li>Export your user-generated content</li>
-              <li>Request deletion of your account and associated data</li>
+              <li>Access, update, or export your account data at any time from the <Link to="/profile" className="text-primary hover:underline">Profile page</Link></li>
+              <li>Permanently delete your account and all associated data directly from within the app</li>
             </ul>
+            <p><strong className="text-foreground">How to delete your account:</strong> Open <Link to="/profile" className="text-primary hover:underline">Profile → Account → Danger Zone</Link> and tap <em>Delete my account</em>. You'll be asked to confirm by typing <code className="text-foreground">DELETE</code>.</p>
+            <p><strong className="text-foreground">What gets deleted:</strong> Your profile, team membership, uploaded team logo, saved notes, match predictions, scouting reports, notifications, and authentication record.</p>
+            <p><strong className="text-foreground">30-day grace period:</strong> When you request deletion, your account is immediately deactivated and scheduled for permanent erasure 30 days later. You can sign back in during this window and cancel the deletion at any time. After 30 days, all data is permanently removed and cannot be recovered.</p>
+            <p><strong className="text-foreground">Subscriptions:</strong> If you have an active RoboRank Premium subscription, please cancel it separately through the <Link to="/profile" className="text-primary hover:underline">billing portal</Link> before deleting your account. Deleting your account does not automatically refund or cancel Stripe subscriptions.</p>
+            <p>If you cannot access the app, you may also request deletion by contacting us via the <Link to="/contact" className="text-primary hover:underline">Contact page</Link>.</p>
           </section>
           <section className="space-y-3">
             <h2 className="text-lg font-display font-semibold text-foreground">7. Cookies</h2>
