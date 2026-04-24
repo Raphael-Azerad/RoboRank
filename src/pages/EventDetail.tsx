@@ -11,7 +11,7 @@ import {
 } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 
-import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download, Radio } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download, Radio, Video } from "lucide-react";
 import { CompModeBar } from "@/components/events/CompModeBar";
 import { ShareButton } from "@/components/ShareButton";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
@@ -331,7 +331,24 @@ export default function EventDetail() {
                 </a>
               )}
             </div>
-            <div className="mt-3">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {Array.isArray(event.webcasts) && event.webcasts.length > 0 && (
+                <>
+                  {event.webcasts.filter((w: any) => w.url).slice(0, 3).map((w: any, i: number) => (
+                    <a
+                      key={i}
+                      href={w.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 h-9 rounded-md bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary text-sm font-medium transition-colors"
+                    >
+                      <Video className="h-3.5 w-3.5" />
+                      {event.webcasts.length > 1 ? `Watch ${w.type || "Stream"}` : "Watch Stream"}
+                      <ExternalLink className="h-3 w-3 opacity-70" />
+                    </a>
+                  ))}
+                </>
+              )}
               <Button
                 variant="hero"
                 size="sm"
