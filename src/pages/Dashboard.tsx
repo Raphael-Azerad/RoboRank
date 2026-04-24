@@ -182,8 +182,13 @@ export default function Dashboard() {
 
   const seasonLabel = `${seasonInfo.name} ${seasonInfo.year}`;
 
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries();
+  };
+
   return (
     <AppLayout>
+      <PullToRefresh onRefresh={handleRefresh}>
       <div className="space-y-6">
         {/* No-team empty state — supersedes the dashboard until a team is set */}
         {teamStatus === "no-team" && !teamNumber && (
