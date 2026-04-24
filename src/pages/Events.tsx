@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { fetchAllPages, getTeamByNumber, getTeamEvents, SEASONS, US_STATES } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -345,8 +346,10 @@ export default function Events() {
     );
   };
 
+  const queryClient = useQueryClient();
   return (
     <AppLayout>
+      <PullToRefresh onRefresh={() => queryClient.invalidateQueries()}>
       <div className="space-y-5">
         <div>
           <h1 className="text-3xl font-display font-bold">Events</h1>
@@ -598,6 +601,7 @@ export default function Events() {
           )
         )}
       </div>
+      </PullToRefresh>
     </AppLayout>
   );
 }
