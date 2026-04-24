@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,7 +11,8 @@ import {
 } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 
-import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download, Radio } from "lucide-react";
+import { CompModeBar } from "@/components/events/CompModeBar";
 import { ShareButton } from "@/components/ShareButton";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,17 @@ export default function EventDetail() {
   const [allDivisionsView, setAllDivisionsView] = useState(false);
   const [teamSearch, setTeamSearch] = useState("");
   const [expandedScheduleTeam, setExpandedScheduleTeam] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [compMode, setCompMode] = useState(searchParams.get("comp") === "1");
+
+  useEffect(() => {
+    if (compMode && searchParams.get("comp") !== "1") {
+      setSearchParams((p) => { p.set("comp", "1"); return p; }, { replace: true });
+    } else if (!compMode && searchParams.get("comp") === "1") {
+      setSearchParams((p) => { p.delete("comp"); return p; }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compMode]);
 
   // Reset division when navigating to a new event
   const prevEventId = useRef(eventId);
