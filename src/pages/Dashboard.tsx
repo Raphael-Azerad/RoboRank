@@ -35,6 +35,7 @@ function saveGoals(goals: { label: string; done: boolean }[]) {
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { season } = useSeason();
   const [teamNumber, setTeamNumber] = useState<string>("");
   const [matchesModalOpen, setMatchesModalOpen] = useState(false);
