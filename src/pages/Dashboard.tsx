@@ -3,6 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check, Clock, Users, Eye } from "lucide-react";
 import { TrendingTeamsWidget } from "@/components/dashboard/TrendingTeamsWidget";
+import { LiveEventCard } from "@/components/dashboard/LiveEventCard";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -206,6 +207,8 @@ export default function Dashboard() {
             </div>
           </motion.div>
         )}
+        {/* Live event auto-suggest (24h before -> 24h after) */}
+        {teamNumber && <LiveEventCard teamNumber={teamNumber} />}
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
