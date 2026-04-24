@@ -87,8 +87,9 @@ export default function EventDetail() {
   const { data: eventRankings, isLoading: rankingsLoading } = useQuery({
     queryKey: ["eventRankings", eventId, divisionId],
     queryFn: async () => {
-      const result = await getEventRankings(Number(eventId), divisionId);
-      return result?.data || result || [];
+      const result: any = await getEventRankings(Number(eventId), divisionId);
+      if (Array.isArray(result)) return result;
+      return result?.data || [];
     },
     enabled: !!eventId && (tab === "teams" || tab === "quals"),
   });
