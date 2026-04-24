@@ -376,6 +376,53 @@ export default function EventDetail() {
           </motion.div>
         )}
 
+        {/* Comp Mode toggle + panel */}
+        {event && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <Button
+                variant={compMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCompMode(!compMode)}
+                className="gap-1.5"
+              >
+                <Radio className={cn("h-3.5 w-3.5", compMode && "animate-pulse")} />
+                {compMode ? "Comp Mode: ON" : "Enter Comp Mode"}
+              </Button>
+              {compMode && (
+                <span className="text-[10px] text-muted-foreground">
+                  Filters scouting & alliance picker to your current division.
+                </span>
+              )}
+            </div>
+            {compMode && (() => {
+              // Filter teamStats to teams ranked in the current division.
+              const divisionTeamIds = new Set<number>(
+                (eventRankings as any[] || [])
+                  .map((r: any) => r.team?.id)
+                  .filter(Boolean)
+              );
+              const divisionStats = (teamStats || []).filter((t: any) =>
+                divisionTeamIds.size === 0 ? true : divisionTeamIds.has(t.id)
+              );
+              const divisionLabel =
+                hasDivisions && divisions[selectedDivisionIdx]?.name
+                  ? divisions[selectedDivisionIdx].name
+                  : "All teams";
+              return (
+                <CompModeBar
+                  eventId={Number(eventId)}
+                  eventName={event.name}
+                  divisionTeamStats={divisionStats}
+                  currentDivisionLabel={divisionLabel}
+                  open={compMode}
+                  onClose={() => setCompMode(false)}
+                />
+              );
+            })()}
+          </div>
+        )}
+
         {/* Tabs */}
         <div className="flex gap-2 flex-wrap">
           {[
