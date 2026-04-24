@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
-import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check, Clock, Users, Eye } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check, Clock, Users, Eye, UserPlus, AlertTriangle, RefreshCw } from "lucide-react";
 import { TrendingTeamsWidget } from "@/components/dashboard/TrendingTeamsWidget";
 import { LiveEventCard } from "@/components/dashboard/LiveEventCard";
 import { Button } from "@/components/ui/button";
