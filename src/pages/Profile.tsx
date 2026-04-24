@@ -549,6 +549,49 @@ export default function Profile() {
                 </Button>
               </div>
             </div>
+
+            {/* Danger Zone — Account Deletion */}
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 space-y-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <h3 className="font-display font-semibold text-sm">Danger Zone</h3>
+              </div>
+              {deletionRequestedAt ? (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Your account is scheduled for permanent deletion on{" "}
+                    <strong className="text-foreground">
+                      {deletionDeadline?.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                    </strong>{" "}
+                    ({daysRemaining} day{daysRemaining === 1 ? "" : "s"} remaining). You can cancel anytime before then.
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancelDeletion}
+                    disabled={deletionLoading}
+                    className="gap-1.5"
+                  >
+                    {deletionLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    Cancel deletion
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <p className="text-sm text-muted-foreground">
+                    Permanently delete your account and all associated data. Your account will be deactivated immediately and fully erased after a 30-day grace period. You can sign in during that window to cancel.
+                  </p>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="gap-1.5"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" /> Delete my account
+                  </Button>
+                </div>
+              )}
+            </div>
           </TabsContent>
 
           {/* TEAM TAB */}
