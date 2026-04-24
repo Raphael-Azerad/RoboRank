@@ -542,8 +542,54 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Trending Teams — global breakout performances */}
-        <TrendingTeamsWidget />
+        {/* Trending Teams — global breakout performances. Always visible on desktop;
+            tucked into a "More insights" disclosure on mobile to reduce density. */}
+        <div className="hidden md:block">
+          <TrendingTeamsWidget />
+        </div>
+
+        <details className="md:hidden group rounded-xl border border-border/50 card-gradient overflow-hidden">
+          <summary className="list-none flex items-center justify-between px-4 py-3.5 cursor-pointer min-h-[52px] active:bg-muted/40 transition-colors">
+            <span className="font-display font-semibold text-sm flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              More insights
+            </span>
+            <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="px-4 pb-4 space-y-4 border-t border-border/40 pt-4">
+            {/* Skills Breakdown — mobile clone */}
+            <div className="rounded-xl border border-border/40 bg-background/40 p-4">
+              <h3 className="font-display font-semibold text-sm mb-3 flex items-center gap-2">
+                <Target className="h-4 w-4 text-[hsl(var(--chart-4))]" /> Skills Breakdown
+              </h3>
+              <div className="text-center mb-3">
+                <div className="text-3xl font-display font-bold text-[hsl(var(--chart-4))]">{totalSkills}</div>
+                <div className="text-xs text-muted-foreground">Combined Score</div>
+              </div>
+              <div className="space-y-2.5">
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-muted-foreground">Driver</span>
+                    <span className="font-medium tabular-nums">{driverSkills}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-gradient-to-r from-primary to-primary/70" style={{ width: `${totalSkills > 0 ? (driverSkills / totalSkills) * 100 : 50}%` }} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-muted-foreground">Programming</span>
+                    <span className="font-medium tabular-nums">{progSkills}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-gradient-to-r from-[hsl(var(--chart-2))] to-[hsl(var(--chart-2))]/70" style={{ width: `${totalSkills > 0 ? (progSkills / totalSkills) * 100 : 50}%` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <TrendingTeamsWidget />
+          </div>
+        </details>
 
         {/* Modals */}
         {teamNumber && (
