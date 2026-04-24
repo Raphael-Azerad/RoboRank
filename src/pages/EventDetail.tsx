@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,7 +11,8 @@ import {
 } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 
-import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download, Radio } from "lucide-react";
+import { CompModeBar } from "@/components/events/CompModeBar";
 import { ShareButton } from "@/components/ShareButton";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { Button } from "@/components/ui/button";
@@ -55,6 +56,17 @@ export default function EventDetail() {
   const [allDivisionsView, setAllDivisionsView] = useState(false);
   const [teamSearch, setTeamSearch] = useState("");
   const [expandedScheduleTeam, setExpandedScheduleTeam] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [compMode, setCompMode] = useState(searchParams.get("comp") === "1");
+
+  useEffect(() => {
+    if (compMode && searchParams.get("comp") !== "1") {
+      setSearchParams((p) => { p.set("comp", "1"); return p; }, { replace: true });
+    } else if (!compMode && searchParams.get("comp") === "1") {
+      setSearchParams((p) => { p.delete("comp"); return p; }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [compMode]);
 
   // Reset division when navigating to a new event
   const prevEventId = useRef(eventId);
@@ -362,6 +374,53 @@ export default function EventDetail() {
               </Button>
             </div>
           </motion.div>
+        )}
+
+        {/* Comp Mode toggle + panel */}
+        {event && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <Button
+                variant={compMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => setCompMode(!compMode)}
+                className="gap-1.5"
+              >
+                <Radio className={cn("h-3.5 w-3.5", compMode && "animate-pulse")} />
+                {compMode ? "Comp Mode: ON" : "Enter Comp Mode"}
+              </Button>
+              {compMode && (
+                <span className="text-[10px] text-muted-foreground">
+                  Filters scouting & alliance picker to your current division.
+                </span>
+              )}
+            </div>
+            {compMode && (() => {
+              // Filter teamStats to teams ranked in the current division.
+              const divisionTeamIds = new Set<number>(
+                (eventRankings as any[] || [])
+                  .map((r: any) => r.team?.id)
+                  .filter(Boolean)
+              );
+              const divisionStats = (teamStats || []).filter((t: any) =>
+                divisionTeamIds.size === 0 ? true : divisionTeamIds.has(t.id)
+              );
+              const divisionLabel =
+                hasDivisions && divisions[selectedDivisionIdx]?.name
+                  ? divisions[selectedDivisionIdx].name
+                  : "All teams";
+              return (
+                <CompModeBar
+                  eventId={Number(eventId)}
+                  eventName={event.name}
+                  divisionTeamStats={divisionStats}
+                  currentDivisionLabel={divisionLabel}
+                  open={compMode}
+                  onClose={() => setCompMode(false)}
+                />
+              );
+            })()}
+          </div>
         )}
 
         {/* Tabs */}
