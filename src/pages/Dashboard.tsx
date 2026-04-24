@@ -335,14 +335,18 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        {/* ============ STAT CARDS ============ */}
-        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-          {[
+        {/* ============ STAT CARDS ============
+            Mobile: show 2 primary cards (Win Rate + Matches) above the fold,
+            tuck the rest into a "More stats" disclosure to reduce density.
+            Desktop: show all 4 in a row. */}
+        {(() => {
+          const allStats = [
             { title: "Win Rate", value: matchRecord ? `${matchRecord.winRate}%` : "-", icon: Trophy, sub: matchRecord ? `${matchRecord.wins}W-${matchRecord.losses}L-${matchRecord.ties}T` : "", color: "text-[hsl(var(--success))]", onClick: () => setWinsModalOpen(true) },
             { title: "Matches", value: totalMatchCount ? String(totalMatchCount) : "-", icon: Swords, sub: qualRecord ? `${qualRecord.eventsAttended} events` : "", color: "text-[hsl(var(--chart-2))]", onClick: () => setMatchesModalOpen(true) },
-            { title: "High Score", value: matchRecord ? String(matchRecord.highScore) : "-", icon: Zap, sub: matchRecord ? `Avg ${matchRecord.avgPoints} pts` : "", color: "text-[hsl(var(--chart-4))]" },
+            { title: "High Score", value: matchRecord ? String(matchRecord.highScore) : "-", icon: Zap, sub: matchRecord ? `Avg ${matchRecord.avgPoints} pts` : "", color: "text-[hsl(var(--chart-4))]", onClick: undefined as undefined | (() => void) },
             { title: "Awards", value: awards ? String(awards.length) : "-", icon: Medal, sub: awards?.length ? "Tap to view" : "", color: "text-primary", onClick: () => navigate("/awards") },
-          ].map((stat, i) => (
+          ];
+          const renderStat = (stat: typeof allStats[number], i: number) => (
             <motion.button
               key={stat.title}
               type="button"
@@ -364,8 +368,33 @@ export default function Dashboard() {
               <div className={cn("text-3xl font-display font-bold tabular-nums leading-none", stat.color)}>{stat.value}</div>
               {stat.sub && <p className="text-[11px] text-muted-foreground mt-2 tabular-nums">{stat.sub}</p>}
             </motion.button>
-          ))}
-        </div>
+          );
+          return (
+            <>
+              {/* Mobile: 2 primary cards */}
+              <div className="grid gap-3 grid-cols-2 md:hidden">
+                {allStats.slice(0, 2).map(renderStat)}
+              </div>
+              {/* Mobile: rest tucked into disclosure */}
+              <details className="md:hidden group rounded-xl border border-border/50 card-gradient overflow-hidden">
+                <summary className="list-none flex items-center justify-between px-4 py-3 cursor-pointer min-h-[48px] active:bg-muted/40 transition-colors">
+                  <span className="text-sm font-medium flex items-center gap-2">
+                    <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-90" />
+                    More stats
+                  </span>
+                  <span className="text-xs text-muted-foreground">High score · Awards</span>
+                </summary>
+                <div className="grid gap-3 grid-cols-2 px-3 pb-3 pt-1">
+                  {allStats.slice(2).map(renderStat)}
+                </div>
+              </details>
+              {/* Desktop: full row */}
+              <div className="hidden md:grid gap-3 grid-cols-2 lg:grid-cols-4">
+                {allStats.map(renderStat)}
+              </div>
+            </>
+          );
+        })()}
 
         {/* ============ MAIN GRID ============ */}
         <div className="grid gap-4 lg:grid-cols-3">
