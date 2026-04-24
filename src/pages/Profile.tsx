@@ -67,6 +67,12 @@ export default function Profile() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
+  // Account deletion (30-day soft delete)
+  const [deletionRequestedAt, setDeletionRequestedAt] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletionLoading, setDeletionLoading] = useState(false);
+
   useEffect(() => {
     async function loadUser() {
       const { data: authData } = await supabase.auth.getUser();
@@ -85,7 +91,7 @@ export default function Profile() {
       // Get followed team, view_mode, display_name from profile
       const { data: profile } = await supabase
         .from("profiles")
-        .select("followed_team, view_mode, display_name")
+        .select("followed_team, view_mode, display_name, deletion_requested_at")
         .eq("id", u.id)
         .maybeSingle();
 
@@ -101,6 +107,7 @@ export default function Profile() {
       const initialName = ((profile as any)?.display_name as string) || "";
       setDisplayName(initialName);
       setSavedDisplayName(initialName);
+      setDeletionRequestedAt(((profile as any)?.deletion_requested_at as string) || null);
 
       // Load logo
       const { data: files } = supabase.storage.from("team-logos").getPublicUrl(`${u.id}/logo`);
