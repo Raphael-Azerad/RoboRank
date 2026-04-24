@@ -314,6 +314,47 @@ export default function Profile() {
     navigate("/");
   };
 
+  const handleRequestDeletion = async () => {
+    if (deleteConfirmText !== "DELETE") {
+      toast.error('Type "DELETE" to confirm');
+      return;
+    }
+    setDeletionLoading(true);
+    const { data, error } = await supabase.functions.invoke("account-deletion", {
+      body: { action: "request" },
+    });
+    setDeletionLoading(false);
+    if (error || (data as any)?.error) {
+      toast.error("Couldn't schedule deletion: " + (error?.message || (data as any)?.error));
+      return;
+    }
+    setDeletionRequestedAt((data as any)?.deletion_requested_at || new Date().toISOString());
+    setShowDeleteDialog(false);
+    setDeleteConfirmText("");
+    toast.success("Account scheduled for deletion in 30 days. You can cancel anytime before then.");
+  };
+
+  const handleCancelDeletion = async () => {
+    setDeletionLoading(true);
+    const { data, error } = await supabase.functions.invoke("account-deletion", {
+      body: { action: "cancel" },
+    });
+    setDeletionLoading(false);
+    if (error || (data as any)?.error) {
+      toast.error("Couldn't cancel: " + (error?.message || (data as any)?.error));
+      return;
+    }
+    setDeletionRequestedAt(null);
+    toast.success("Account deletion cancelled.");
+  };
+
+  const deletionDeadline = deletionRequestedAt
+    ? new Date(new Date(deletionRequestedAt).getTime() + 30 * 24 * 60 * 60 * 1000)
+    : null;
+  const daysRemaining = deletionDeadline
+    ? Math.max(0, Math.ceil((deletionDeadline.getTime() - Date.now()) / (24 * 60 * 60 * 1000)))
+    : 0;
+
   const seasonInfo = SEASONS[season];
   const avatarStr = user.team_number || user.email || "?";
 
