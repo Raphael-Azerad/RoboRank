@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      alliance_watchlist: {
+        Row: {
+          created_at: string
+          event_id: number | null
+          event_name: string | null
+          id: string
+          notes: string | null
+          team_number: string
+          updated_at: string
+          user_id: string
+          watched_team: string
+        }
+        Insert: {
+          created_at?: string
+          event_id?: number | null
+          event_name?: string | null
+          id?: string
+          notes?: string | null
+          team_number: string
+          updated_at?: string
+          user_id: string
+          watched_team: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: number | null
+          event_name?: string | null
+          id?: string
+          notes?: string | null
+          team_number?: string
+          updated_at?: string
+          user_id?: string
+          watched_team?: string
+        }
+        Relationships: []
+      }
       api_cache: {
         Row: {
           cache_key: string
