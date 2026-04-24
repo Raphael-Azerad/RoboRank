@@ -15,6 +15,7 @@ import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal
 import { ShareButton } from "@/components/ShareButton";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -50,7 +51,9 @@ export default function EventDetail() {
   const [tab, setTab] = useState<DetailTab>("teams");
   const [h2hTeams, setH2hTeams] = useState<[string, string] | null>(null);
   const [h2hOpen, setH2hOpen] = useState(false);
-  const [selectedDivisionIdx, setSelectedDivisionIdx] = useState(0);
+  const [selectedDivisionIdx, setSelectedDivisionIdx] = useState<number>(0);
+  const [allDivisionsView, setAllDivisionsView] = useState(false);
+  const [teamSearch, setTeamSearch] = useState("");
   const [expandedScheduleTeam, setExpandedScheduleTeam] = useState<string | null>(null);
 
   // Reset division when navigating to a new event
@@ -58,6 +61,8 @@ export default function EventDetail() {
   useEffect(() => {
     if (eventId !== prevEventId.current) {
       setSelectedDivisionIdx(0);
+      setAllDivisionsView(false);
+      setTeamSearch("");
       prevEventId.current = eventId;
     }
   }, [eventId]);
