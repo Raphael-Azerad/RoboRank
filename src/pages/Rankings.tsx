@@ -5,7 +5,8 @@ import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { Search, Loader2, Zap, Globe, MapPin } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import {
   getWorldSkillsRankings,
   getTeamRankings,
@@ -341,8 +342,10 @@ export default function Rankings() {
 
   const gradeBadge = gradeLevel === "Both" ? "All" : gradeLevel === "High School" ? "HS" : "MS";
 
+  const queryClient = useQueryClient();
   return (
     <AppLayout>
+      <PullToRefresh onRefresh={() => queryClient.invalidateQueries()}>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-display font-bold">Rankings</h1>
@@ -621,6 +624,7 @@ export default function Rankings() {
           </>
         )}
       </div>
+      </PullToRefresh>
     </AppLayout>
   );
 }
