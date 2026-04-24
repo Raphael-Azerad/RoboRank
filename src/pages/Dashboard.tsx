@@ -18,6 +18,9 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { useTeamStatus } from "@/hooks/useTeamStatus";
 import { toast } from "sonner";
+import { PullToRefresh } from "@/components/PullToRefresh";
+import { useQueryClient } from "@tanstack/react-query";
+import { ChevronDown } from "lucide-react";
 
 // Season goals stored in localStorage
 function loadGoals(): { label: string; done: boolean }[] {
