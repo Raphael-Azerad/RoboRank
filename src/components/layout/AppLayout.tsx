@@ -202,7 +202,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         )}
       </header>
 
-      <main className="container py-6 flex-1 w-full pb-24 md:pb-6">{children}</main>
+      <main key={location.pathname} className="container py-6 flex-1 w-full pb-24 md:pb-6 route-enter">{children}</main>
 
       <MobileTabBar />
 
