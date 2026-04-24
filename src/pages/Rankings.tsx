@@ -421,7 +421,8 @@ export default function Rankings() {
           ) : (
             <>
               <div className="rounded-xl border border-border/50 overflow-hidden">
-                <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                {/* Desktop table header */}
+                <div className="hidden md:grid grid-cols-12 gap-2 px-6 py-3 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   <div className="col-span-1">#</div>
                   <div className="col-span-3">Team</div>
                   <div className="col-span-2 text-center">Driver</div>
@@ -436,23 +437,43 @@ export default function Rankings() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: Math.min(i * 0.01, 0.5) }}
                     onClick={() => navigate(`/team/${team.number}`)}
-                    className="grid grid-cols-12 gap-2 px-6 py-4 items-center border-t border-border/30 hover:bg-accent/50 transition-colors cursor-pointer"
+                    className="border-t border-border/30 hover:bg-accent/50 active:bg-accent/70 transition-colors cursor-pointer"
                   >
-                    <div className="col-span-1 stat-number text-muted-foreground">{team.rank}</div>
-                    <div className="col-span-3">
-                      <div className="font-display font-semibold">{team.number}</div>
-                      <div className="text-xs text-muted-foreground truncate">{team.name}</div>
+                    {/* Desktop row */}
+                    <div className="hidden md:grid grid-cols-12 gap-2 px-6 py-4 items-center">
+                      <div className="col-span-1 stat-number text-muted-foreground">{team.rank}</div>
+                      <div className="col-span-3">
+                        <div className="font-display font-semibold">{team.number}</div>
+                        <div className="text-xs text-muted-foreground truncate">{team.name}</div>
+                      </div>
+                      <div className="col-span-2 text-center stat-number text-sm">{team.driverScore}</div>
+                      <div className="col-span-2 text-center stat-number text-sm">{team.progScore}</div>
+                      <div className="col-span-2 text-center">
+                        <span className="stat-number text-primary text-lg">{team.combined}</span>
+                      </div>
+                      <div className="col-span-2 flex justify-center">
+                        {roboRankMap.has(team.id) ? (
+                          <RoboRankScore score={roboRankMap.get(team.id)!} size="sm" />
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
+                      </div>
                     </div>
-                    <div className="col-span-2 text-center stat-number text-sm">{team.driverScore}</div>
-                    <div className="col-span-2 text-center stat-number text-sm">{team.progScore}</div>
-                    <div className="col-span-2 text-center">
-                      <span className="stat-number text-primary text-lg">{team.combined}</span>
-                    </div>
-                    <div className="col-span-2 flex justify-center">
-                      {roboRankMap.has(team.id) ? (
-                        <RoboRankScore score={roboRankMap.get(team.id)!} size="sm" />
-                      ) : (
-                        <span className="text-xs text-muted-foreground">-</span>
+                    {/* Mobile card row */}
+                    <div className="md:hidden flex items-center gap-3 px-4 py-3 min-h-[64px]">
+                      <div className="w-7 text-right stat-number text-muted-foreground text-sm shrink-0">{team.rank}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-display font-semibold text-sm">{team.number}</div>
+                        <div className="text-xs text-muted-foreground truncate">{team.name}</div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="stat-number text-primary text-base leading-none">{team.combined}</div>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">D {team.driverScore} · P {team.progScore}</div>
+                      </div>
+                      {roboRankMap.has(team.id) && (
+                        <div className="shrink-0">
+                          <RoboRankScore score={roboRankMap.get(team.id)!} size="sm" />
+                        </div>
                       )}
                     </div>
                   </motion.div>
