@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { SeasonProvider } from "@/contexts/SeasonContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
+import { ComfortModeProvider } from "@/contexts/ComfortModeContext";
 import { getPostAuthRoute } from "@/lib/postAuthRoute";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
@@ -119,6 +120,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <SeasonProvider>
       <SubscriptionProvider>
+        <ComfortModeProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -154,6 +156,7 @@ const App = () => (
             </Routes>
           </BrowserRouter>
         </TooltipProvider>
+        </ComfortModeProvider>
       </SubscriptionProvider>
     </SeasonProvider>
   </QueryClientProvider>
