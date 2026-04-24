@@ -73,10 +73,11 @@ export default function Dashboard() {
     sessionStorage.setItem(captainToastKey, "1");
   }, [teamStatus, memberRole, memberTeamNumber, memberUserId]);
 
-  const { data: teamData, isLoading: teamLoading } = useQuery({
+  const { data: teamData, isLoading: teamLoading, error: teamError, refetch: refetchTeam } = useQuery({
     queryKey: ["team", teamNumber],
     queryFn: () => getTeamByNumber(teamNumber),
     enabled: !!teamNumber,
+    retry: 1,
   });
 
   const teamId = teamData?.id || null;
