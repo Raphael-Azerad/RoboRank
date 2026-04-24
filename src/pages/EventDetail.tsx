@@ -99,6 +99,27 @@ export default function EventDetail() {
     enabled: !!eventId && (tab === "teams" || tab === "quals"),
   });
 
+  // All-divisions rankings: merge rankings from every division
+  const { data: allDivisionsRankings, isLoading: allDivRankingsLoading } = useQuery({
+    queryKey: ["eventRankingsAll", eventId, divisions.map((d: any) => d.id).join(",")],
+    queryFn: async () => {
+      if (!divisions.length) return [];
+      const all = await Promise.all(
+        divisions.map(async (div: any) => {
+          try {
+            const result: any = await getEventRankings(Number(eventId), div.id);
+            const arr: any[] = Array.isArray(result) ? result : (result?.data || []);
+            return arr.map((r) => ({ ...r, _divisionName: div.name || `Division ${div.id}` }));
+          } catch {
+            return [];
+          }
+        })
+      );
+      return all.flat();
+    },
+    enabled: !!eventId && hasDivisions && allDivisionsView && tab === "teams",
+  });
+
   const { data: allMatches, isLoading: matchesLoading } = useQuery({
     queryKey: ["eventMatches", eventId, divisionId],
     queryFn: () => getEventMatches(Number(eventId), divisionId),
@@ -131,15 +152,14 @@ export default function EventDetail() {
     enabled: !!eventId && tab === "awards",
   });
 
-  // RoboRank for teams (batch, max 50)
+  // RoboRank for teams (batched concurrency, all teams)
   const { data: teamStats, isLoading: statsLoading } = useQuery({
     queryKey: ["eventTeamStats", teams?.map((t: any) => t.id)],
     queryFn: async () => {
       if (!teams) return [];
-      const subset = teams.slice(0, 50);
       const results: any[] = [];
-      for (let i = 0; i < subset.length; i += 15) {
-        const batch = subset.slice(i, i + 15);
+      for (let i = 0; i < teams.length; i += 15) {
+        const batch = teams.slice(i, i + 15);
         await Promise.all(batch.map(async (team: any) => {
           try {
             const [rankings, skillsScore] = await Promise.all([
