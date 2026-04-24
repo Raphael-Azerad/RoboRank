@@ -5,7 +5,8 @@ import { getTeamByNumber, SEASONS, SEASON_LIST } from "@/lib/robotevents";
 import { useSeason, type GradeLevel } from "@/contexts/SeasonContext";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock, Crown, ChevronDown, ChevronUp, Trash2, Shield, Key, LogOut, Camera, CreditCard, Eye, AlertTriangle, ArrowRightLeft } from "lucide-react";
+import { User, Mail, Hash, MapPin, Building, Loader2, Calendar, GraduationCap, Users, Check, X as XIcon, Clock, Crown, ChevronDown, ChevronUp, Trash2, Shield, Key, LogOut, Camera, CreditCard, Eye, AlertTriangle, ArrowRightLeft, Type } from "lucide-react";
+import { useComfortMode } from "@/contexts/ComfortModeContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -39,6 +40,7 @@ function getAvatarColor(str: string) {
 
 export default function Profile() {
   const { season, setSeason, gradeLevel, setGradeLevel } = useSeason();
+  const { mode: comfortMode, setMode: setComfortMode } = useComfortMode();
   
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -812,6 +814,37 @@ export default function Profile() {
                       {opt.label}
                     </Button>
                   ))}
+                </div>
+              </div>
+              <div className="border-t border-border/30" />
+              <div className="space-y-2.5">
+                <div className="flex items-center gap-2">
+                  <Type className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Comfort reading mode</span>
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {comfortMode === "comfort" ? "On" : "Off"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Bumps text size and tap targets app-wide for easier reading on small screens.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant={comfortMode === "default" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setComfortMode("default")}
+                    className="text-xs flex-1"
+                  >
+                    Default
+                  </Button>
+                  <Button
+                    variant={comfortMode === "comfort" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setComfortMode("comfort")}
+                    className="text-xs flex-1"
+                  >
+                    Comfort (larger)
+                  </Button>
                 </div>
               </div>
               <div className="border-t border-border/30" />

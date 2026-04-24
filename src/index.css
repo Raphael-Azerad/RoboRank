@@ -200,3 +200,31 @@ html.capacitor-native, html.capacitor-native body {
 .route-enter {
   animation: route-enter 220ms ease-out both;
 }
+
+/* ============ COMFORT READING MODE ============
+   Toggled via ComfortModeContext. Bumps base sizing app-wide so dense
+   pages (rankings, dashboard) are easier to scan without zooming. */
+html.comfort-mode {
+  font-size: 17px;
+}
+html.comfort-mode body {
+  font-size: 16px;
+  line-height: 1.65;
+}
+html.comfort-mode .text-xs { font-size: 0.85rem !important; }
+html.comfort-mode .text-sm { font-size: 0.95rem !important; }
+html.comfort-mode .text-\[10px\] { font-size: 12px !important; }
+html.comfort-mode .text-\[11px\] { font-size: 13px !important; }
+html.comfort-mode button,
+html.comfort-mode a > button {
+  min-height: 48px;
+}
+@media (max-width: 767px) {
+  html.comfort-mode {
+    font-size: 18px;
+  }
+  html.comfort-mode body {
+    font-size: 17px;
+  }
+}
+
