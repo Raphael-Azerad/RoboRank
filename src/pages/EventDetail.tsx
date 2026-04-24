@@ -15,6 +15,7 @@ import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal
 import { ShareButton } from "@/components/ShareButton";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -50,7 +51,9 @@ export default function EventDetail() {
   const [tab, setTab] = useState<DetailTab>("teams");
   const [h2hTeams, setH2hTeams] = useState<[string, string] | null>(null);
   const [h2hOpen, setH2hOpen] = useState(false);
-  const [selectedDivisionIdx, setSelectedDivisionIdx] = useState(0);
+  const [selectedDivisionIdx, setSelectedDivisionIdx] = useState<number>(0);
+  const [allDivisionsView, setAllDivisionsView] = useState(false);
+  const [teamSearch, setTeamSearch] = useState("");
   const [expandedScheduleTeam, setExpandedScheduleTeam] = useState<string | null>(null);
 
   // Reset division when navigating to a new event
@@ -58,6 +61,8 @@ export default function EventDetail() {
   useEffect(() => {
     if (eventId !== prevEventId.current) {
       setSelectedDivisionIdx(0);
+      setAllDivisionsView(false);
+      setTeamSearch("");
       prevEventId.current = eventId;
     }
   }, [eventId]);
@@ -87,10 +92,32 @@ export default function EventDetail() {
   const { data: eventRankings, isLoading: rankingsLoading } = useQuery({
     queryKey: ["eventRankings", eventId, divisionId],
     queryFn: async () => {
-      const result = await getEventRankings(Number(eventId), divisionId);
-      return result?.data || result || [];
+      const result: any = await getEventRankings(Number(eventId), divisionId);
+      if (Array.isArray(result)) return result;
+      return result?.data || [];
     },
     enabled: !!eventId && (tab === "teams" || tab === "quals"),
+  });
+
+  // All-divisions rankings: merge rankings from every division
+  const { data: allDivisionsRankings, isLoading: allDivRankingsLoading } = useQuery({
+    queryKey: ["eventRankingsAll", eventId, divisions.map((d: any) => d.id).join(",")],
+    queryFn: async () => {
+      if (!divisions.length) return [];
+      const all = await Promise.all(
+        divisions.map(async (div: any) => {
+          try {
+            const result: any = await getEventRankings(Number(eventId), div.id);
+            const arr: any[] = Array.isArray(result) ? result : (result?.data || []);
+            return arr.map((r) => ({ ...r, _divisionName: div.name || `Division ${div.id}` }));
+          } catch {
+            return [];
+          }
+        })
+      );
+      return all.flat();
+    },
+    enabled: !!eventId && hasDivisions && allDivisionsView && tab === "teams",
   });
 
   const { data: allMatches, isLoading: matchesLoading } = useQuery({
@@ -125,15 +152,14 @@ export default function EventDetail() {
     enabled: !!eventId && tab === "awards",
   });
 
-  // RoboRank for teams (batch, max 50)
+  // RoboRank for teams (batched concurrency, all teams)
   const { data: teamStats, isLoading: statsLoading } = useQuery({
     queryKey: ["eventTeamStats", teams?.map((t: any) => t.id)],
     queryFn: async () => {
       if (!teams) return [];
-      const subset = teams.slice(0, 50);
       const results: any[] = [];
-      for (let i = 0; i < subset.length; i += 15) {
-        const batch = subset.slice(i, i + 15);
+      for (let i = 0; i < teams.length; i += 15) {
+        const batch = teams.slice(i, i + 15);
         await Promise.all(batch.map(async (team: any) => {
           try {
             const [rankings, skillsScore] = await Promise.all([
@@ -362,7 +388,7 @@ export default function EventDetail() {
         </div>
 
         {/* Division Selector - below tabs */}
-        {hasDivisions && (
+        {hasDivisions && tab !== "teams" && (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Division:</span>
             {divisions.map((div: any, idx: number) => (
@@ -382,110 +408,217 @@ export default function EventDetail() {
         {/* Teams Tab */}
         {tab === "teams" && (
           <>
-            {statsLoading && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
-                <Loader2 className="h-4 w-4 animate-spin" /> Calculating RoboRank scores...
-              </div>
-            )}
-
-            {eventRankings && Array.isArray(eventRankings) && eventRankings.length > 0 && !statsLoading && (
-              <div className="rounded-xl border border-border/50 overflow-hidden">
-                <div className="px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Event Rankings
-                </div>
-                <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-muted/30 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                  <div className="col-span-1">#</div>
-                  <div className="col-span-3">Team</div>
-                  <div className="col-span-2 text-center">Record</div>
-                  <div className="col-span-1 text-center">WP</div>
-                  <div className="col-span-1 text-center">AP</div>
-                  <div className="col-span-1 text-center">SP</div>
-                  <div className="col-span-1 text-center">High</div>
-                  <div className="col-span-2 text-center">RoboRank</div>
-                </div>
-                {(eventRankings as any[]).slice(0, 50).map((r: any, i: number) => {
-                  const teamRR = teamStats?.find((t: any) => t.id === r.team?.id);
-                  return (
-                    <div
-                      key={r.id || i}
-                      onClick={() => r.team?.name && navigate(`/team/${r.team.name}`)}
-                      className="grid grid-cols-12 gap-2 px-4 py-3 items-center border-t border-border/20 hover:bg-accent/30 transition-colors cursor-pointer"
-                    >
-                      <div className="col-span-1 stat-number text-xs text-muted-foreground">{r.rank}</div>
-                      <div className="col-span-3">
-                        <div className="font-display font-semibold text-sm">{r.team?.name || "-"}</div>
-                      </div>
-                      <div className="col-span-2 text-center text-xs">
-                        <span className="text-[hsl(var(--success))]">{r.wins}W</span>
-                        <span className="text-muted-foreground">-</span>
-                        <span className="text-destructive">{r.losses}L</span>
-                        {r.ties > 0 && <><span className="text-muted-foreground">-</span><span>{r.ties}T</span></>}
-                      </div>
-                      <div className="col-span-1 text-center text-xs stat-number">{r.wp}</div>
-                      <div className="col-span-1 text-center text-xs text-muted-foreground">{r.ap}</div>
-                      <div className="col-span-1 text-center text-xs text-muted-foreground">{r.sp}</div>
-                      <div className="col-span-1 text-center text-xs stat-number">{r.high_score}</div>
-                      <div className="col-span-2 flex justify-center">
-                        {teamRR ? <RoboRankScore score={teamRR.roboRank} size="sm" /> : <span className="text-xs text-muted-foreground">-</span>}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {teamStats && teamStats.length > 0 && !(eventRankings && Array.isArray(eventRankings) && eventRankings.length > 0) && (
-              <div className="rounded-xl border border-border/50 overflow-hidden">
-                <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  <div className="col-span-1">#</div>
-                  <div className="col-span-3">Team</div>
-                  <div className="col-span-2 text-center">RoboRank</div>
-                  <div className="col-span-2 text-center hidden sm:block">Record</div>
-                  <div className="col-span-2 text-center">Win Rate</div>
-                  <div className="col-span-2 text-center hidden sm:block">Location</div>
-                </div>
-                {teamStats.map((team: any, i: number) => (
-                  <motion.div
-                    key={team.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: i * 0.02 }}
-                    onClick={() => navigate(`/team/${team.number}`)}
-                    className="grid grid-cols-12 gap-2 px-6 py-4 items-center border-t border-border/30 hover:bg-accent/50 transition-colors cursor-pointer"
+            {/* Division selector w/ All Divisions option for Teams tab */}
+            {hasDivisions && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Division:</span>
+                <Button
+                  variant={allDivisionsView ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setAllDivisionsView(true)}
+                  className="text-xs h-7"
+                >
+                  All Divisions
+                </Button>
+                {divisions.map((div: any, idx: number) => (
+                  <Button
+                    key={div.id}
+                    variant={!allDivisionsView && selectedDivisionIdx === idx ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => { setAllDivisionsView(false); setSelectedDivisionIdx(idx); }}
+                    className="text-xs h-7"
                   >
-                    <div className="col-span-1 stat-number text-muted-foreground">{i + 1}</div>
-                    <div className="col-span-3">
-                      <div className="font-display font-semibold">{team.number}</div>
-                      <div className="text-xs text-muted-foreground truncate">{team.team_name}</div>
-                    </div>
-                    <div className="col-span-2 flex justify-center">
-                      <RoboRankScore score={team.roboRank} size="sm" />
-                    </div>
-                    <div className="col-span-2 text-center text-sm hidden sm:block">
-                      {team.record ? (
-                        <>
-                          <span className="text-[hsl(var(--success))]">{team.record.wins}W</span>
-                          <span className="text-muted-foreground mx-0.5">-</span>
-                          <span className="text-destructive">{team.record.losses}L</span>
-                        </>
-                      ) : "-"}
-                    </div>
-                    <div className="col-span-2 text-center stat-number text-sm">
-                      {team.record ? `${team.record.winRate}%` : "-"}
-                    </div>
-                    <div className="col-span-2 text-center text-xs text-muted-foreground hidden sm:block truncate">
-                      {team.location?.city}, {team.location?.region}
-                    </div>
-                  </motion.div>
+                    {div.name || `Division ${idx + 1}`}
+                  </Button>
                 ))}
               </div>
             )}
 
-            {teams && teamStats && teams.length > 50 && (
-              <p className="text-sm text-muted-foreground text-center">
-                Showing top 50 of {teams.length} teams.
-              </p>
+            {/* Search box */}
+            <Input
+              type="search"
+              value={teamSearch}
+              onChange={(e) => setTeamSearch(e.target.value)}
+              placeholder="Search team number or name..."
+              className="max-w-sm"
+            />
+
+            {(statsLoading || (allDivisionsView && allDivRankingsLoading)) && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground py-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                {allDivisionsView ? "Loading all divisions..." : `Calculating RoboRank scores for ${teams?.length || 0} teams...`}
+              </div>
             )}
+
+            {/* All-Divisions merged rankings view */}
+            {allDivisionsView && allDivisionsRankings && allDivisionsRankings.length > 0 && !allDivRankingsLoading && (() => {
+              const search = teamSearch.trim().toLowerCase();
+              const filtered = (allDivisionsRankings as any[]).filter((r) => {
+                if (!search) return true;
+                const num = (r.team?.name || "").toLowerCase();
+                const name = (r.team?.team_name || "").toLowerCase();
+                return num.includes(search) || name.includes(search);
+              });
+              return (
+                <div className="rounded-xl border border-border/50 overflow-hidden">
+                  <div className="px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                    <span>All Divisions Rankings</span>
+                    <span className="text-[10px] text-muted-foreground normal-case">{filtered.length} teams</span>
+                  </div>
+                  <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-muted/30 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                    <div className="col-span-1">Rk</div>
+                    <div className="col-span-3">Team</div>
+                    <div className="col-span-2">Division</div>
+                    <div className="col-span-2 text-center">Record</div>
+                    <div className="col-span-1 text-center">WP</div>
+                    <div className="col-span-1 text-center">High</div>
+                    <div className="col-span-2 text-center">RoboRank</div>
+                  </div>
+                  {filtered.map((r: any, i: number) => {
+                    const teamRR = teamStats?.find((t: any) => t.id === r.team?.id);
+                    return (
+                      <div
+                        key={`${r._divisionName}-${r.id || i}`}
+                        onClick={() => r.team?.name && navigate(`/team/${r.team.name}`)}
+                        className="grid grid-cols-12 gap-2 px-4 py-3 items-center border-t border-border/20 hover:bg-accent/30 transition-colors cursor-pointer"
+                      >
+                        <div className="col-span-1 stat-number text-xs text-muted-foreground">{r.rank}</div>
+                        <div className="col-span-3">
+                          <div className="font-display font-semibold text-sm">{r.team?.name || "-"}</div>
+                          <div className="text-[10px] text-muted-foreground truncate">{r.team?.team_name}</div>
+                        </div>
+                        <div className="col-span-2 text-[11px] text-muted-foreground truncate">{r._divisionName}</div>
+                        <div className="col-span-2 text-center text-xs">
+                          <span className="text-[hsl(var(--success))]">{r.wins}W</span>
+                          <span className="text-muted-foreground">-</span>
+                          <span className="text-destructive">{r.losses}L</span>
+                          {r.ties > 0 && <><span className="text-muted-foreground">-</span><span>{r.ties}T</span></>}
+                        </div>
+                        <div className="col-span-1 text-center text-xs stat-number">{r.wp}</div>
+                        <div className="col-span-1 text-center text-xs stat-number">{r.high_score}</div>
+                        <div className="col-span-2 flex justify-center">
+                          {teamRR ? <RoboRankScore score={teamRR.roboRank} size="sm" /> : <span className="text-xs text-muted-foreground">-</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* Single-division rankings view */}
+            {!allDivisionsView && eventRankings && Array.isArray(eventRankings) && eventRankings.length > 0 && (() => {
+              const search = teamSearch.trim().toLowerCase();
+              const filtered = (eventRankings as any[]).filter((r) => {
+                if (!search) return true;
+                const num = (r.team?.name || "").toLowerCase();
+                const name = (r.team?.team_name || "").toLowerCase();
+                return num.includes(search) || name.includes(search);
+              });
+              return (
+                <div className="rounded-xl border border-border/50 overflow-hidden">
+                  <div className="px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between">
+                    <span>Event Rankings</span>
+                    <span className="text-[10px] text-muted-foreground normal-case">{filtered.length} teams</span>
+                  </div>
+                  <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-muted/30 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                    <div className="col-span-1">#</div>
+                    <div className="col-span-3">Team</div>
+                    <div className="col-span-2 text-center">Record</div>
+                    <div className="col-span-1 text-center">WP</div>
+                    <div className="col-span-1 text-center">AP</div>
+                    <div className="col-span-1 text-center">SP</div>
+                    <div className="col-span-1 text-center">High</div>
+                    <div className="col-span-2 text-center">RoboRank</div>
+                  </div>
+                  {filtered.map((r: any, i: number) => {
+                    const teamRR = teamStats?.find((t: any) => t.id === r.team?.id);
+                    return (
+                      <div
+                        key={r.id || i}
+                        onClick={() => r.team?.name && navigate(`/team/${r.team.name}`)}
+                        className="grid grid-cols-12 gap-2 px-4 py-3 items-center border-t border-border/20 hover:bg-accent/30 transition-colors cursor-pointer"
+                      >
+                        <div className="col-span-1 stat-number text-xs text-muted-foreground">{r.rank}</div>
+                        <div className="col-span-3">
+                          <div className="font-display font-semibold text-sm">{r.team?.name || "-"}</div>
+                        </div>
+                        <div className="col-span-2 text-center text-xs">
+                          <span className="text-[hsl(var(--success))]">{r.wins}W</span>
+                          <span className="text-muted-foreground">-</span>
+                          <span className="text-destructive">{r.losses}L</span>
+                          {r.ties > 0 && <><span className="text-muted-foreground">-</span><span>{r.ties}T</span></>}
+                        </div>
+                        <div className="col-span-1 text-center text-xs stat-number">{r.wp}</div>
+                        <div className="col-span-1 text-center text-xs text-muted-foreground">{r.ap}</div>
+                        <div className="col-span-1 text-center text-xs text-muted-foreground">{r.sp}</div>
+                        <div className="col-span-1 text-center text-xs stat-number">{r.high_score}</div>
+                        <div className="col-span-2 flex justify-center">
+                          {teamRR ? <RoboRankScore score={teamRR.roboRank} size="sm" /> : <span className="text-xs text-muted-foreground">-</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* Fallback: no rankings available yet (e.g. event hasn't started) — show team list */}
+            {!allDivisionsView && teamStats && teamStats.length > 0 && !(eventRankings && Array.isArray(eventRankings) && eventRankings.length > 0) && (() => {
+              const search = teamSearch.trim().toLowerCase();
+              const filtered = teamStats.filter((t: any) => {
+                if (!search) return true;
+                const num = (t.number || "").toLowerCase();
+                const name = (t.team_name || "").toLowerCase();
+                return num.includes(search) || name.includes(search);
+              });
+              return (
+                <div className="rounded-xl border border-border/50 overflow-hidden">
+                  <div className="grid grid-cols-12 gap-2 px-6 py-3 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <div className="col-span-1">#</div>
+                    <div className="col-span-3">Team</div>
+                    <div className="col-span-2 text-center">RoboRank</div>
+                    <div className="col-span-2 text-center hidden sm:block">Record</div>
+                    <div className="col-span-2 text-center">Win Rate</div>
+                    <div className="col-span-2 text-center hidden sm:block">Location</div>
+                  </div>
+                  {filtered.map((team: any, i: number) => (
+                    <motion.div
+                      key={team.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: Math.min(i * 0.01, 0.5) }}
+                      onClick={() => navigate(`/team/${team.number}`)}
+                      className="grid grid-cols-12 gap-2 px-6 py-4 items-center border-t border-border/30 hover:bg-accent/50 transition-colors cursor-pointer"
+                    >
+                      <div className="col-span-1 stat-number text-muted-foreground">{i + 1}</div>
+                      <div className="col-span-3">
+                        <div className="font-display font-semibold">{team.number}</div>
+                        <div className="text-xs text-muted-foreground truncate">{team.team_name}</div>
+                      </div>
+                      <div className="col-span-2 flex justify-center">
+                        <RoboRankScore score={team.roboRank} size="sm" />
+                      </div>
+                      <div className="col-span-2 text-center text-sm hidden sm:block">
+                        {team.record ? (
+                          <>
+                            <span className="text-[hsl(var(--success))]">{team.record.wins}W</span>
+                            <span className="text-muted-foreground mx-0.5">-</span>
+                            <span className="text-destructive">{team.record.losses}L</span>
+                          </>
+                        ) : "-"}
+                      </div>
+                      <div className="col-span-2 text-center stat-number text-sm">
+                        {team.record ? `${team.record.winRate}%` : "-"}
+                      </div>
+                      <div className="col-span-2 text-center text-xs text-muted-foreground hidden sm:block truncate">
+                        {team.location?.city}, {team.location?.region}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              );
+            })()}
           </>
         )}
 
