@@ -543,6 +543,7 @@ export default function Dashboard() {
             <WinsModal open={winsModalOpen} onOpenChange={setWinsModalOpen} teamNumber={teamNumber} seasonLabel={seasonLabel} wonMatches={wonMatches} totalMatchCount={totalMatchCount} winRate={matchRecord?.winRate ?? 0} />
           </>
         )}
+        </>)}
       </div>
     </AppLayout>
   );
