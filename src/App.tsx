@@ -24,6 +24,7 @@ import Awards from "./pages/Awards";
 import MatchPredictor from "./pages/MatchPredictor";
 import TeamNotes from "./pages/TeamNotes";
 import SeasonProgress from "./pages/SeasonProgress";
+import Alliances from "./pages/Alliances";
 import JoinTeam from "./pages/JoinTeam";
 import NotFound from "./pages/NotFound";
 import VerifyEmail from "./pages/VerifyEmail";
@@ -140,6 +141,7 @@ const App = () => (
               <Route path="/predictor" element={<ProtectedRoute><MatchPredictor /></ProtectedRoute>} />
               <Route path="/notes" element={<ProtectedRoute><TeamNotes /></ProtectedRoute>} />
               <Route path="/progress" element={<ProtectedRoute><SeasonProgress /></ProtectedRoute>} />
+              <Route path="/alliances" element={<ProtectedRoute><Alliances /></ProtectedRoute>} />
               <Route path="/team/:teamNumber" element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />
               <Route path="/event/:eventId" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
               <Route path="/awards" element={<ProtectedRoute><Awards /></ProtectedRoute>} />
