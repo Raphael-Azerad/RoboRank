@@ -885,6 +885,49 @@ export default function Profile() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Account Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={(open) => { setShowDeleteDialog(open); if (!open) setDeleteConfirmText(""); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Delete your account?
+            </DialogTitle>
+            <DialogDescription className="space-y-3 pt-2">
+              <span className="block">This will schedule your account for permanent deletion. After 30 days, the following will be erased and cannot be recovered:</span>
+              <ul className="list-disc list-inside space-y-1 text-sm">
+                <li>Your profile, team membership, and uploaded logo</li>
+                <li>Saved notes, predictions, and scouting reports</li>
+                <li>Your active subscription (cancel separately if applicable)</li>
+              </ul>
+              <span className="block">You can sign back in within 30 days to cancel deletion.</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="delete-confirm" className="text-xs">Type <strong>DELETE</strong> to confirm</Label>
+            <Input
+              id="delete-confirm"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="DELETE"
+              className="bg-card"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowDeleteDialog(false)}>Cancel</Button>
+            <Button
+              variant="destructive"
+              onClick={handleRequestDeletion}
+              disabled={deletionLoading || deleteConfirmText !== "DELETE"}
+              className="gap-1.5"
+            >
+              {deletionLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+              Schedule deletion
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
