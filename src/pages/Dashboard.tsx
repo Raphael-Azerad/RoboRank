@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
-import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check, Clock, Users, Eye } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check, Clock, Users, Eye, UserPlus, AlertTriangle, RefreshCw } from "lucide-react";
 import { TrendingTeamsWidget } from "@/components/dashboard/TrendingTeamsWidget";
 import { LiveEventCard } from "@/components/dashboard/LiveEventCard";
 import { Button } from "@/components/ui/button";
@@ -72,10 +73,11 @@ export default function Dashboard() {
     sessionStorage.setItem(captainToastKey, "1");
   }, [teamStatus, memberRole, memberTeamNumber, memberUserId]);
 
-  const { data: teamData, isLoading: teamLoading } = useQuery({
+  const { data: teamData, isLoading: teamLoading, error: teamError, refetch: refetchTeam } = useQuery({
     queryKey: ["team", teamNumber],
     queryFn: () => getTeamByNumber(teamNumber),
     enabled: !!teamNumber,
+    retry: 1,
   });
 
   const teamId = teamData?.id || null;
@@ -179,7 +181,48 @@ export default function Dashboard() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Pending team approval banner */}
+        {/* No-team empty state — supersedes the dashboard until a team is set */}
+        {teamStatus === "no-team" && !teamNumber && (
+          <EmptyState
+            icon={UserPlus}
+            size="lg"
+            title="Welcome to RoboRank"
+            description="Join your competition team to unlock your dashboard, scouting reports, and live match analytics — or follow a team as a parent or coach."
+            action={
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Link to="/join-team">
+                  <Button variant="hero" className="gap-1.5">
+                    <Users className="h-4 w-4" /> Join or follow a team
+                  </Button>
+                </Link>
+                <Link to="/rankings">
+                  <Button variant="outline" className="gap-1.5">
+                    Browse rankings <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            }
+          />
+        )}
+
+        {/* RobotEvents API failure — team configured but data couldn't load */}
+        {teamStatus !== "no-team" && teamNumber && teamError && !teamData && (
+          <EmptyState
+            icon={AlertTriangle}
+            title="Couldn't reach the RobotEvents API"
+            description="We had trouble loading data for your team. This is usually temporary — please check your connection and try again."
+            action={
+              <Button onClick={() => refetchTeam()} variant="outline" className="gap-1.5">
+                <RefreshCw className="h-4 w-4" /> Retry
+              </Button>
+            }
+          />
+        )}
+
+        {/* Hide the rest of the dashboard until we have a team to show */}
+        {teamStatus !== "no-team" && (<>
+
+
         {teamStatus === "pending" && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
@@ -500,6 +543,7 @@ export default function Dashboard() {
             <WinsModal open={winsModalOpen} onOpenChange={setWinsModalOpen} teamNumber={teamNumber} seasonLabel={seasonLabel} wonMatches={wonMatches} totalMatchCount={totalMatchCount} winRate={matchRecord?.winRate ?? 0} />
           </>
         )}
+        </>)}
       </div>
     </AppLayout>
   );
