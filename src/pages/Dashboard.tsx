@@ -181,7 +181,48 @@ export default function Dashboard() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Pending team approval banner */}
+        {/* No-team empty state — supersedes the dashboard until a team is set */}
+        {teamStatus === "no-team" && !teamNumber && (
+          <EmptyState
+            icon={UserPlus}
+            size="lg"
+            title="Welcome to RoboRank"
+            description="Join your competition team to unlock your dashboard, scouting reports, and live match analytics — or follow a team as a parent or coach."
+            action={
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Link to="/join-team">
+                  <Button variant="hero" className="gap-1.5">
+                    <Users className="h-4 w-4" /> Join or follow a team
+                  </Button>
+                </Link>
+                <Link to="/rankings">
+                  <Button variant="outline" className="gap-1.5">
+                    Browse rankings <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            }
+          />
+        )}
+
+        {/* RobotEvents API failure — team configured but data couldn't load */}
+        {teamStatus !== "no-team" && teamNumber && teamError && !teamData && (
+          <EmptyState
+            icon={AlertTriangle}
+            title="Couldn't reach the RobotEvents API"
+            description="We had trouble loading data for your team. This is usually temporary — please check your connection and try again."
+            action={
+              <Button onClick={() => refetchTeam()} variant="outline" className="gap-1.5">
+                <RefreshCw className="h-4 w-4" /> Retry
+              </Button>
+            }
+          />
+        )}
+
+        {/* Hide the rest of the dashboard until we have a team to show */}
+        {teamStatus !== "no-team" && (<>
+
+
         {teamStatus === "pending" && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
