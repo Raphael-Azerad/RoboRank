@@ -369,8 +369,8 @@ export default function Dashboard() {
 
         {/* ============ MAIN GRID ============ */}
         <div className="grid gap-4 lg:grid-cols-3">
-          {/* Left col: Skills + Goals */}
-          <div className="space-y-4">
+          {/* Left col: Skills + Goals — collapsed on mobile, always visible on desktop */}
+          <div className="space-y-4 hidden lg:block">
             {/* Skills Breakdown */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
