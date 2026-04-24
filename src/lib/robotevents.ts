@@ -90,7 +90,7 @@ export async function getEventTeams(eventId: number) {
 }
 
 export async function getEventRankings(eventId: number, divisionId: number) {
-  return fetchRobotEvents(`/events/${eventId}/divisions/${divisionId}/rankings`);
+  return fetchAllPages(`/events/${eventId}/divisions/${divisionId}/rankings`);
 }
 
 export async function getEventMatches(eventId: number, divisionId: number) {
