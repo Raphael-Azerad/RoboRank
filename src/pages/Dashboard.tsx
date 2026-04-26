@@ -20,6 +20,8 @@ import { useTeamStatus } from "@/hooks/useTeamStatus";
 import { toast } from "sonner";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { PinnedSection } from "@/components/dashboard/PinnedSection";
+import { DashboardModeToggle } from "@/components/dashboard/DashboardModeToggle";
+import { useDashboardMode } from "@/hooks/useDashboardMode";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
 
