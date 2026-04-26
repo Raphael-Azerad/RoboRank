@@ -60,6 +60,24 @@ export default function EventDetail() {
   const [expandedScheduleTeam, setExpandedScheduleTeam] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [compMode, setCompMode] = useState(searchParams.get("comp") === "1");
+  const [myTeamNumber, setMyTeamNumber] = useState<string | null>(null);
+
+  // Fetch user's team number for HUD targeting
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user || cancelled) return;
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("team_number,followed_team")
+        .eq("id", u.user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      setMyTeamNumber((p?.team_number || p?.followed_team || null) as string | null);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (compMode && searchParams.get("comp") !== "1") {
