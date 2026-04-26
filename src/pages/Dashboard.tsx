@@ -1,10 +1,9 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, lazy, Suspense } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check, Clock, Users, Eye, UserPlus, AlertTriangle, RefreshCw } from "lucide-react";
 
-import { LiveEventCard } from "@/components/dashboard/LiveEventCard";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,19 +11,24 @@ import { getTeamByNumber, getTeamRankings, getTeamAwards, getTeamMatches, getTea
 import { useSeason } from "@/contexts/SeasonContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { MatchesPlayedModal, WinsModal, groupMatchesByEvent, filterWonMatches } from "@/components/matches/MatchModals";
+import { groupMatchesByEvent, filterWonMatches } from "@/components/matches/MatchModals";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { useTeamStatus } from "@/hooks/useTeamStatus";
 import { toast } from "sonner";
 import { PullToRefresh } from "@/components/PullToRefresh";
-import { PinnedSection } from "@/components/dashboard/PinnedSection";
-import { FirstRunTour } from "@/components/onboarding/FirstRunTour";
 import { DashboardModeToggle } from "@/components/dashboard/DashboardModeToggle";
 import { useDashboardMode } from "@/hooks/useDashboardMode";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
+
+// Lazy-load below-the-fold / non-critical chunks to speed up first paint
+const LiveEventCard = lazy(() => import("@/components/dashboard/LiveEventCard").then(m => ({ default: m.LiveEventCard })));
+const PinnedSection = lazy(() => import("@/components/dashboard/PinnedSection").then(m => ({ default: m.PinnedSection })));
+const FirstRunTour = lazy(() => import("@/components/onboarding/FirstRunTour").then(m => ({ default: m.FirstRunTour })));
+const MatchesPlayedModal = lazy(() => import("@/components/matches/MatchModals").then(m => ({ default: m.MatchesPlayedModal })));
+const WinsModal = lazy(() => import("@/components/matches/MatchModals").then(m => ({ default: m.WinsModal })));
 
 // Season goals stored in localStorage
 function loadGoals(): { label: string; done: boolean }[] {
