@@ -136,7 +136,7 @@ export default function EventDetail() {
     enabled: !!eventId,
   });
 
-  const { data: eventRankings, isLoading: rankingsLoading } = useQuery({
+  const { data: eventRankings, isLoading: rankingsLoading, dataUpdatedAt: rankingsUpdatedAt, isFetching: rankingsFetching } = useQuery({
     queryKey: ["eventRankings", eventId, divisionId],
     queryFn: async () => {
       const result: any = await getEventRankings(Number(eventId), divisionId);
@@ -144,6 +144,8 @@ export default function EventDetail() {
       return result?.data || [];
     },
     enabled: !!eventId && (tab === "teams" || tab === "quals"),
+    refetchInterval: livePollMs,
+    refetchIntervalInBackground: false,
   });
 
   // All-divisions rankings: merge rankings from every division
