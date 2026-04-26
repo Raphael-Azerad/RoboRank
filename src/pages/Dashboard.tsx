@@ -86,6 +86,13 @@ export default function Dashboard() {
     sessionStorage.setItem(captainToastKey, "1");
   }, [teamStatus, memberRole, memberTeamNumber, memberUserId]);
 
+  // Defer non-critical fetches until after first paint to keep the hero snappy
+  const [secondaryReady, setSecondaryReady] = useState(false);
+  useEffect(() => {
+    const id = window.requestAnimationFrame(() => setSecondaryReady(true));
+    return () => window.cancelAnimationFrame(id);
+  }, []);
+
   const { data: teamData, isLoading: teamLoading, error: teamError, refetch: refetchTeam } = useQuery({
     queryKey: ["team", teamNumber],
     queryFn: () => getTeamByNumber(teamNumber),
@@ -95,15 +102,10 @@ export default function Dashboard() {
 
   const teamId = teamData?.id || null;
 
+  // Critical: rankings + skills score drive the hero RoboRank score
   const { data: rankings, isLoading: rankingsLoading } = useQuery({
     queryKey: ["teamRankings", teamId, season],
     queryFn: () => getTeamRankings(teamId!, season),
-    enabled: !!teamId,
-  });
-
-  const { data: awards } = useQuery({
-    queryKey: ["teamAwards", teamId, season],
-    queryFn: () => getTeamAwards(teamId!, season),
     enabled: !!teamId,
   });
 
@@ -113,22 +115,29 @@ export default function Dashboard() {
     enabled: !!teamId,
   });
 
+  // Deferred: only fetched after first paint
+  const { data: awards } = useQuery({
+    queryKey: ["teamAwards", teamId, season],
+    queryFn: () => getTeamAwards(teamId!, season),
+    enabled: !!teamId && secondaryReady,
+  });
+
   const { data: matches } = useQuery({
     queryKey: ["teamMatches", teamId, season],
     queryFn: () => getTeamMatches(teamId!, season),
-    enabled: !!teamId,
+    enabled: !!teamId && secondaryReady,
   });
 
   const { data: skillsData } = useQuery({
     queryKey: ["teamSkillsRaw", teamId, season],
     queryFn: () => getTeamSkills(teamId!, season),
-    enabled: !!teamId,
+    enabled: !!teamId && secondaryReady,
   });
 
   const { data: upcomingEvents } = useQuery({
     queryKey: ["teamEvents", teamId, season],
     queryFn: () => getTeamEvents(teamId!, season),
-    enabled: !!teamId,
+    enabled: !!teamId && secondaryReady,
   });
 
   const qualRecord = rankings ? calculateRecordFromRankings(rankings) : null;
