@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { cn } from "@/lib/utils";
 import { MatchesPlayedModal, WinsModal, groupMatchesByEvent, filterWonMatches } from "@/components/matches/MatchModals";
 import { ShareButton } from "@/components/ShareButton";
+import { PinButton } from "@/components/PinButton";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { RoboRankHistory } from "@/components/profile/RoboRankHistory";
 import { AwardsHeatmap } from "@/components/profile/AwardsHeatmap";
