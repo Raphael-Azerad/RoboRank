@@ -13,6 +13,7 @@ import { useSeason } from "@/contexts/SeasonContext";
 
 import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download, Radio, Video } from "lucide-react";
 import { CompModeBar } from "@/components/events/CompModeBar";
+import { LiveMatchHUD } from "@/components/events/LiveMatchHUD";
 import { ShareButton } from "@/components/ShareButton";
 import { PinButton } from "@/components/PinButton";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
