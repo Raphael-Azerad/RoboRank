@@ -20,6 +20,7 @@ import { useTeamStatus } from "@/hooks/useTeamStatus";
 import { toast } from "sonner";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { PinnedSection } from "@/components/dashboard/PinnedSection";
+import { FirstRunTour } from "@/components/onboarding/FirstRunTour";
 import { DashboardModeToggle } from "@/components/dashboard/DashboardModeToggle";
 import { useDashboardMode } from "@/hooks/useDashboardMode";
 import { useQueryClient } from "@tanstack/react-query";
@@ -326,6 +327,7 @@ export default function Dashboard() {
 
         {/* Personal pins — fast access to starred events/teams/views */}
         <PinnedSection />
+        <FirstRunTour />
 
         <motion.div
           initial={{ opacity: 0, y: 15 }}
