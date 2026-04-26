@@ -21,7 +21,7 @@ import {
 } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 import type { GradeLevel } from "@/contexts/SeasonContext";
-import { motion } from "framer-motion";
+// motion no longer used — long lists use lightweight CSS fade-in for perf
 
 interface SkillsTeam {
   rank: number;
