@@ -654,9 +654,24 @@ export default function EventDetail() {
               });
               return (
                 <div className="rounded-xl border border-border/50 overflow-hidden">
-                  <div className="px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between">
-                    <span>Event Rankings</span>
-                    <span className="text-[10px] text-muted-foreground normal-case">{filtered.length} teams</span>
+                  <div className="px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      Event Rankings
+                      {isLiveEvent && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[9px] normal-case tracking-normal">
+                          <span className={cn("h-1.5 w-1.5 rounded-full bg-primary", rankingsFetching ? "animate-pulse" : "")} />
+                          Live · auto-updating
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground normal-case">
+                      {filtered.length} teams
+                      {isLiveEvent && rankingsUpdatedAt > 0 && (
+                        <span className="ml-2 tabular-nums">
+                          updated {Math.max(0, Math.floor((Date.now() - rankingsUpdatedAt) / 1000))}s ago
+                        </span>
+                      )}
+                    </span>
                   </div>
                   <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-muted/30 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                     <div className="col-span-1">#</div>
