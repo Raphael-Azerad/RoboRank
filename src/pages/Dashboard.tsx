@@ -335,12 +335,22 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* Live event auto-suggest (24h before -> 24h after) */}
-        {teamNumber && <LiveEventCard teamNumber={teamNumber} />}
+        {/* Live event auto-suggest (24h before -> 24h after) — deferred */}
+        {teamNumber && secondaryReady && (
+          <Suspense fallback={null}>
+            <LiveEventCard teamNumber={teamNumber} />
+          </Suspense>
+        )}
 
         {/* Personal pins — fast access to starred events/teams/views */}
-        <PinnedSection />
-        <FirstRunTour />
+        <Suspense fallback={<div className="h-16 rounded-xl border border-border/40 bg-muted/20 animate-pulse" />}>
+          <PinnedSection />
+        </Suspense>
+        {secondaryReady && (
+          <Suspense fallback={null}>
+            <FirstRunTour />
+          </Suspense>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 15 }}
@@ -728,11 +738,16 @@ export default function Dashboard() {
         </details>
 
         {/* Modals */}
-        {teamNumber && (
-          <>
-            <MatchesPlayedModal open={matchesModalOpen} onOpenChange={setMatchesModalOpen} teamNumber={teamNumber} seasonLabel={seasonLabel} matchesByEvent={matchesByEvent} totalMatchCount={totalMatchCount} />
-            <WinsModal open={winsModalOpen} onOpenChange={setWinsModalOpen} teamNumber={teamNumber} seasonLabel={seasonLabel} wonMatches={wonMatches} totalMatchCount={totalMatchCount} winRate={matchRecord?.winRate ?? 0} />
-          </>
+        {/* Modals — only mount when opened to avoid loading their chunks upfront */}
+        {teamNumber && (matchesModalOpen || winsModalOpen) && (
+          <Suspense fallback={null}>
+            {matchesModalOpen && (
+              <MatchesPlayedModal open={matchesModalOpen} onOpenChange={setMatchesModalOpen} teamNumber={teamNumber} seasonLabel={seasonLabel} matchesByEvent={matchesByEvent} totalMatchCount={totalMatchCount} />
+            )}
+            {winsModalOpen && (
+              <WinsModal open={winsModalOpen} onOpenChange={setWinsModalOpen} teamNumber={teamNumber} seasonLabel={seasonLabel} wonMatches={wonMatches} totalMatchCount={totalMatchCount} winRate={matchRecord?.winRate ?? 0} />
+            )}
+          </Suspense>
         )}
         </>)}
       </div>
