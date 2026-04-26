@@ -138,6 +138,42 @@ export default function Dashboard() {
     return filterWonMatches(matches, teamNumber);
   }, [matches, teamNumber]);
 
+  // Current win/loss streak from most recent matches (chronological from latest)
+  const currentStreak = useMemo(() => {
+    if (!matches || !teamNumber || matches.length === 0) return null;
+    // Sort by start desc; matches array shape: { started, scored, alliances: [{color, score, teams:[{team:{name}}]}] }
+    const sorted = [...matches]
+      .filter((m: any) => m.scored)
+      .sort((a: any, b: any) => new Date(b.started || 0).getTime() - new Date(a.started || 0).getTime());
+    let kind: "W" | "L" | "T" | null = null;
+    let count = 0;
+    for (const m of sorted) {
+      const myAlliance = m.alliances?.find((al: any) =>
+        al.teams?.some((t: any) => (t.team?.name || "") === teamNumber),
+      );
+      const oppAlliance = m.alliances?.find((al: any) => al !== myAlliance);
+      if (!myAlliance || !oppAlliance) continue;
+      let res: "W" | "L" | "T";
+      if (myAlliance.score > oppAlliance.score) res = "W";
+      else if (myAlliance.score < oppAlliance.score) res = "L";
+      else res = "T";
+      if (kind === null) { kind = res; count = 1; }
+      else if (kind === res) count++;
+      else break;
+    }
+    return kind && count > 0 ? { kind, count } : null;
+  }, [matches, teamNumber]);
+
+  // Time-of-day greeting
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    if (h < 5) return "Up late";
+    if (h < 12) return "Good morning";
+    if (h < 17) return "Good afternoon";
+    if (h < 21) return "Good evening";
+    return "Good night";
+  }, []);
+
   // Skills breakdown
   const driverSkills = useMemo(() => {
     if (!skillsData) return 0;
@@ -264,11 +300,15 @@ export default function Dashboard() {
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative overflow-hidden rounded-2xl border border-border/60 bg-card/60 backdrop-blur-xl p-6 md:p-8 mesh-bg"
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          className="relative overflow-hidden rounded-2xl border border-border/60 card-elevated p-6 md:p-8"
         >
-          {/* Decorative grid lines */}
+          {/* Ambient drifting glows for cinematic feel */}
+          <div className="pointer-events-none absolute -top-32 -right-24 w-[28rem] h-[28rem] rounded-full bg-primary/15 blur-3xl animate-ambient-drift" />
+          <div className="pointer-events-none absolute -bottom-32 -left-24 w-[24rem] h-[24rem] rounded-full bg-[hsl(var(--chart-2))]/10 blur-3xl animate-ambient-drift" style={{ animationDelay: "-7s" }} />
+          {/* Decorative grid */}
           <div
-            className="pointer-events-none absolute inset-0 opacity-[0.04]"
+            className="pointer-events-none absolute inset-0 opacity-[0.05]"
             style={{
               backgroundImage:
                 "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
@@ -276,31 +316,56 @@ export default function Dashboard() {
               maskImage: "radial-gradient(ellipse at top right, black 30%, transparent 75%)",
             }}
           />
-          <div className="absolute -top-20 -right-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl" />
 
           <div className="relative flex flex-col md:flex-row items-center gap-6">
-            <div className="shrink-0">
+            <motion.div
+              className="shrink-0 relative"
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            >
+              {/* Soft halo behind RoboRank score */}
+              <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl scale-110 animate-pulse-glow" />
               {loading ? (
-                <div className="h-28 w-28 flex items-center justify-center">
+                <div className="h-28 w-28 flex items-center justify-center relative">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : (
-                <RoboRankScore score={roboRank ?? 0} size="lg" />
+                <div className="relative">
+                  <RoboRankScore score={roboRank ?? 0} size="lg" />
+                </div>
               )}
-            </div>
-            <div className="flex-1 text-center md:text-left space-y-2.5">
-              <div className="flex items-center gap-2 justify-center md:justify-start">
+            </motion.div>
+
+            <div className="flex-1 text-center md:text-left space-y-2.5 min-w-0">
+              <div className="flex items-center gap-2 justify-center md:justify-start flex-wrap">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                   <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                   {seasonLabel}
                 </span>
+                {currentStreak && currentStreak.count >= 2 && (
+                  <motion.span
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.4 }}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider border",
+                      currentStreak.kind === "W" && "border-[hsl(var(--success))]/40 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]",
+                      currentStreak.kind === "L" && "border-destructive/40 bg-destructive/10 text-destructive",
+                      currentStreak.kind === "T" && "border-border bg-muted/40 text-muted-foreground",
+                    )}
+                  >
+                    {currentStreak.kind === "W" && <Zap className="h-2.5 w-2.5" />}
+                    {currentStreak.count}-{currentStreak.kind} streak
+                  </motion.span>
+                )}
               </div>
-              <h1 className="text-3xl md:text-4xl font-display font-bold tracking-tight">
+              <p className="text-xs md:text-sm text-muted-foreground font-medium">
+                {greeting}{teamData?.team_name ? `, ${teamData.team_name}` : ""}.
+              </p>
+              <h1 className="text-3xl md:text-5xl font-display font-bold tracking-tight leading-[1.05]">
                 Team <span className="text-gradient">{teamNumber || "-"}</span>
               </h1>
-              <p className="text-sm text-muted-foreground">
-                {teamData?.team_name || "Your competition command center"}
-              </p>
               {matchRecord && (
                 <div className="flex items-center gap-3 justify-center md:justify-start text-sm pt-1">
                   <span className="flex items-center gap-1.5">

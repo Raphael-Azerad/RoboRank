@@ -195,35 +195,95 @@ export default function TeamDetail() {
         <div className="flex flex-col gap-4">
           <Link to="/rankings"><Button variant="ghost" className="gap-2 -ml-2"><ArrowLeft className="h-4 w-4" /> Back to Rankings</Button></Link>
 
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-            <div>
-              <h1 className="text-3xl font-display font-bold">
-                Team <span className="text-gradient">{teamData.number}</span>
-              </h1>
-              <p className="text-lg text-muted-foreground mt-1">{teamData.team_name}</p>
-              <div className="flex flex-wrap gap-4 mt-2 text-sm text-muted-foreground">
-                {teamData.location && (
-                  <span className="flex items-center gap-1.5">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {teamData.location.city}, {teamData.location.region}, {teamData.location.country}
+          {/* ============ CINEMATIC TEAM HERO ============ */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="relative overflow-hidden rounded-2xl border border-border/60 card-elevated p-6 md:p-8"
+          >
+            {/* Ambient drifting glows */}
+            <div className="pointer-events-none absolute -top-32 -right-24 w-[28rem] h-[28rem] rounded-full bg-primary/15 blur-3xl animate-ambient-drift" />
+            <div className="pointer-events-none absolute -bottom-32 -left-24 w-[24rem] h-[24rem] rounded-full bg-[hsl(var(--chart-2))]/10 blur-3xl animate-ambient-drift" style={{ animationDelay: "-7s" }} />
+            {/* Decorative grid */}
+            <div
+              className="pointer-events-none absolute inset-0 opacity-[0.05]"
+              style={{
+                backgroundImage:
+                  "linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)",
+                backgroundSize: "32px 32px",
+                maskImage: "radial-gradient(ellipse at top right, black 30%, transparent 75%)",
+              }}
+            />
+
+            <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex-1 min-w-0 space-y-2.5 text-center md:text-left">
+                <div className="flex items-center gap-2 justify-center md:justify-start flex-wrap">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/60 px-2.5 py-0.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                    {seasonLabel}
                   </span>
-                )}
-                {teamData.organization && (
-                  <span className="flex items-center gap-1.5">
-                    <Building className="h-3.5 w-3.5" />
-                    {teamData.organization}
-                  </span>
+                  {matchRecord && matchRecord.winRate >= 70 && (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider border border-[hsl(var(--success))]/40 bg-[hsl(var(--success))]/10 text-[hsl(var(--success))]">
+                      <TrendingUp className="h-2.5 w-2.5" /> {matchRecord.winRate}% win
+                    </span>
+                  )}
+                </div>
+                <h1 className="text-3xl md:text-5xl font-display font-bold tracking-tight leading-[1.05]">
+                  Team <span className="text-gradient">{teamData.number}</span>
+                </h1>
+                <p className="text-base md:text-lg text-foreground/90 font-medium">{teamData.team_name}</p>
+                <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs md:text-sm text-muted-foreground justify-center md:justify-start pt-1">
+                  {teamData.location && (
+                    <span className="flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5" />
+                      {teamData.location.city}, {teamData.location.region}, {teamData.location.country}
+                    </span>
+                  )}
+                  {teamData.organization && (
+                    <span className="flex items-center gap-1.5">
+                      <Building className="h-3.5 w-3.5" />
+                      {teamData.organization}
+                    </span>
+                  )}
+                </div>
+                {matchRecord && (
+                  <div className="flex items-center gap-3 justify-center md:justify-start text-sm pt-1.5">
+                    <span className="flex items-center gap-1.5">
+                      <div className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--success))]" />
+                      <span className="font-display font-bold text-[hsl(var(--success))] tabular-nums">{matchRecord.wins}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">W</span>
+                    </span>
+                    <span className="text-border">·</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="font-display font-bold text-destructive tabular-nums">{matchRecord.losses}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">L</span>
+                    </span>
+                    <span className="text-border">·</span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="font-display font-bold text-muted-foreground tabular-nums">{matchRecord.ties}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase tracking-wider">T</span>
+                    </span>
+                  </div>
                 )}
               </div>
-              <p className="text-xs text-primary mt-2">{seasonLabel}</p>
-            </div>
-            <div className="flex flex-col items-end gap-3 shrink-0">
-              <RoboRankScore score={roboRank ?? 0} size="lg" />
-              <ShareButton
-                title={`Team ${teamData.number} on RoboRank`}
-                text={`${teamData.team_name || "VEX V5 team"} - RoboRank ${roboRank ?? "-"}`}
-              />
+              <motion.div
+                className="flex flex-col items-center md:items-end gap-3 shrink-0 relative"
+                initial={{ scale: 0.85, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-full bg-primary/20 blur-2xl scale-110 animate-pulse-glow" />
+                  <div className="relative">
+                    <RoboRankScore score={roboRank ?? 0} size="lg" />
+                  </div>
+                </div>
+                <ShareButton
+                  title={`Team ${teamData.number} on RoboRank`}
+                  text={`${teamData.team_name || "VEX V5 team"} - RoboRank ${roboRank ?? "-"}`}
+                />
+              </motion.div>
             </div>
           </motion.div>
         </div>
