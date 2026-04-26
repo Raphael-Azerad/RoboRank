@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, Calendar, Home, Search, Trophy, User, LogOut, Menu, X, Swords, StickyNote, TrendingUp, Bell, Users } from "lucide-react";
+import { BarChart3, Calendar, Home, Search, Trophy, User, LogOut, Menu, X, Swords, StickyNote, TrendingUp, Bell, Users, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -193,6 +193,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   Profile
                 </Button>
               </Link>
+              <Link to="/help" onClick={() => setMobileMenuOpen(false)}>
+                <Button variant="ghost" className="w-full justify-start gap-3">
+                  <HelpCircle className="h-4 w-4" />
+                  Help & Tips
+                </Button>
+              </Link>
               <Button variant="ghost" className="w-full justify-start gap-3" onClick={handleLogout}>
                 <LogOut className="h-4 w-4" />
                 Logout
@@ -217,6 +223,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Link to="/refund" className="hover:text-primary transition-colors">Refund Policy</Link>
             <Link to="/cookies" className="hover:text-primary transition-colors">Cookies</Link>
             <Link to="/about#scoring" className="hover:text-primary transition-colors">How RoboRank Works</Link>
+            <Link to="/help" className="hover:text-primary transition-colors">Help & Tips</Link>
           </nav>
         </div>
       </footer>
