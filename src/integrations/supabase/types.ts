@@ -302,6 +302,51 @@ export type Database = {
         }
         Relationships: []
       }
+      scout_board_entries: {
+        Row: {
+          author_id: string
+          author_name: string | null
+          body: string
+          category: string
+          created_at: string
+          event_id: number
+          event_name: string | null
+          id: string
+          rating: number | null
+          team_number: string
+          updated_at: string
+          watched_team: string
+        }
+        Insert: {
+          author_id: string
+          author_name?: string | null
+          body?: string
+          category?: string
+          created_at?: string
+          event_id: number
+          event_name?: string | null
+          id?: string
+          rating?: number | null
+          team_number: string
+          updated_at?: string
+          watched_team: string
+        }
+        Update: {
+          author_id?: string
+          author_name?: string | null
+          body?: string
+          category?: string
+          created_at?: string
+          event_id?: number
+          event_name?: string | null
+          id?: string
+          rating?: number | null
+          team_number?: string
+          updated_at?: string
+          watched_team?: string
+        }
+        Relationships: []
+      }
       scouting_reports: {
         Row: {
           created_at: string
