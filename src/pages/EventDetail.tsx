@@ -110,6 +110,21 @@ export default function EventDetail() {
   const hasDivisions = divisions.length > 1;
   const divisionId = divisions[selectedDivisionIdx]?.id || divisions[0]?.id || 1;
 
+  // Live event detection — within the event window (start day → end day inclusive) or explicitly ongoing
+  const isLiveEvent = useMemo(() => {
+    if (!event) return false;
+    if (event.ongoing) return true;
+    const now = Date.now();
+    const start = event.start ? new Date(event.start).getTime() : 0;
+    const endRaw = event.end ? new Date(event.end).getTime() : start;
+    // pad end to end-of-day
+    const end = endRaw + 24 * 60 * 60 * 1000;
+    return start && now >= start && now <= end;
+  }, [event]);
+
+  // Auto-poll cadence (ms) when the event is live and the user is viewing
+  const livePollMs = isLiveEvent ? 30_000 : false as const;
+
   useDocumentMeta({
     title: event?.name ? `${event.name} | RoboRank` : "Event | RoboRank",
     description: event ? `Rankings, matches, skills and predictions for ${event.name}${event.location?.city ? " in " + event.location.city : ""}.` : undefined,
