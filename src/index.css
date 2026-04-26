@@ -75,11 +75,17 @@
 
   body {
     @apply bg-background text-foreground font-body antialiased;
+    font-feature-settings: "ss01", "cv11", "cv02";
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-display;
+    @apply font-display tracking-tight;
   }
+  h1 { letter-spacing: -0.025em; }
+  h2 { letter-spacing: -0.02em; }
+
+  /* Standardize lucide icon stroke for crisper rendering at small sizes */
+  svg.lucide { stroke-width: 1.75; }
 }
 
 @layer utilities {
@@ -116,6 +122,36 @@
 
   .hairline {
     border: 1px solid hsl(220 14% 20% / 0.8);
+  }
+
+  /* === Micro-interaction utilities === */
+  /* Subtle press: scales down on tap; works on buttons, cards, links */
+  .press {
+    @apply transition-transform duration-150 ease-out active:scale-[0.97];
+  }
+  .press-soft {
+    @apply transition-transform duration-150 ease-out active:scale-[0.985];
+  }
+  /* Lift on hover (desktop), no-op on touch (no hover) */
+  .lift {
+    @apply transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-lg;
+  }
+  /* Glow ring on hover */
+  .ring-glow {
+    @apply transition-shadow duration-300 hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.4)];
+  }
+  /* Shimmer text gradient sweep — for premium hero numbers */
+  .text-shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--foreground)) 0%,
+      hsl(var(--foreground)) 40%,
+      hsl(var(--primary)) 50%,
+      hsl(var(--foreground)) 60%,
+      hsl(var(--foreground)) 100%
+    );
+    background-size: 200% 100%;
+    @apply bg-clip-text text-transparent animate-shimmer;
   }
 
   /* Subtle noise texture for premium dark surfaces */
