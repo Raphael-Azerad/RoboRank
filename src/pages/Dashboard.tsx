@@ -40,6 +40,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { season } = useSeason();
+  const { mode: dashMode } = useDashboardMode();
   const [teamNumber, setTeamNumber] = useState<string>("");
   const [matchesModalOpen, setMatchesModalOpen] = useState(false);
   const [winsModalOpen, setWinsModalOpen] = useState(false);
