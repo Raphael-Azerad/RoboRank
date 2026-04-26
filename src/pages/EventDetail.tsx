@@ -14,6 +14,7 @@ import { useSeason } from "@/contexts/SeasonContext";
 import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download, Radio, Video } from "lucide-react";
 import { CompModeBar } from "@/components/events/CompModeBar";
 import { ShareButton } from "@/components/ShareButton";
+import { PinButton } from "@/components/PinButton";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -296,7 +297,17 @@ export default function EventDetail() {
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <div className="flex items-start justify-between gap-3">
               <h1 className="text-2xl font-display font-bold">{event.name}</h1>
-              <ShareButton title={`${event.name} on RoboRank`} text={`Live coverage, rankings & matches for ${event.name}`} />
+              <div className="flex items-center gap-2 shrink-0">
+                <PinButton
+                  kind="event"
+                  ref={String(event.id)}
+                  label={event.name}
+                  sublabel={event.location ? `${event.location.city}, ${event.location.region}` : null}
+                  route={`/event/${event.id}`}
+                  icon="Calendar"
+                />
+                <ShareButton title={`${event.name} on RoboRank`} text={`Live coverage, rankings & matches for ${event.name}`} />
+              </div>
             </div>
             <div className="flex flex-wrap gap-4 mt-2 text-sm text-muted-foreground">
               {event.location && (
