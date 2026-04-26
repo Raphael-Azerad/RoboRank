@@ -17,7 +17,35 @@ const KIND_ICON = {
 export function PinnedSection() {
   const { pins, removePin, loading, signedIn } = usePins();
 
-  if (!signedIn || loading || pins.length === 0) return null;
+  if (!signedIn || loading) return null;
+
+  // Friendly empty state instead of nothing — teaches the pin feature.
+  if (pins.length === 0) {
+    return (
+      <motion.section
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15 }}
+        className="rounded-xl border border-dashed border-border/60 bg-card/30 px-5 py-4 flex items-center gap-3"
+      >
+        <div className="rounded-lg bg-primary/10 ring-1 ring-primary/20 p-2 shrink-0">
+          <PinIcon className="h-4 w-4 text-primary" strokeWidth={1.75} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-medium">Pin events and teams</div>
+          <div className="text-[11px] text-muted-foreground">
+            Tap the pin icon on any event or team to bookmark it here.
+          </div>
+        </div>
+        <Link
+          to="/events"
+          className="text-[11px] font-semibold text-primary hover:underline shrink-0 hidden sm:inline"
+        >
+          Browse events →
+        </Link>
+      </motion.section>
+    );
+  }
 
   return (
     <motion.section
