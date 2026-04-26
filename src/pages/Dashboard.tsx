@@ -3,7 +3,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check, Clock, Users, Eye, UserPlus, AlertTriangle, RefreshCw } from "lucide-react";
-import { TrendingTeamsWidget } from "@/components/dashboard/TrendingTeamsWidget";
+
 import { LiveEventCard } from "@/components/dashboard/LiveEventCard";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
@@ -571,12 +571,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Trending Teams — global breakout performances. Always visible on desktop;
-            tucked into a "More insights" disclosure on mobile to reduce density. */}
-        <div className="hidden md:block">
-          <TrendingTeamsWidget />
-        </div>
-
         <details className="md:hidden group rounded-xl border border-border/50 card-gradient overflow-hidden">
           <summary className="list-none flex items-center justify-between px-4 py-3.5 cursor-pointer min-h-[52px] active:bg-muted/40 transition-colors">
             <span className="font-display font-semibold text-sm flex items-center gap-2">
@@ -616,7 +610,6 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <TrendingTeamsWidget />
           </div>
         </details>
 
