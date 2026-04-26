@@ -498,14 +498,11 @@ export default function Rankings() {
                 <div className="col-span-2 text-center">Win Rate</div>
                 <div className="col-span-2 text-center">Skills</div>
               </div>
-              {filteredRoboRank.map((team, i) => (
-                <motion.div
+              {filteredRoboRank.slice(0, displayCount).map((team, i) => (
+                <div
                   key={team.number}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: Math.min(i * 0.015, 0.5) }}
                   onClick={() => navigate(`/team/${team.number}`)}
-                  className="border-t border-border/30 hover:bg-accent/50 active:bg-accent/70 transition-colors cursor-pointer"
+                  className="border-t border-border/30 hover:bg-accent/50 active:bg-accent/70 transition-colors cursor-pointer animate-fade-in"
                 >
                   {/* Desktop row */}
                   <div className="hidden md:grid grid-cols-12 gap-2 px-6 py-4 items-center">
@@ -529,7 +526,7 @@ export default function Rankings() {
                     <div className="col-span-2 text-center stat-number text-sm">{team.winRate}</div>
                     <div className="col-span-2 text-center stat-number text-sm text-muted-foreground">{team.skillsCombined}</div>
                   </div>
-                  {/* Mobile card row — RoboRank score + win rate are the headline */}
+                  {/* Mobile card row */}
                   <div className="md:hidden flex items-center gap-3 px-4 py-3 min-h-[64px]">
                     <div className="w-7 text-right stat-number text-muted-foreground text-sm shrink-0">{i + 1}</div>
                     <div className="flex-1 min-w-0">
@@ -547,8 +544,15 @@ export default function Rankings() {
                       <RoboRankScore score={team.score} size="sm" />
                     </div>
                   </div>
-                </motion.div>
+                </div>
               ))}
+              {filteredRoboRank.length > displayCount && (
+                <div className="flex justify-center p-4 border-t border-border/30">
+                  <Button variant="outline" onClick={() => setDisplayCount((c) => c + 50)}>
+                    Show More ({filteredRoboRank.length - displayCount} remaining)
+                  </Button>
+                </div>
+              )}
             </div>
         )}
 
