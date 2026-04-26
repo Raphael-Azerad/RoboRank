@@ -11,9 +11,10 @@ import {
 } from "@/lib/robotevents";
 import { useSeason } from "@/contexts/SeasonContext";
 
-import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download, Radio, Video } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download, Radio, Video, ClipboardList } from "lucide-react";
 import { CompModeBar } from "@/components/events/CompModeBar";
 import { LiveMatchHUD } from "@/components/events/LiveMatchHUD";
+import { ScoutBoard } from "@/components/events/ScoutBoard";
 import { ShareButton } from "@/components/ShareButton";
 import { PinButton } from "@/components/PinButton";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
@@ -27,7 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { generateScoutingReport, downloadCSV, downloadExcel } from "@/lib/scoutingReport";
 import { toast } from "sonner";
 
-type DetailTab = "teams" | "quals" | "elims" | "skills" | "awards" | "predictions" | "schedule";
+type DetailTab = "teams" | "quals" | "elims" | "skills" | "awards" | "predictions" | "schedule" | "scout";
 
 // Match round types: 1=Practice, 2=Qualification, 3=R128..6=Finals
 function roundLabel(round: number): string {
@@ -511,6 +512,7 @@ export default function EventDetail() {
             { key: "awards" as DetailTab, label: "Awards", icon: Medal },
             { key: "predictions" as DetailTab, label: "Predictions", icon: TrendingUp },
             { key: "schedule" as DetailTab, label: "Schedule Difficulty", icon: BarChart3 },
+            { key: "scout" as DetailTab, label: "Scout Board", icon: ClipboardList },
           ].map(({ key, label, icon: Icon }) => (
             <Button
               key={key}
@@ -1201,6 +1203,17 @@ export default function EventDetail() {
               </div>
             )}
           </div>
+        )}
+
+        {tab === "scout" && event && (
+          <ScoutBoard
+            eventId={Number(eventId)}
+            eventName={event.name}
+            candidateTeams={(teamStats || teams || []).map((t: any) => ({
+              number: t.number,
+              team_name: t.team_name,
+            }))}
+          />
         )}
 
         {/* Head-to-Head Dialog */}
