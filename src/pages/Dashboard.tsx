@@ -299,6 +299,28 @@ export default function Dashboard() {
             </div>
           </motion.div>
         )}
+        {/* At-event mode banner — quick actions row */}
+        {dashMode === "at-event" && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-primary/30 bg-primary/5 p-3 flex flex-wrap items-center gap-2"
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 text-primary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              At-event mode
+            </span>
+            <span className="text-xs text-muted-foreground hidden sm:inline">Live HUD, pins, and scouting up top.</span>
+            <div className="ml-auto flex items-center gap-2">
+              {!isFollower && (
+                <Link to="/scouting"><Button variant="hero" size="sm" className="gap-1.5"><Zap className="h-3.5 w-3.5" /> Scout</Button></Link>
+              )}
+              <Link to="/predictor"><Button variant="outline" size="sm" className="gap-1.5"><Swords className="h-3.5 w-3.5" /> Predict</Button></Link>
+              <Link to="/notes"><Button variant="outline" size="sm" className="gap-1.5"><Flag className="h-3.5 w-3.5" /> Notes</Button></Link>
+            </div>
+          </motion.div>
+        )}
+
         {/* Live event auto-suggest (24h before -> 24h after) */}
         {teamNumber && <LiveEventCard teamNumber={teamNumber} />}
 
