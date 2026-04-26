@@ -1,10 +1,9 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, lazy, Suspense } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { RoboRankScore } from "@/components/dashboard/RoboRankScore";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Calendar, Trophy, Target, TrendingUp, ArrowRight, Loader2, Award, Medal, Swords, Zap, Flag, ChevronRight, Check, Clock, Users, Eye, UserPlus, AlertTriangle, RefreshCw } from "lucide-react";
 
-import { LiveEventCard } from "@/components/dashboard/LiveEventCard";
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,19 +11,24 @@ import { getTeamByNumber, getTeamRankings, getTeamAwards, getTeamMatches, getTea
 import { useSeason } from "@/contexts/SeasonContext";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { MatchesPlayedModal, WinsModal, groupMatchesByEvent, filterWonMatches } from "@/components/matches/MatchModals";
+import { groupMatchesByEvent, filterWonMatches } from "@/components/matches/MatchModals";
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { useTeamStatus } from "@/hooks/useTeamStatus";
 import { toast } from "sonner";
 import { PullToRefresh } from "@/components/PullToRefresh";
-import { PinnedSection } from "@/components/dashboard/PinnedSection";
-import { FirstRunTour } from "@/components/onboarding/FirstRunTour";
 import { DashboardModeToggle } from "@/components/dashboard/DashboardModeToggle";
 import { useDashboardMode } from "@/hooks/useDashboardMode";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
+
+// Lazy-load below-the-fold / non-critical chunks to speed up first paint
+const LiveEventCard = lazy(() => import("@/components/dashboard/LiveEventCard").then(m => ({ default: m.LiveEventCard })));
+const PinnedSection = lazy(() => import("@/components/dashboard/PinnedSection").then(m => ({ default: m.PinnedSection })));
+const FirstRunTour = lazy(() => import("@/components/onboarding/FirstRunTour").then(m => ({ default: m.FirstRunTour })));
+const MatchesPlayedModal = lazy(() => import("@/components/matches/MatchModals").then(m => ({ default: m.MatchesPlayedModal })));
+const WinsModal = lazy(() => import("@/components/matches/MatchModals").then(m => ({ default: m.WinsModal })));
 
 // Season goals stored in localStorage
 function loadGoals(): { label: string; done: boolean }[] {
@@ -82,6 +86,13 @@ export default function Dashboard() {
     sessionStorage.setItem(captainToastKey, "1");
   }, [teamStatus, memberRole, memberTeamNumber, memberUserId]);
 
+  // Defer non-critical fetches until after first paint to keep the hero snappy
+  const [secondaryReady, setSecondaryReady] = useState(false);
+  useEffect(() => {
+    const id = window.requestAnimationFrame(() => setSecondaryReady(true));
+    return () => window.cancelAnimationFrame(id);
+  }, []);
+
   const { data: teamData, isLoading: teamLoading, error: teamError, refetch: refetchTeam } = useQuery({
     queryKey: ["team", teamNumber],
     queryFn: () => getTeamByNumber(teamNumber),
@@ -91,15 +102,10 @@ export default function Dashboard() {
 
   const teamId = teamData?.id || null;
 
+  // Critical: rankings + skills score drive the hero RoboRank score
   const { data: rankings, isLoading: rankingsLoading } = useQuery({
     queryKey: ["teamRankings", teamId, season],
     queryFn: () => getTeamRankings(teamId!, season),
-    enabled: !!teamId,
-  });
-
-  const { data: awards } = useQuery({
-    queryKey: ["teamAwards", teamId, season],
-    queryFn: () => getTeamAwards(teamId!, season),
     enabled: !!teamId,
   });
 
@@ -109,22 +115,29 @@ export default function Dashboard() {
     enabled: !!teamId,
   });
 
+  // Deferred: only fetched after first paint
+  const { data: awards } = useQuery({
+    queryKey: ["teamAwards", teamId, season],
+    queryFn: () => getTeamAwards(teamId!, season),
+    enabled: !!teamId && secondaryReady,
+  });
+
   const { data: matches } = useQuery({
     queryKey: ["teamMatches", teamId, season],
     queryFn: () => getTeamMatches(teamId!, season),
-    enabled: !!teamId,
+    enabled: !!teamId && secondaryReady,
   });
 
   const { data: skillsData } = useQuery({
     queryKey: ["teamSkillsRaw", teamId, season],
     queryFn: () => getTeamSkills(teamId!, season),
-    enabled: !!teamId,
+    enabled: !!teamId && secondaryReady,
   });
 
   const { data: upcomingEvents } = useQuery({
     queryKey: ["teamEvents", teamId, season],
     queryFn: () => getTeamEvents(teamId!, season),
-    enabled: !!teamId,
+    enabled: !!teamId && secondaryReady,
   });
 
   const qualRecord = rankings ? calculateRecordFromRankings(rankings) : null;
@@ -322,12 +335,22 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* Live event auto-suggest (24h before -> 24h after) */}
-        {teamNumber && <LiveEventCard teamNumber={teamNumber} />}
+        {/* Live event auto-suggest (24h before -> 24h after) — deferred */}
+        {teamNumber && secondaryReady && (
+          <Suspense fallback={null}>
+            <LiveEventCard teamNumber={teamNumber} />
+          </Suspense>
+        )}
 
         {/* Personal pins — fast access to starred events/teams/views */}
-        <PinnedSection />
-        <FirstRunTour />
+        <Suspense fallback={<div className="h-16 rounded-xl border border-border/40 bg-muted/20 animate-pulse" />}>
+          <PinnedSection />
+        </Suspense>
+        {secondaryReady && (
+          <Suspense fallback={null}>
+            <FirstRunTour />
+          </Suspense>
+        )}
 
         <motion.div
           initial={{ opacity: 0, y: 15 }}
@@ -715,11 +738,16 @@ export default function Dashboard() {
         </details>
 
         {/* Modals */}
-        {teamNumber && (
-          <>
-            <MatchesPlayedModal open={matchesModalOpen} onOpenChange={setMatchesModalOpen} teamNumber={teamNumber} seasonLabel={seasonLabel} matchesByEvent={matchesByEvent} totalMatchCount={totalMatchCount} />
-            <WinsModal open={winsModalOpen} onOpenChange={setWinsModalOpen} teamNumber={teamNumber} seasonLabel={seasonLabel} wonMatches={wonMatches} totalMatchCount={totalMatchCount} winRate={matchRecord?.winRate ?? 0} />
-          </>
+        {/* Modals — only mount when opened to avoid loading their chunks upfront */}
+        {teamNumber && (matchesModalOpen || winsModalOpen) && (
+          <Suspense fallback={null}>
+            {matchesModalOpen && (
+              <MatchesPlayedModal open={matchesModalOpen} onOpenChange={setMatchesModalOpen} teamNumber={teamNumber} seasonLabel={seasonLabel} matchesByEvent={matchesByEvent} totalMatchCount={totalMatchCount} />
+            )}
+            {winsModalOpen && (
+              <WinsModal open={winsModalOpen} onOpenChange={setWinsModalOpen} teamNumber={teamNumber} seasonLabel={seasonLabel} wonMatches={wonMatches} totalMatchCount={totalMatchCount} winRate={matchRecord?.winRate ?? 0} />
+            )}
+          </Suspense>
         )}
         </>)}
       </div>

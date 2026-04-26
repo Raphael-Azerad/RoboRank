@@ -102,6 +102,10 @@ export default {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
         },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -110,6 +114,7 @@ export default {
         "slide-up": "slide-up 0.4s ease-out",
         "ambient-drift": "ambient-drift 14s ease-in-out infinite",
         "shimmer": "shimmer 2.5s linear infinite",
+        "fade-in": "fade-in 0.2s ease-out both",
       },
     },
   },
