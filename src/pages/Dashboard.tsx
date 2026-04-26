@@ -333,6 +333,10 @@ export default function Dashboard() {
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="relative overflow-hidden rounded-2xl border border-border/60 card-elevated p-6 md:p-8"
         >
+          {/* Mode toggle — sits absolutely in the top-right of the hero */}
+          <div className="absolute top-3 right-3 z-10">
+            <DashboardModeToggle />
+          </div>
           {/* Ambient drifting glows for cinematic feel */}
           <div className="pointer-events-none absolute -top-32 -right-24 w-[28rem] h-[28rem] rounded-full bg-primary/15 blur-3xl animate-ambient-drift" />
           <div className="pointer-events-none absolute -bottom-32 -left-24 w-[24rem] h-[24rem] rounded-full bg-[hsl(var(--chart-2))]/10 blur-3xl animate-ambient-drift" style={{ animationDelay: "-7s" }} />
