@@ -13,6 +13,7 @@ import { useSeason } from "@/contexts/SeasonContext";
 
 import { ArrowLeft, MapPin, Calendar, Users, Loader2, Trophy, Zap, Swords, Medal, Target, ExternalLink, TrendingUp, GitCompare, BarChart3, AlertTriangle, FileText, Download, Radio, Video } from "lucide-react";
 import { CompModeBar } from "@/components/events/CompModeBar";
+import { LiveMatchHUD } from "@/components/events/LiveMatchHUD";
 import { ShareButton } from "@/components/ShareButton";
 import { PinButton } from "@/components/PinButton";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
@@ -59,6 +60,24 @@ export default function EventDetail() {
   const [expandedScheduleTeam, setExpandedScheduleTeam] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const [compMode, setCompMode] = useState(searchParams.get("comp") === "1");
+  const [myTeamNumber, setMyTeamNumber] = useState<string | null>(null);
+
+  // Fetch user's team number for HUD targeting
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user || cancelled) return;
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("team_number,followed_team")
+        .eq("id", u.user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      setMyTeamNumber((p?.team_number || p?.followed_team || null) as string | null);
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (compMode && searchParams.get("comp") !== "1") {
@@ -91,6 +110,21 @@ export default function EventDetail() {
   const hasDivisions = divisions.length > 1;
   const divisionId = divisions[selectedDivisionIdx]?.id || divisions[0]?.id || 1;
 
+  // Live event detection — within the event window (start day → end day inclusive) or explicitly ongoing
+  const isLiveEvent = useMemo(() => {
+    if (!event) return false;
+    if (event.ongoing) return true;
+    const now = Date.now();
+    const start = event.start ? new Date(event.start).getTime() : 0;
+    const endRaw = event.end ? new Date(event.end).getTime() : start;
+    // pad end to end-of-day
+    const end = endRaw + 24 * 60 * 60 * 1000;
+    return start && now >= start && now <= end;
+  }, [event]);
+
+  // Auto-poll cadence (ms) when the event is live and the user is viewing
+  const livePollMs = isLiveEvent ? 30_000 : false as const;
+
   useDocumentMeta({
     title: event?.name ? `${event.name} | RoboRank` : "Event | RoboRank",
     description: event ? `Rankings, matches, skills and predictions for ${event.name}${event.location?.city ? " in " + event.location.city : ""}.` : undefined,
@@ -102,7 +136,7 @@ export default function EventDetail() {
     enabled: !!eventId,
   });
 
-  const { data: eventRankings, isLoading: rankingsLoading } = useQuery({
+  const { data: eventRankings, isLoading: rankingsLoading, dataUpdatedAt: rankingsUpdatedAt, isFetching: rankingsFetching } = useQuery({
     queryKey: ["eventRankings", eventId, divisionId],
     queryFn: async () => {
       const result: any = await getEventRankings(Number(eventId), divisionId);
@@ -110,6 +144,8 @@ export default function EventDetail() {
       return result?.data || [];
     },
     enabled: !!eventId && (tab === "teams" || tab === "quals"),
+    refetchInterval: livePollMs,
+    refetchIntervalInBackground: false,
   });
 
   // All-divisions rankings: merge rankings from every division
@@ -133,10 +169,13 @@ export default function EventDetail() {
     enabled: !!eventId && hasDivisions && allDivisionsView && tab === "teams",
   });
 
-  const { data: allMatches, isLoading: matchesLoading } = useQuery({
+  const { data: allMatches, isLoading: matchesLoading, dataUpdatedAt: matchesUpdatedAt } = useQuery({
     queryKey: ["eventMatches", eventId, divisionId],
     queryFn: () => getEventMatches(Number(eventId), divisionId),
-    enabled: !!eventId && (tab === "quals" || tab === "elims"),
+    // Always fetch matches when the event is live so the HUD has data on every tab
+    enabled: !!eventId && (tab === "quals" || tab === "elims" || isLiveEvent),
+    refetchInterval: livePollMs,
+    refetchIntervalInBackground: false,
   });
 
   const { data: eventSkills, isLoading: skillsLoading } = useQuery({
@@ -286,6 +325,17 @@ export default function EventDetail() {
         <Link to="/events">
           <Button variant="ghost" className="gap-2 -ml-2"><ArrowLeft className="h-4 w-4" /> Back to Events</Button>
         </Link>
+
+        {/* Live Match HUD — only when the event is in its window and the user has a team in it */}
+        {event && allMatches && (
+          <LiveMatchHUD
+            matches={allMatches}
+            myTeamNumber={myTeamNumber}
+            eventName={event.name}
+            isLive={isLiveEvent}
+            lastUpdated={matchesUpdatedAt ? new Date(matchesUpdatedAt) : null}
+          />
+        )}
 
         {loading && (
           <div className="flex justify-center py-12">
@@ -604,9 +654,24 @@ export default function EventDetail() {
               });
               return (
                 <div className="rounded-xl border border-border/50 overflow-hidden">
-                  <div className="px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between">
-                    <span>Event Rankings</span>
-                    <span className="text-[10px] text-muted-foreground normal-case">{filtered.length} teams</span>
+                  <div className="px-4 py-2 bg-muted/50 text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      Event Rankings
+                      {isLiveEvent && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-primary/15 text-primary text-[9px] normal-case tracking-normal">
+                          <span className={cn("h-1.5 w-1.5 rounded-full bg-primary", rankingsFetching ? "animate-pulse" : "")} />
+                          Live · auto-updating
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground normal-case">
+                      {filtered.length} teams
+                      {isLiveEvent && rankingsUpdatedAt > 0 && (
+                        <span className="ml-2 tabular-nums">
+                          updated {Math.max(0, Math.floor((Date.now() - rankingsUpdatedAt) / 1000))}s ago
+                        </span>
+                      )}
+                    </span>
                   </div>
                   <div className="grid grid-cols-12 gap-2 px-4 py-2 bg-muted/30 text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                     <div className="col-span-1">#</div>
