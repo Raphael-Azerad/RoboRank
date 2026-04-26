@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: "app.lovable.67947d7fea74423c831abddd9b1760dd",
-  appName: "RoboRank",
+  appId: "com.azerad.roborankscouter",
+  appName: "RoboRank Scouter",
   webDir: "dist",
   server: {
     url: "https://67947d7f-ea74-423c-831a-bddd9b1760dd.lovableproject.com?forceHideBadge=true",
