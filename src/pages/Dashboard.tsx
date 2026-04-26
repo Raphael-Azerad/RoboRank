@@ -138,6 +138,42 @@ export default function Dashboard() {
     return filterWonMatches(matches, teamNumber);
   }, [matches, teamNumber]);
 
+  // Current win/loss streak from most recent matches (chronological from latest)
+  const currentStreak = useMemo(() => {
+    if (!matches || !teamNumber || matches.length === 0) return null;
+    // Sort by start desc; matches array shape: { started, scored, alliances: [{color, score, teams:[{team:{name}}]}] }
+    const sorted = [...matches]
+      .filter((m: any) => m.scored)
+      .sort((a: any, b: any) => new Date(b.started || 0).getTime() - new Date(a.started || 0).getTime());
+    let kind: "W" | "L" | "T" | null = null;
+    let count = 0;
+    for (const m of sorted) {
+      const myAlliance = m.alliances?.find((al: any) =>
+        al.teams?.some((t: any) => (t.team?.name || "") === teamNumber),
+      );
+      const oppAlliance = m.alliances?.find((al: any) => al !== myAlliance);
+      if (!myAlliance || !oppAlliance) continue;
+      let res: "W" | "L" | "T";
+      if (myAlliance.score > oppAlliance.score) res = "W";
+      else if (myAlliance.score < oppAlliance.score) res = "L";
+      else res = "T";
+      if (kind === null) { kind = res; count = 1; }
+      else if (kind === res) count++;
+      else break;
+    }
+    return kind && count > 0 ? { kind, count } : null;
+  }, [matches, teamNumber]);
+
+  // Time-of-day greeting
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    if (h < 5) return "Up late";
+    if (h < 12) return "Good morning";
+    if (h < 17) return "Good afternoon";
+    if (h < 21) return "Good evening";
+    return "Good night";
+  }, []);
+
   // Skills breakdown
   const driverSkills = useMemo(() => {
     if (!skillsData) return 0;
