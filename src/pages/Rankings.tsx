@@ -617,12 +617,9 @@ export default function Rankings() {
                   {regionData.rows
                     .filter((r) => !regionSearch.trim() || r.region.toLowerCase().includes(regionSearch.trim().toLowerCase()))
                     .map((row, i) => (
-                      <motion.div
+                      <div
                         key={row.region}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: Math.min(i * 0.015, 0.5) }}
-                        className="grid grid-cols-12 gap-2 px-6 py-4 items-center border-t border-border/30 hover:bg-accent/30 transition-colors"
+                        className="grid grid-cols-12 gap-2 px-6 py-4 items-center border-t border-border/30 hover:bg-accent/30 transition-colors animate-fade-in"
                       >
                         <div className="col-span-1 stat-number text-muted-foreground">{i + 1}</div>
                         <div className="col-span-4">
@@ -654,7 +651,7 @@ export default function Rankings() {
                             <span className="text-xs text-muted-foreground">-</span>
                           )}
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
                 </div>
               </>
