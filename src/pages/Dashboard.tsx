@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { useTeamStatus } from "@/hooks/useTeamStatus";
 import { toast } from "sonner";
 import { PullToRefresh } from "@/components/PullToRefresh";
+import { PinnedSection } from "@/components/dashboard/PinnedSection";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
 
@@ -297,6 +298,10 @@ export default function Dashboard() {
         )}
         {/* Live event auto-suggest (24h before -> 24h after) */}
         {teamNumber && <LiveEventCard teamNumber={teamNumber} />}
+
+        {/* Personal pins — fast access to starred events/teams/views */}
+        <PinnedSection />
+
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
