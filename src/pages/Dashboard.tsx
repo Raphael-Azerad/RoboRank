@@ -327,6 +327,7 @@ export default function Dashboard() {
 
         {/* Personal pins — fast access to starred events/teams/views */}
         <PinnedSection />
+        <FirstRunTour />
 
         <motion.div
           initial={{ opacity: 0, y: 15 }}
