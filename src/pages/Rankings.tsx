@@ -430,14 +430,11 @@ export default function Rankings() {
                   <div className="col-span-2 text-center">Combined</div>
                   <div className="col-span-2 text-center">RoboRank</div>
                 </div>
-                {filteredSkills.slice(0, displayCount).map((team, i) => (
-                  <motion.div
+                {filteredSkills.slice(0, displayCount).map((team) => (
+                  <div
                     key={`${team.id}-${team.rank}`}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: Math.min(i * 0.01, 0.5) }}
                     onClick={() => navigate(`/team/${team.number}`)}
-                    className="border-t border-border/30 hover:bg-accent/50 active:bg-accent/70 transition-colors cursor-pointer"
+                    className="border-t border-border/30 hover:bg-accent/50 active:bg-accent/70 transition-colors cursor-pointer animate-fade-in"
                   >
                     {/* Desktop row */}
                     <div className="hidden md:grid grid-cols-12 gap-2 px-6 py-4 items-center">
@@ -476,7 +473,7 @@ export default function Rankings() {
                         </div>
                       )}
                     </div>
-                  </motion.div>
+                  </div>
                 ))}
               </div>
               {filteredSkills.length > displayCount && (
