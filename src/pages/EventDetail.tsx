@@ -326,6 +326,17 @@ export default function EventDetail() {
           <Button variant="ghost" className="gap-2 -ml-2"><ArrowLeft className="h-4 w-4" /> Back to Events</Button>
         </Link>
 
+        {/* Live Match HUD — only when the event is in its window and the user has a team in it */}
+        {event && allMatches && (
+          <LiveMatchHUD
+            matches={allMatches}
+            myTeamNumber={myTeamNumber}
+            eventName={event.name}
+            isLive={isLiveEvent}
+            lastUpdated={matchesUpdatedAt ? new Date(matchesUpdatedAt) : null}
+          />
+        )}
+
         {loading && (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
