@@ -169,10 +169,13 @@ export default function EventDetail() {
     enabled: !!eventId && hasDivisions && allDivisionsView && tab === "teams",
   });
 
-  const { data: allMatches, isLoading: matchesLoading } = useQuery({
+  const { data: allMatches, isLoading: matchesLoading, dataUpdatedAt: matchesUpdatedAt } = useQuery({
     queryKey: ["eventMatches", eventId, divisionId],
     queryFn: () => getEventMatches(Number(eventId), divisionId),
-    enabled: !!eventId && (tab === "quals" || tab === "elims"),
+    // Always fetch matches when the event is live so the HUD has data on every tab
+    enabled: !!eventId && (tab === "quals" || tab === "elims" || isLiveEvent),
+    refetchInterval: livePollMs,
+    refetchIntervalInBackground: false,
   });
 
   const { data: eventSkills, isLoading: skillsLoading } = useQuery({
