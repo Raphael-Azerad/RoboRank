@@ -1205,6 +1205,17 @@ export default function EventDetail() {
           </div>
         )}
 
+        {tab === "scout" && event && (
+          <ScoutBoard
+            eventId={Number(eventId)}
+            eventName={event.name}
+            candidateTeams={(teamStats || teams || []).map((t: any) => ({
+              number: t.number,
+              team_name: t.team_name,
+            }))}
+          />
+        )}
+
         {/* Head-to-Head Dialog */}
         <HeadToHeadDialog
           open={h2hOpen}
