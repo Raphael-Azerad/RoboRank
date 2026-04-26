@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { cn } from "@/lib/utils";
 import { MatchesPlayedModal, WinsModal, groupMatchesByEvent, filterWonMatches } from "@/components/matches/MatchModals";
 import { ShareButton } from "@/components/ShareButton";
+import { PinButton } from "@/components/PinButton";
 import { useDocumentMeta } from "@/hooks/useDocumentMeta";
 import { RoboRankHistory } from "@/components/profile/RoboRankHistory";
 import { AwardsHeatmap } from "@/components/profile/AwardsHeatmap";
@@ -279,10 +280,20 @@ export default function TeamDetail() {
                     <RoboRankScore score={roboRank ?? 0} size="lg" />
                   </div>
                 </div>
-                <ShareButton
-                  title={`Team ${teamData.number} on RoboRank`}
-                  text={`${teamData.team_name || "VEX V5 team"} - RoboRank ${roboRank ?? "-"}`}
-                />
+                <div className="flex items-center gap-2">
+                  <PinButton
+                    kind="team"
+                    ref={teamData.number}
+                    label={`Team ${teamData.number}`}
+                    sublabel={teamData.team_name || (teamData.location ? `${teamData.location.city}, ${teamData.location.region}` : null)}
+                    route={`/team/${teamData.number}`}
+                    icon="Users"
+                  />
+                  <ShareButton
+                    title={`Team ${teamData.number} on RoboRank`}
+                    text={`${teamData.team_name || "VEX V5 team"} - RoboRank ${roboRank ?? "-"}`}
+                  />
+                </div>
               </motion.div>
             </div>
           </motion.div>

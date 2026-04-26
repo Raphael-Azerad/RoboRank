@@ -19,6 +19,9 @@ import { Input } from "@/components/ui/input";
 import { useTeamStatus } from "@/hooks/useTeamStatus";
 import { toast } from "sonner";
 import { PullToRefresh } from "@/components/PullToRefresh";
+import { PinnedSection } from "@/components/dashboard/PinnedSection";
+import { DashboardModeToggle } from "@/components/dashboard/DashboardModeToggle";
+import { useDashboardMode } from "@/hooks/useDashboardMode";
 import { useQueryClient } from "@tanstack/react-query";
 import { ChevronDown } from "lucide-react";
 
@@ -37,6 +40,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { season } = useSeason();
+  const { mode: dashMode } = useDashboardMode();
   const [teamNumber, setTeamNumber] = useState<string>("");
   const [matchesModalOpen, setMatchesModalOpen] = useState(false);
   const [winsModalOpen, setWinsModalOpen] = useState(false);
@@ -295,14 +299,44 @@ export default function Dashboard() {
             </div>
           </motion.div>
         )}
+        {/* At-event mode banner — quick actions row */}
+        {dashMode === "at-event" && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl border border-primary/30 bg-primary/5 p-3 flex flex-wrap items-center gap-2"
+          >
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 text-primary px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              At-event mode
+            </span>
+            <span className="text-xs text-muted-foreground hidden sm:inline">Live HUD, pins, and scouting up top.</span>
+            <div className="ml-auto flex items-center gap-2">
+              {!isFollower && (
+                <Link to="/scouting"><Button variant="hero" size="sm" className="gap-1.5"><Zap className="h-3.5 w-3.5" /> Scout</Button></Link>
+              )}
+              <Link to="/predictor"><Button variant="outline" size="sm" className="gap-1.5"><Swords className="h-3.5 w-3.5" /> Predict</Button></Link>
+              <Link to="/notes"><Button variant="outline" size="sm" className="gap-1.5"><Flag className="h-3.5 w-3.5" /> Notes</Button></Link>
+            </div>
+          </motion.div>
+        )}
+
         {/* Live event auto-suggest (24h before -> 24h after) */}
         {teamNumber && <LiveEventCard teamNumber={teamNumber} />}
+
+        {/* Personal pins — fast access to starred events/teams/views */}
+        <PinnedSection />
+
         <motion.div
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           className="relative overflow-hidden rounded-2xl border border-border/60 card-elevated p-6 md:p-8"
         >
+          {/* Mode toggle — sits absolutely in the top-right of the hero */}
+          <div className="absolute top-3 right-3 z-10">
+            <DashboardModeToggle />
+          </div>
           {/* Ambient drifting glows for cinematic feel */}
           <div className="pointer-events-none absolute -top-32 -right-24 w-[28rem] h-[28rem] rounded-full bg-primary/15 blur-3xl animate-ambient-drift" />
           <div className="pointer-events-none absolute -bottom-32 -left-24 w-[24rem] h-[24rem] rounded-full bg-[hsl(var(--chart-2))]/10 blur-3xl animate-ambient-drift" style={{ animationDelay: "-7s" }} />
