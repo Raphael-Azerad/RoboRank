@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { isNative } from "@/lib/native";
 import { SeasonProvider } from "@/contexts/SeasonContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { ComfortModeProvider } from "@/contexts/ComfortModeContext";
@@ -127,7 +128,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<AuthRedirect><Boundary name="landing"><Landing /></Boundary></AuthRedirect>} />
+              <Route path="/" element={isNative() ? <Navigate to="/login" replace /> : <AuthRedirect><Boundary name="landing"><Landing /></Boundary></AuthRedirect>} />
               <Route path="/login" element={<AuthRedirect><Boundary name="login"><Login /></Boundary></AuthRedirect>} />
               <Route path="/signup" element={<AuthRedirect><Boundary name="signup"><Signup /></Boundary></AuthRedirect>} />
               <Route path="/forgot-password" element={<Boundary name="forgot-password"><ForgotPassword /></Boundary>} />
