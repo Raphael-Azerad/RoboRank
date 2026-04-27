@@ -4,10 +4,6 @@ const config: CapacitorConfig = {
   appId: "com.azerad.roborankscouter",
   appName: "RoboRank Scouter",
   webDir: "dist",
-  server: {
-    url: "https://67947d7f-ea74-423c-831a-bddd9b1760dd.lovableproject.com?forceHideBadge=true",
-    cleartext: true,
-  },
   ios: {
     contentInset: "always",
     backgroundColor: "#0b0f1a",
