@@ -23,8 +23,7 @@ const navItems = [
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [, setMobileMenuOpen] = useState(false);
-  void setMobileMenuOpen;
+  // (mobile menu removed — bottom tab bar replaces hamburger nav)
   const [userId, setUserId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
