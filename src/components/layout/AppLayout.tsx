@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { BarChart3, Calendar, Home, Search, Trophy, User, LogOut, Menu, X, Swords, StickyNote, TrendingUp, Bell, Users, HelpCircle } from "lucide-react";
+import { BarChart3, Calendar, Home, Search, Trophy, User, LogOut, Swords, StickyNote, TrendingUp, Bell, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
@@ -23,7 +23,8 @@ const navItems = [
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [, setMobileMenuOpen] = useState(false);
+  void setMobileMenuOpen;
   const [userId, setUserId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
