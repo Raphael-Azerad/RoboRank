@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Calendar, Trophy, Search, User } from "lucide-react";
+import { Home, Calendar, Trophy, Search, MoreHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { hapticTap } from "@/lib/native";
 
@@ -8,7 +8,7 @@ const tabs = [
   { href: "/events", label: "Events", icon: Calendar },
   { href: "/rankings", label: "Rankings", icon: Trophy },
   { href: "/scouting", label: "Scout", icon: Search },
-  { href: "/profile", label: "Profile", icon: User },
+  { href: "/more", label: "More", icon: MoreHorizontal },
 ];
 
 /**

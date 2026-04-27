@@ -38,6 +38,7 @@ import Contact from "./pages/Contact";
 import CookiePolicy from "./pages/CookiePolicy";
 import Install from "./pages/Install";
 import Help from "./pages/Help";
+import More from "./pages/More";
 import { RouteErrorBoundary } from "./components/RouteErrorBoundary";
 
 const queryClient = new QueryClient();
@@ -155,6 +156,7 @@ const App = () => (
               <Route path="/event/:eventId" element={<ProtectedRoute><Boundary name="event-detail"><EventDetail /></Boundary></ProtectedRoute>} />
               <Route path="/awards" element={<ProtectedRoute><Boundary name="awards"><Awards /></Boundary></ProtectedRoute>} />
               <Route path="/help" element={<Boundary name="help"><Help /></Boundary>} />
+              <Route path="/more" element={<ProtectedRoute><Boundary name="more"><More /></Boundary></ProtectedRoute>} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
