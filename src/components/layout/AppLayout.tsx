@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { MobileTabBar } from "./MobileTabBar";
+import { ApiDownBanner } from "./ApiDownBanner";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -138,6 +139,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      <ApiDownBanner />
       {/* Desktop header — full nav. Hidden on mobile so the app feels native. */}
       <header className="sticky top-0 z-50 glass border-b border-border/50 hidden md:block">
         <div className="container flex h-16 items-center justify-between">
